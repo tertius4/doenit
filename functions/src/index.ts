@@ -67,16 +67,47 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
 
       // Send notification using firebase-admin
       if (title && body) {
+        // Direct notification (simple case)
         await admin.messaging().send({
           token,
           notification: { title, body },
         });
       } else if (type && data) {
+        // Structured notification - send data in payload for proper background handling
+        const fcmData = {
+          type: type,
+          // Flatten the data object into string values (FCM requirement)
+          ...Object.keys(data).reduce(
+            (acc, key) => {
+              acc[key] = String(data[key]);
+              return acc;
+            },
+            {} as Record<string, string>
+          ),
+        };
+        
+        console.log("Sending FCM message with data:", fcmData);
+        
         await admin.messaging().send({
           token,
+          data: fcmData,
           notification: {
-            title: '',
-            body: JSON.stringify({ data, type }),
+            title: "Doenit",
+            body: "u het 'n nuwe kennisgewing", // Simple fallback for system display
+          },
+          // Configure for both platforms
+          android: {
+            priority: "high",
+          },
+          apns: {
+            headers: {
+              "apns-priority": "10",
+            },
+            payload: {
+              aps: {
+                "content-available": 1,
+              },
+            },
           },
         });
       } else {

@@ -55,6 +55,7 @@
 /**
  * @typedef {Object} OnlineTask
  * @property {string} id - Primary key (UUID).
+ * @property {boolean} [deleted]
  * @property {string} task_id - Primary key of task (UUID).
  * @property {string} room_id - ID of the room associated with the task.
  * @property {string} data - Encrypted and compressed task data.

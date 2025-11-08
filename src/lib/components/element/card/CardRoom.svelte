@@ -25,17 +25,17 @@
 
 <div
   class={[
-    "p-4 border  w-full text-left rounded-md",
-    !selected && !pending && "bg-surface border-default",
-    selected && "bg-success/20! border border-success text-alt",
-    pending && "bg-yellow-900/30 border border-yellow-600/50",
+    "p-4 border w-full text-left rounded-md",
+    !selected && !pending && "bg-surface border-default text-normal",
+    selected && "bg-success/20 border border-success text-alt",
+    pending && "bg-warning/20 border border-warning text-alt",
     rest.class || "",
   ]}
 >
   <div class="flex justify-between items-center mb-2 gap-1">
     <div class="flex items-center gap-2 flex-1 min-w-0">
       {#if pending}
-        <Clock class="text-yellow-500 flex-shrink-0" />
+        <Clock class="text-alt flex-shrink-0" />
       {/if}
 
       <h2 class="text-lg font-semibold truncate">
@@ -61,7 +61,7 @@
   </div>
   <div>
     {#if pending}
-      <span class="text-yellow-500 text-sm font-normal">{t("pending")}</span>
+      <span class="text-alt text-sm font-normal">{t("pending")}</span>
     {/if}
 
     <div class="flex gap-2 overflow-x-auto scrollbar-none">
@@ -70,13 +70,13 @@
           class={[
             "px-3 py-1 rounded-full h-fit text-sm flex border items-center gap-1.5",
             selected && !room_user.pending && "bg-success/30 border-success",
-            selected && room_user.pending && "bg-yellow-600/70 ",
+            selected && room_user.pending && "bg-warning/30 text-alt border-warning",
             !selected && !room_user.pending && "bg-card text-muted border-default",
-            !selected && room_user.pending && "bg-yellow-800/50 text-yellow-300/80",
+            !selected && room_user.pending && "bg-warning/30 text-alt border-warning",
           ]}
         >
           {#if room_user.pending}
-            <Clock class="text-lg flex-shrink-0" />
+            <Clock class="text-lg flex-shrink-0 text-warning" />
           {:else}
             <Check class="text-lg flex-shrink-0 text-alt" />
           {/if}

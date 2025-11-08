@@ -29,8 +29,14 @@ class PushNotificationService {
       // Save token to user profile (you'll need to implement this)
       await this.saveTokenToProfile(this.token);
 
+      // Setup background message handler for when app is killed/background
+      this.setupBackgroundMessageHandler();
+
       // Listen for incoming messages
       this.setupMessageListener();
+
+      // Handle notification that launched the app (from killed state)
+      this.handleAppLaunchNotification();
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       Alert.error(`${t("error_initializing_push_notifications")}: ${error_message}`);
@@ -53,20 +59,122 @@ class PushNotificationService {
     }
   }
 
+  private setupBackgroundMessageHandler() {
+    // Note: Capacitor Firebase Messaging handles background messages automatically
+    // and triggers the notificationActionPerformed when user taps the notification
+    // The background processing will be handled in the listeners below
+  }
+
+  private async handleAppLaunchNotification() {
+    try {
+      // Check if app was launched by tapping a notification
+      const result = await FirebaseMessaging.getDeliveredNotifications();
+      // Note: This method may not be available in all versions
+      // The notificationActionPerformed listener should handle most cases
+    } catch (error) {
+      // Method not available or other error - this is expected in some versions
+      console.log('getDeliveredNotifications not available or error:', error);
+    }
+  }
+
   private setupMessageListener() {
     // Listen for messages when app is in foreground
-    FirebaseMessaging.addListener("notificationReceived", (action) => {
-      this.handleInviteNotification(action.notification);
+    FirebaseMessaging.addListener("notificationReceived", async (action) => {
+      console.log('Foreground notification received:', action);
+      await this.processNotification(action);
     });
 
     // Listen for notification taps (when app is in background)
-    FirebaseMessaging.addListener("notificationActionPerformed", (action) => {
-      this.handleInviteNotification(action.notification);
+    FirebaseMessaging.addListener("notificationActionPerformed", async (action) => {
+      console.log('Notification tap performed:', action);
+      await this.processNotification(action);
+    });
+
+    // Listen for token refresh
+    FirebaseMessaging.addListener("tokenReceived", async (event) => {
+      console.log('FCM token received:', event.token);
+      this.token = event.token;
+      await this.saveTokenToProfile(event.token);
     });
   }
 
-  private async handleInviteNotification(notification) {
+  private async processNotification(action: any) {
     try {
+      // Debug: Log the entire action object to see what we're receiving
+      console.log('Full action object:', JSON.stringify(action, null, 2));
+      
+      // Try to get data from the FCM data payload first (new format)
+      let notificationData = null;
+      let notificationType = null;
+
+      // Check for data in various possible locations
+      // For Capacitor Firebase Messaging, the data payload is often in different locations
+      if (action.data) {
+        console.log('Found data in action.data:', action.data);
+        notificationData = action.data;
+        notificationType = action.data.type;
+      } else if (action.notification?.data) {
+        console.log('Found data in action.notification.data:', action.notification.data);
+        notificationData = action.notification.data;
+        notificationType = action.notification.data.type;
+      } else if ((action as any).message?.data) {
+        console.log('Found data in action.message.data:', (action as any).message.data);
+        notificationData = (action as any).message.data;
+        notificationType = (action as any).message.data.type;
+      } else if (action.notification?.body) {
+        console.log('Trying to parse body as JSON:', action.notification.body);
+        // Fallback to legacy JSON body format
+        try {
+          const parsed = JSON.parse(action.notification.body);
+          notificationType = parsed.type;
+          notificationData = parsed.data;
+          console.log('Successfully parsed JSON from body:', { type: notificationType, data: notificationData });
+        } catch (e) {
+          console.log('Body is not JSON, treating as regular notification');
+          // Not JSON, handle as regular notification
+          return;
+        }
+      } else {
+        console.log('No data found in any expected location');
+        return;
+      }
+
+      if (notificationType && notificationData) {
+        console.log('Processing notification with type:', notificationType, 'data:', notificationData);
+        await this.handleDataNotification({ type: notificationType, ...notificationData });
+      } else {
+        console.log('Missing type or data:', { type: notificationType, data: notificationData });
+      }
+    } catch (error) {
+      console.error('Error processing notification:', error);
+    }
+  }
+
+  private async handleDataNotification(data: Record<string, string>) {
+    try {
+      const { type, ...notificationData } = data;
+      if (!type) return;
+
+      const body = await this.getBody(type, notificationData);
+      if (!body) return;
+
+      const formatted_notification = {
+        id: Date.now() % 1000000,
+        title: this.getTitle(type),
+        body: body,
+        schedule: { at: new Date(Date.now() + 1000) },
+      };
+
+      // Show local notification with formatted content
+      await LocalNotifications.schedule({ notifications: [formatted_notification] });
+    } catch (error) {
+      Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
+    }
+  }
+
+  private async handleInviteNotification(notification: any) {
+    try {
+      // Legacy format - parse JSON from body
       const { type, data } = JSON.parse(notification.body) || {};
       const body = await this.getBody(type, data);
       if (!body) return;

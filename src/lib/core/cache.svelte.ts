@@ -81,4 +81,5 @@ export class Cached {
   static readonly automaticBackup = new CacheHandler<boolean>("automatic_backup");
   static readonly rateUs = new CacheHandler<RateUsSetting>("rate_us");
   static readonly favouriteCategories = new CacheHandler<Category['id']>("favourite_categories");
+  static readonly pendingTaskSync = new CacheHandler<string[]>("pending_task_sync");
 }

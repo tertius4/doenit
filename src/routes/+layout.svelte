@@ -2,6 +2,7 @@
   import { pushNotificationService } from "$lib/services/pushNotifications.svelte";
   import { notifications } from "$lib/services/notification.svelte";
   import { onDestroy, onMount, setContext, untrack } from "svelte";
+  import { SyncService } from "$lib/services/syncService";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { Photos } from "$lib/services/photos.svelte";
   import Backup from "$lib/services/backup.svelte";
@@ -29,8 +30,6 @@
 
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeOnlineTasks = null;
-  /** @type {FirebaseUnsubscribe?} */
-  let unsubscribeOnlineRoom = null;
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeInvites = null;
   /** @type {Subscription?} */
@@ -126,6 +125,14 @@
   });
 
   onMount(() => {
+    const sync = SyncService.getInstance();
+    // Start background sync service
+    sync.startBackgroundSync();
+
+    return () => sync.stopBackgroundSync();
+  });
+
+  onMount(() => {
     // Register default navigation handler (lowest priority)
     const nav_token = backHandler.register(() => {
       if (page.url.pathname !== "/") {
@@ -154,7 +161,6 @@
 
   onDestroy(() => {
     if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
-    if (unsubscribeOnlineRoom) unsubscribeOnlineRoom();
     if (unsubscribeInvites) unsubscribeInvites();
     if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
   });

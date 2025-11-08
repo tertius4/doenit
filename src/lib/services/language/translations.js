@@ -189,6 +189,7 @@ export const translations = {
     leave_friend: "Verlaat",
     left_group: "Groep Verlaat",
     user_left_group: '{{user_name}} het die groep "{{room_name}}" verlaat',
+    user_not_found: "Gebruiker nie gevind nie",
 
     // Room Management
     edit_room: "Wysig Groep",
@@ -627,6 +628,7 @@ export const translations = {
     leave_friend: "Leave",
     left_group: "Left Group",
     user_left_group: '{{user_name}} have left the group "{{room_name}}"',
+    user_not_found: "User not found",
 
     // Room Management
     edit_room: "Edit room",
@@ -743,7 +745,7 @@ export const translations = {
     sign_out: "Sign out",
     yes: "Yes",
     no: "No",
-    log_in_first: "please log in first",
+    log_in_first: "Log in first",
     log_in_to_see_invites: "Log in to see invites",
     log_in_to_use_friends: "Verify your email address in settings to activate the friends feature",
     go_to_settings: "Go to settings",
@@ -874,6 +876,6 @@ export const translations = {
     backup_locked: "Automatic backup is a Plus feature",
     backup_locked_desc: "Upgrade to DOenit Plus to unlock automatic backup.",
 
-    you: "You"
+    you: "You",
   },
 };

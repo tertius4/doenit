@@ -1,13 +1,14 @@
+import { SyncService } from "$lib/services/syncService";
 import type { RxCollection } from "$lib/chunk/rxdb";
-import DateUtil from "$lib/DateUtil";
-import { Table } from "./_Table";
-import { DB } from "$lib/DB";
 import { Photos } from "$lib/services/photos.svelte";
 import { t } from "$lib/services/language.svelte";
 import { Secure } from "$lib/core/secure";
 import { OnlineDB } from "$lib/OnlineDB";
 import user from "$lib/core/user.svelte";
+import DateUtil from "$lib/DateUtil";
+import { Table } from "./_Table";
 import { deepEqual } from "rxdb";
+import { DB } from "$lib/DB";
 
 export class TaskTable extends Table<Task> {
   constructor(collection: RxCollection<Task>) {
@@ -38,16 +39,11 @@ export class TaskTable extends Table<Task> {
     }
 
     const db_task = await super.create(task);
+
+    // Handle online sync asynchronously and only if online
     if (db_task.room_id && !!user.value?.is_friends_enabled) {
-      const encrypted_data = await Secure.compressAndEncrypt(db_task);
-      await OnlineDB.Task.create(
-        {
-          task_id: db_task.id,
-          room_id: db_task.room_id || "",
-          data: encrypted_data || "",
-        },
-        db_task
-      );
+      // Don't await this - let it run in background
+      this.syncTaskToOnline(db_task);
     }
 
     return db_task;
@@ -74,33 +70,11 @@ export class TaskTable extends Table<Task> {
     }
 
     const db_task = await super.update(id, task);
-    if (db_task?.room_id && !!user.value?.is_friends_enabled) {
-      const [encrypted_data, [online_task]] = await Promise.all([
-        Secure.compressAndEncrypt(db_task),
-        OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
-      ]);
 
-      if (online_task) {
-        await OnlineDB.Task.update(
-          online_task.id,
-          {
-            id: online_task.id,
-            task_id: db_task.id,
-            room_id: db_task.room_id || "",
-            data: encrypted_data || "",
-          },
-          db_task
-        );
-      } else {
-        await OnlineDB.Task.create(
-          {
-            task_id: db_task.id,
-            room_id: db_task.room_id || "",
-            data: encrypted_data || "",
-          },
-          db_task
-        );
-      }
+    // Handle online sync asynchronously and only if online
+    if (db_task?.room_id && !!user.value?.is_friends_enabled) {
+      // Don't await this - let it run in background
+      this.syncTaskUpdateToOnline(db_task);
     }
 
     return db_task;
@@ -131,7 +105,11 @@ export class TaskTable extends Table<Task> {
       await Photos.deletePhotos(photo_ids);
     }
 
-    await OnlineDB.Task.deleteMany({ filters: [{ field: "id", operator: "in", value: ids }] });
+    // Handle online sync asynchronously and only if online
+    if (!!user.value?.is_friends_enabled) {
+      // Don't await this - let it run in background
+      this.syncTaskDeleteToOnline({ ids, delete: true });
+    }
   }
 
   async completeId(task_id: string) {
@@ -170,6 +148,11 @@ export class TaskTable extends Table<Task> {
     try {
       const task_ids: string[] = [];
       const promises = online_tasks.map((online_task) => {
+        if (online_task.deleted) {
+          task_ids.push(online_task.task_id);
+          return Promise.resolve({ id: online_task.task_id, deleted: true } as Task);
+        }
+
         const encrypted_data = online_task.data;
         if (!encrypted_data) return;
 
@@ -191,6 +174,11 @@ export class TaskTable extends Table<Task> {
       for (const task of all_tasks) {
         if (!task) continue;
 
+        if (task.deleted) {
+          await super.delete(task.id);
+          continue;
+        }
+
         const existing = existing_tasks_map.get(task.id);
         if (!existing) {
           await super.create(task);
@@ -205,6 +193,115 @@ export class TaskTable extends Table<Task> {
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       alert(`[sync] Fout gedurende sinkronisasie: ${error_message}`);
+    }
+  }
+
+  /**
+   * Sync task to online database in the background
+   * @private
+   */
+  private async syncTaskToOnline(db_task: Task): Promise<void> {
+    try {
+      // Check if online first
+      if (!navigator.onLine) {
+        throw new Error("Offline - will sync later");
+      }
+
+      const encrypted_data = await Secure.compressAndEncrypt(db_task);
+      await OnlineDB.Task.createWithNotification(
+        {
+          task_id: db_task.id,
+          room_id: db_task.room_id || "",
+          data: encrypted_data || "",
+        },
+        db_task
+      );
+    } catch (error: any) {
+      // Mark task for later sync when online
+      this.markForSync(db_task.id);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync task update to online database in the background
+   * @private
+   */
+  private async syncTaskUpdateToOnline(db_task: Task): Promise<void> {
+    try {
+      // Check if online first
+      if (!navigator.onLine) {
+        throw new Error("Offline - will sync later");
+      }
+
+      const [encrypted_data, [online_task]] = await Promise.all([
+        Secure.compressAndEncrypt(db_task),
+        OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
+      ]);
+
+      if (online_task) {
+        await OnlineDB.Task.updateWithNotification(
+          online_task.id,
+          {
+            id: online_task.id,
+            task_id: db_task.id,
+            room_id: db_task.room_id || "",
+            data: encrypted_data || "",
+          },
+          db_task
+        );
+      } else {
+        await OnlineDB.Task.createWithNotification(
+          {
+            task_id: db_task.id,
+            room_id: db_task.room_id || "",
+            data: encrypted_data || "",
+          },
+          db_task
+        );
+      }
+    } catch (error: any) {
+      // Mark task for later sync when online
+      this.markForSync(db_task.id);
+      throw error;
+    }
+  }
+
+  private async syncTaskDeleteToOnline(params: { ids: string[]; delete: true }): Promise<void> {
+    try {
+      // Check if online first
+      if (!navigator.onLine) {
+        throw new Error("Offline - will sync later");
+      }
+
+      const online_tasks = await OnlineDB.Task.readMany({
+        filters: [{ field: "task_id", operator: "in", value: params.ids }],
+      });
+
+      const delete_promises = online_tasks.map(async (online_task) => {
+        const db_task = await Secure.decryptAndDecompress(online_task.data);
+        await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task);
+      });
+
+      await Promise.all(delete_promises);
+    } catch (error: any) {
+      // Mark tasks for later sync when online
+      for (const id of params.ids) {
+        this.markForSync(id);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Mark task that needs syncing later
+   * @private
+   */
+  private markForSync(task_id: string): void {
+    try {
+      SyncService.getInstance().addPendingTaskId(task_id);
+    } catch (error) {
+      console.warn("Could not mark task for sync:", error);
     }
   }
 }

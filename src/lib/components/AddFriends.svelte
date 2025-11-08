@@ -46,11 +46,20 @@
     //   return;
     // }
 
-    is_loading = true;
-    error_message = "";
-    success_message = "";
-
     try {
+      const searched_user = await OnlineDB.User.readMany({
+        filters: [{ field: "email_address", operator: "==", value: friend_email }],
+      });
+
+      if (!searched_user.length) {
+        error_message = t("user_not_found");
+        return;
+      }
+
+      is_loading = true;
+      error_message = "";
+      success_message = "";
+
       const room = await DB.Room.create({
         name: email,
         pending: true,
@@ -78,13 +87,13 @@
       if (!result.success) {
         Alert.error(result.error_message);
       }
-    } catch (error) {
-      console.error("Error sending invite:", error);
-      error_message = t("add_friend_error");
-    }
 
-    is_loading = false;
-    handleClose();
+      is_loading = false;
+      handleClose();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      error_message = `${t("add_friend_error")}: ${message}`;
+    }
   }
 
   function handleClose() {
