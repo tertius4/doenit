@@ -66,29 +66,6 @@
         throw new Error(t("error_updating_task"));
       }
 
-      if (user.value?.is_friends_enabled) {
-        // Was nie vrooër gedeel nie, en nou wel
-        const is_shared = !data.task.room_id && !!task.room_id;
-        if (is_shared) {
-          const room = await DB.Room.get(task.room_id);
-          await OnlineDB.Changelog.createCreateEntry(room, task);
-        }
-
-        // Was vrooër gedeel, maar nou nie meer
-        const is_unshared = !!data.task.room_id && !task.room_id;
-        if (is_unshared) {
-          const room = await DB.Room.get(data.task.room_id);
-          await OnlineDB.Changelog.createUnshareUpdateEntry(room, task);
-        }
-
-        // Was vrooër gedeel en is steeds gedeel
-        const is_still_shared = !!data.task.room_id && !!task.room_id;
-        if (is_still_shared) {
-          const room = await DB.Room.get(task.room_id);
-          await OnlineDB.Changelog.createUpdateEntry(room, task);
-        }
-      }
-
       // Delete removed photos
       const ids = [...deleted_photo_ids.values()];
       const promised = ids.map((p) => Photos.deletePhoto(p));
@@ -125,12 +102,6 @@
       }
 
       await DB.Task.update(task.id, task);
-      if (task.room_id && !!user.value) {
-        const room = await DB.Room.get(task.room_id);
-        if (!room) return;
-
-        await OnlineDB.Changelog.createCompleteEntry(room, task);
-      }
     } catch (error) {
       Alert.error(`${t("error_updating_task")}: ${error}`);
     }

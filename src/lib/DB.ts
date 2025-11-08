@@ -3,9 +3,12 @@ import { getRxStorageDexie, RxDBMigrationSchemaPlugin } from "$lib/chunk/rxdb_he
 import { CategoryTable } from "./DB/Category";
 import { TaskTable } from "./DB/Task";
 import { RoomTable } from "./DB/Room";
+import { InviteTable } from "./DB/Invite.svelte";
+import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 
 async function initDB() {
   addRxPlugin(RxDBMigrationSchemaPlugin);
+  addRxPlugin(RxDBUpdatePlugin);
 
   const DB = await createRxDatabase({
     name: "doenitDb",
@@ -173,9 +176,10 @@ class DBClass {
   #Task: TaskTable | undefined;
   #Category: CategoryTable | undefined;
   #Room: RoomTable | undefined;
+  #Invite = new InviteTable();
 
   async init() {
-    if (!!this.#Task && !!this.#Category && !!this.#Room) return;
+    if (!!this.#Task && !!this.#Category && !!this.#Room && !!this.#Invite) return;
 
     const db = await initDB();
     this.#Task = new TaskTable(db.collections.Task);
@@ -199,6 +203,10 @@ class DBClass {
     if (!this.#Room) throw new Error("Room table not initialized");
 
     return this.#Room;
+  }
+
+  get Invite(): InviteTable {
+    return this.#Invite;
   }
 }
 

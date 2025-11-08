@@ -1,11 +1,7 @@
 <script>
   import { goto } from "$app/navigation";
   import EditTask from "$lib/components/EditTask.svelte";
-  import { t } from "$lib/services/language.svelte";
   import { DB } from "$lib/DB.js";
-  import { OnlineDB } from "$lib/OnlineDB.js";
-  import user from "$lib/core/user.svelte.js";
-  import { Notify } from "$lib/services/notifications/notifications.js";
   import { Alert } from "$lib/core/alert.js";
   import { setContext } from "svelte";
   import { Photos } from "$lib/services/photos.svelte.js";
@@ -44,35 +40,6 @@
       }
 
       const new_task = await DB.Task.create(task);
-
-      if (task.room_id && !!user.value?.is_friends_enabled) {
-        const room = await DB.Room.get(task.room_id);
-
-        // TODO: Vertaal
-        if (!room) throw new Error("Vriend nie gevind");
-
-        const email_address = user.value.email;
-        await OnlineDB.Changelog.create({
-          type: "create",
-          data: JSON.stringify(new_task),
-          room_id: task.room_id || "",
-          total_reads_needed: room.users.length,
-          user_reads_list: [email_address],
-        });
-
-        const email_addresses = [];
-        for (const { email, pending } of room.users) {
-          if (email && email !== email_address && !pending) {
-            email_addresses.push(email);
-          }
-        }
-
-        await Notify.Push.send({
-          title: t("task_created"),
-          body: t("task_was_created", { task_name: task.name }),
-          email_address: email_addresses,
-        });
-      }
 
       // Delete removed photos
       const ids = [...deleted_photo_ids.values()];

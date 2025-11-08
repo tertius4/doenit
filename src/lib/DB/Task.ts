@@ -3,14 +3,18 @@ import DateUtil from "$lib/DateUtil";
 import { Table } from "./_Table";
 import { DB } from "$lib/DB";
 import { Photos } from "$lib/services/photos.svelte";
-import { language, t } from "$lib/services/language.svelte";
+import { t } from "$lib/services/language.svelte";
+import { Secure } from "$lib/core/secure";
+import { OnlineDB } from "$lib/OnlineDB";
+import user from "$lib/core/user.svelte";
+import { deepEqual } from "rxdb";
 
 export class TaskTable extends Table<Task> {
   constructor(collection: RxCollection<Task>) {
     super(collection);
   }
 
-  create(task: Omit<Task, "id" | "created_at" | "updated_at">): Promise<Task> {
+  async create(task: Omit<Task, "id" | "created_at" | "updated_at"> & { id?: string }): Promise<Task> {
     if (!task) throw Error(t("no_task_found"));
     if (!task.name?.trim()) throw Error(t("what_must_be_done"));
 
@@ -29,12 +33,24 @@ export class TaskTable extends Table<Task> {
     }
 
     if (!!task.completed && !task.repeat_interval) {
-      if (!task.completed_at)
-        task.completed_at = new Date().toLocaleString(language.value === "af" ? "af-ZA" : "en-US");
+      if (!task.completed_at) task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
       if (!task.archived) task.archived = true;
     }
 
-    return super.create(task);
+    const db_task = await super.create(task);
+    if (db_task.room_id && !!user.value?.is_friends_enabled) {
+      const encrypted_data = await Secure.compressAndEncrypt(db_task);
+      await OnlineDB.Task.create(
+        {
+          task_id: db_task.id,
+          room_id: db_task.room_id || "",
+          data: encrypted_data || "",
+        },
+        db_task
+      );
+    }
+
+    return db_task;
   }
 
   async update(id: string, task: Task): Promise<Task | null> {
@@ -57,7 +73,37 @@ export class TaskTable extends Table<Task> {
       if (!task.archived) task.archived = true;
     }
 
-    return await super.update(id, task);
+    const db_task = await super.update(id, task);
+    if (db_task?.room_id && !!user.value?.is_friends_enabled) {
+      const [encrypted_data, [online_task]] = await Promise.all([
+        Secure.compressAndEncrypt(db_task),
+        OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
+      ]);
+
+      if (online_task) {
+        await OnlineDB.Task.update(
+          online_task.id,
+          {
+            id: online_task.id,
+            task_id: db_task.id,
+            room_id: db_task.room_id || "",
+            data: encrypted_data || "",
+          },
+          db_task
+        );
+      } else {
+        await OnlineDB.Task.create(
+          {
+            task_id: db_task.id,
+            room_id: db_task.room_id || "",
+            data: encrypted_data || "",
+          },
+          db_task
+        );
+      }
+    }
+
+    return db_task;
   }
 
   /**
@@ -84,6 +130,8 @@ export class TaskTable extends Table<Task> {
     if (photo_ids.length > 0) {
       await Photos.deletePhotos(photo_ids);
     }
+
+    await OnlineDB.Task.deleteMany({ filters: [{ field: "id", operator: "in", value: ids }] });
   }
 
   async completeId(task_id: string) {
@@ -105,7 +153,7 @@ export class TaskTable extends Table<Task> {
       task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
     }
 
-    return super.update(task.id, task);
+    return this.update(task.id, task);
   }
 
   uncomplete(task: Task) {
@@ -114,59 +162,49 @@ export class TaskTable extends Table<Task> {
     return this.update(task.id, task);
   }
 
-  // Get tasks for a specific room
-  async getByRoom(roomId: string): Promise<Task[]> {
-    return this.getAll({
-      selector: {
-        room_id: roomId,
-        archived: false,
-      },
-    });
-  }
+  /**
+   * Sync online tasks to local DB
+   * @param online_tasks
+   */
+  async sync(online_tasks: OnlineTask[]) {
+    try {
+      const task_ids: string[] = [];
+      const promises = online_tasks.map((online_task) => {
+        const encrypted_data = online_task.data;
+        if (!encrypted_data) return;
 
-  async implementChange(change: Changelog) {
-    switch (change.type) {
-      case "create":
-        if (!change.data) break;
+        task_ids.push(online_task.task_id);
+        return Secure.decryptAndDecompress(encrypted_data) as Promise<Task>;
+      });
 
-        const task = JSON.parse(change.data); // TODO Encrypt/Decrypt
-        const existing_task = await DB.Task.get(task.id).catch(() => null);
-        if (existing_task) break;
+      const [existing_tasks, all_tasks] = await Promise.all([
+        DB.Task.getAll({ selector: { id: { $in: task_ids } } }),
+        Promise.all(promises),
+      ]);
 
-        await this.create(task);
-        break;
-      case "unshare":
-        if (true) {
-          if (!change.task_id) break;
+      // Map existing tasks by id for quick lookup.
+      const existing_tasks_map = new Map<string, Task>();
+      for (const task of existing_tasks) {
+        if (task) existing_tasks_map.set(task.id, task);
+      }
 
-          const task = await DB.Task.get(change.task_id).catch(() => null);
-          if (!task) break;
+      for (const task of all_tasks) {
+        if (!task) continue;
 
-          task.room_id = null;
-          await this.update(task.id, task);
-          break;
-        }
-      case "update":
-        if (true) {
-          if (!change.data) break;
-          const updated_task = JSON.parse(change.data); // TODO Encrypt/Decrypt
-          const task = await DB.Task.get(updated_task.id).catch(() => null);
-          if (!task) {
-            await this.create(updated_task);
-          } else {
-            await this.update(updated_task.id, updated_task);
+        const existing = existing_tasks_map.get(task.id);
+        if (!existing) {
+          await super.create(task);
+        } else {
+          // Check if there are changes
+          let has_changes = !deepEqual(existing, task);
+          if (has_changes) {
+            await super.update(task.id, task);
           }
         }
-        break;
-      case "delete":
-        if (!change.task_id) break;
-        await this.delete(change.task_id);
-        break;
-      case "complete":
-        if (!change.task_id) break;
-        await this.completeId(change.task_id).catch(() => null);
-      default:
-        break;
+      }
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      alert(`[sync] Fout gedurende sinkronisasie: ${error_message}`);
     }
   }
 }

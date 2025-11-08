@@ -66,24 +66,28 @@
 
     <div class="flex gap-2 overflow-x-auto scrollbar-none">
       {#each users as room_user}
-        {#if room_user.email !== user.value?.email}
-          <span
-            class={[
-              "px-3 py-1 rounded-full h-fit text-sm flex border items-center gap-1.5",
-              selected && !room_user.pending && "bg-success/30 border-success",
-              selected && room_user.pending && "bg-yellow-600/70 ",
-              !selected && !room_user.pending && "bg-card text-muted border-default",
-              !selected && room_user.pending && "bg-yellow-800/50 text-yellow-300/80",
-            ]}
-          >
-            {#if room_user.pending}
-              <Clock class="text-lg flex-shrink-0" />
+        <span
+          class={[
+            "px-3 py-1 rounded-full h-fit text-sm flex border items-center gap-1.5",
+            selected && !room_user.pending && "bg-success/30 border-success",
+            selected && room_user.pending && "bg-yellow-600/70 ",
+            !selected && !room_user.pending && "bg-card text-muted border-default",
+            !selected && room_user.pending && "bg-yellow-800/50 text-yellow-300/80",
+          ]}
+        >
+          {#if room_user.pending}
+            <Clock class="text-lg flex-shrink-0" />
+          {:else}
+            <Check class="text-lg flex-shrink-0 text-alt" />
+          {/if}
+          <span class="truncate">
+            {#if room_user.email === user.value?.email}
+              {t("you")}
             {:else}
-              <Check class="text-lg flex-shrink-0 text-alt" />
+              {room_user.email}
             {/if}
-            <span class="truncate">{room_user.email}</span>
           </span>
-        {/if}
+        </span>
       {/each}
     </div>
   </div>

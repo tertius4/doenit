@@ -1,5 +1,4 @@
 <script>
-  import { inviteService } from "$lib/services/invites.svelte";
   import { t } from "$lib/services/language.svelte";
   import InputText from "./element/input/InputText.svelte";
   import { slide } from "svelte/transition";
@@ -8,6 +7,10 @@
   import { isValidEmail, normalize } from "$lib";
   import user from "$lib/core/user.svelte";
   import Loading from "$lib/icon/Loading.svelte";
+  import { OnlineDB } from "$lib/OnlineDB";
+  import { DB } from "$lib/DB";
+  import { Alert } from "$lib/core/alert";
+  import { Notify } from "$lib/services/notifications/notifications";
 
   let open = $state(false);
   let friend_email = $state("");
@@ -48,13 +51,33 @@
     success_message = "";
 
     try {
-      const result = await inviteService.sendInvite(email);
-      if (!result.success) {
-        error_message = result.error_message;
-        return;
-      }
+      const room = await DB.Room.create({
+        name: email,
+        pending: true,
+        users: [
+          { email: user.value.email, pending: false },
+          { email, pending: true },
+        ],
+      });
+      const result = await OnlineDB.Invite.create({
+        sender_name: user.value.name,
+        from_email_address: user.value.email,
+        to_email_address: email,
+        status: "pending",
+        room_id: room.id,
+      });
 
-      // AppNotification.showSimple(t("invitation_sent"));
+      await Notify.Push.sendTemplate({
+        type: "friend_request",
+        data: {
+          sender_name: user.value.name,
+        },
+        email_address: [email],
+      });
+
+      if (!result.success) {
+        Alert.error(result.error_message);
+      }
     } catch (error) {
       console.error("Error sending invite:", error);
       error_message = t("add_friend_error");

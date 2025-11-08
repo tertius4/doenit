@@ -16,13 +16,17 @@
 
   let processing = $state(false);
 
+  const expires_at = new Date(invite.created_at);
+  expires_at.setHours(expires_at.getDate() + 7); // Set expiration to 7 hours from creation
+
   /**
-   * @param {any} expires_at
+   * @param {string} created_at
    */
-  function formatTimeRemaining(expires_at) {
-    const now = new Date();
-    const expiry = new Date(expires_at);
-    const diffMs = expiry.getTime() - now.getTime();
+  function formatTimeRemaining(created_at) {
+    const expires_at = new Date(created_at);
+    expires_at.setDate(expires_at.getDate() + 7); // Expires in 7 Days
+
+    const diffMs = expires_at.getTime() - Date.now();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
@@ -56,7 +60,7 @@
       </div>
 
       <p class="text-sm mb-1">
-        {invite.sender_email_address}
+        {invite.sender_name}
       </p>
 
       <p class="text-sm mb-2">
@@ -64,7 +68,7 @@
       </p>
 
       <p class="text-xs text-muted">
-        {formatTimeRemaining(invite.expires_at)}
+        {formatTimeRemaining(invite.created_at)}
       </p>
     </div>
   </div>

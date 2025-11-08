@@ -1,20 +1,21 @@
 import { getApp, initializeApp, type Unsubscribe } from "$lib/chunk/firebase-app";
 import {
-  collection,
-  doc,
   addDoc,
-  updateDoc,
+  collection,
   deleteDoc,
+  doc,
   getDoc,
   getDocs,
-  query,
-  where,
-  or,
-  orderBy,
+  getFirestore,
   limit,
   onSnapshot,
+  or,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+  writeBatch,
   type WhereFilterOp,
-  getFirestore,
 } from "$lib/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 import DateUtil from "$lib/DateUtil";
@@ -30,7 +31,7 @@ interface QueryOptions {
 
 type SnapshotCallback<T> = (docs: T[]) => void;
 
-export class Table<T extends BackupManifest | Invite | Changelog | Users> {
+export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | Invite> {
   private readonly name: string;
 
   constructor(name: string) {
@@ -46,15 +47,16 @@ export class Table<T extends BackupManifest | Invite | Changelog | Users> {
       const colRef = collection(db, this.name);
 
       // Convert to plain object and ensure all values are serializable
-      const doc_data = JSON.parse(JSON.stringify({ ...data, created_at, archived: false }));
+      const doc_data = JSON.parse(JSON.stringify({ ...data, created_at }));
       await addDoc(colRef, doc_data);
 
       return { success: true };
     } catch (error) {
-      console.error("Error creating document in " + this.name + ":", error);
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.error(`Error creating document in ${this.name}: ${error_message}`);
       return {
         success: false,
-        error_message: (error as Error).message || "Failed to create document",
+        error_message: error_message || "Failed to create document",
       };
     }
   }
@@ -68,6 +70,13 @@ export class Table<T extends BackupManifest | Invite | Changelog | Users> {
     return { id: snapshot.id, ...snapshot.data() } as T;
   }
 
+  async readMany(options?: QueryOptions): Promise<T[]> {
+    const q = this.buildQuery(options);
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
+  }
+
   async getAll(options?: QueryOptions): Promise<T[]> {
     try {
       const q = this.buildQuery(options);
@@ -79,17 +88,54 @@ export class Table<T extends BackupManifest | Invite | Changelog | Users> {
     }
   }
 
-  async update(id: string, data: T) {
-    const db = this.getFirestore();
-    const docRef = doc(db, this.name, id);
-    await updateDoc(docRef, data);
-    return { ...data, id };
+  async updateById(id: string, data: Partial<T>): Promise<SimpleResult> {
+    try {
+      const db = this.getFirestore();
+      const docRef = doc(db, this.name, id);
+
+      await updateDoc(docRef, data);
+      return { success: true };
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      return { success: false, error_message };
+    }
+  }
+
+  async update(id: string, data: Partial<T>): Promise<SimpleResult> {
+    try {
+      const db = this.getFirestore();
+
+      // Query for the document with matching id property
+      const q = query(collection(db, this.name), where("id", "==", id), limit(1));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        return { success: false, error_message: "Document not found" };
+      }
+
+      // Update using the found document reference
+      await updateDoc(snapshot.docs[0].ref, data);
+      return { success: true };
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      return { success: false, error_message };
+    }
   }
 
   async delete(id: string) {
     const db = this.getFirestore();
     const docRef = doc(db, this.name, id);
     await deleteDoc(docRef);
+  }
+
+  async deleteMany(options?: QueryOptions) {
+    const db = this.getFirestore();
+    const batch = writeBatch(db);
+    const q = this.buildQuery(options);
+    const snapshot = await getDocs(q);
+
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
   }
 
   protected getDoc(id: string) {

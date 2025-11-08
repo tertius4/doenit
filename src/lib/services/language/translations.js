@@ -436,6 +436,8 @@ export const translations = {
     rooms_locked_desc: "Gradeer op na DOenit Plus om kamers te ontsluit en take met jou vriende te deel.",
     backup_locked: "Outomatiese rugsteun is 'n Plus funksie",
     backup_locked_desc: "Gradeer op na DOenit Plus om outomatiese rugsteun te ontsluit.",
+
+    you: "Jy",
   },
 
   en: {
@@ -871,5 +873,7 @@ export const translations = {
     rooms_locked_desc: "Upgrade to DOenit Plus to unlock rooms and share tasks with your friends.",
     backup_locked: "Automatic backup is a Plus feature",
     backup_locked_desc: "Upgrade to DOenit Plus to unlock automatic backup.",
+
+    you: "You"
   },
 };

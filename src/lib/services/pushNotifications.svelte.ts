@@ -3,9 +3,10 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Alert } from "$lib/core/alert";
 import { OnlineDB } from "$lib/OnlineDB";
-import { Notify } from "./notifications/notifications";
 import user from "$lib/core/user.svelte";
 import { t } from "./language.svelte";
+import { Cached } from "$lib/core/cache.svelte";
+import { DB } from "$lib/DB";
 
 class PushNotificationService {
   private token: string | null = null;
@@ -54,47 +55,132 @@ class PushNotificationService {
 
   private setupMessageListener() {
     // Listen for messages when app is in foreground
-    FirebaseMessaging.addListener("notificationReceived", (notification) => {
-      this.handleInviteNotification(notification);
+    FirebaseMessaging.addListener("notificationReceived", (action) => {
+      this.handleInviteNotification(action.notification);
     });
 
     // Listen for notification taps (when app is in background)
     FirebaseMessaging.addListener("notificationActionPerformed", (action) => {
       this.handleInviteNotification(action.notification);
-      window.location.pathname = "/friends";
     });
   }
 
-  private handleInviteNotification(notification: any) {
+  private async handleInviteNotification(notification) {
     try {
+      const { type, data } = JSON.parse(notification.body) || {};
+      const body = await this.getBody(type, data);
+      if (!body) return;
+
       const formatted_notification = {
-        id: Date.now(),
-        title: notification.title || t("new_friend_invite"),
-        body: notification.body || t("you_have_new_friend_request"),
+        id: Date.now() % 1000000,
+        title: this.getTitle(type),
+        body: body,
         schedule: { at: new Date(Date.now() + 1000) },
-        actionTypeId: "FRIEND_INVITE",
-        largeBody: notification.body,
       };
 
       // Show local notification with custom actions
-      LocalNotifications.schedule({ notifications: [formatted_notification] });
+      await LocalNotifications.schedule({ notifications: [formatted_notification] });
     } catch (error) {
       Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
     }
   }
 
-  // Method to send push notification (would be called from your backend)
-  async sendInviteNotification(email_address: string) {
-    const [user] = await OnlineDB.User.getAll({
-      filters: [{ field: "email_address", operator: "==", value: email_address }],
-      limit: 1,
-    });
+  private getTitle(type: string): string {
+    const is_english = Cached.language.value === "en";
+    switch (type) {
+      case "friend_request":
+        if (is_english) {
+          return "New Friend Request";
+        } else {
+          return "Nuwe Vriend Versoek";
+        }
+      case "new_task":
+        if (is_english) {
+          return "New Task Assigned";
+        } else {
+          return "Nuwe Taak Toegeken";
+        }
+      case "task_updated":
+        if (is_english) {
+          return "Task Updated";
+        } else {
+          return "Taak Opgedateer";
+        }
+      case "user_left_group":
+        if (is_english) {
+          return "User Left Group";
+        } else {
+          return "Gebruiker Het Groep Verlaat";
+        }
+      case "friend_request_accepted":
+        if (is_english) {
+          return "Friend Request Accepted";
+        } else {
+          return "Vriend Versoek Aanvaar";
+        }
+      default:
+        if (is_english) {
+          return "Notification";
+        } else {
+          return "Kennisgewing";
+        }
+    }
+  }
 
-    await Notify.Push.send({
-      title: t("new_friend_invite"),
-      body: t("someone_sent_friend_request"),
-      email_address: [email_address],
-    });
+  private async getBody(type: string, data: any): Promise<string> {
+    const is_english = Cached.language.value === "en";
+
+    switch (type) {
+      case "friend_request":
+        if (is_english) {
+          return "You have a new friend request";
+        } else {
+          return "Jy het 'n nuwe vriend versoek";
+        }
+      case "new_task":
+        if (true) {
+          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
+          if (!room) return "";
+
+          if (is_english) {
+            return `New task "${data.task_name}" assigned in ${room.name}`;
+          } else {
+            return `Nuwe taak "${data.task_name}" toegeken in ${room.name}`;
+          }
+        }
+      case "task_updated":
+        if (true) {
+          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
+          if (!room) return "";
+          if (is_english) {
+            return `Task "${data.task_name}" updated in ${room.name}`;
+          } else {
+            return `Taak "${data.task_name}" opgedateer in ${room.name}`;
+          }
+        }
+      case "user_left_group":
+        if (true) {
+          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
+          if (!room) return "";
+          if (is_english) {
+            return `${data.user_name} left ${room.name}`;
+          } else {
+            return `${data.user_name} het ${room.name} verlaat`;
+          }
+        }
+      case "friend_request_accepted":
+        if (is_english) {
+          return `${data.sender_name} accepted your friend request`;
+        } else {
+          return `${data.sender_name} het jou vriend versoek aanvaar`;
+        }
+      default:
+        if (is_english) {
+          return "You have a new notification";
+        } else {
+          return "Jy het 'n nuwe kennisgewing";
+        }
+    }
   }
 
   getToken(): string | null {

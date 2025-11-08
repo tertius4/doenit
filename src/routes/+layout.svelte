@@ -2,7 +2,6 @@
   import { pushNotificationService } from "$lib/services/pushNotifications.svelte";
   import { notifications } from "$lib/services/notification.svelte";
   import { onDestroy, onMount, setContext, untrack } from "svelte";
-  import { inviteService } from "$lib/services/invites.svelte";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { Photos } from "$lib/services/photos.svelte";
   import Backup from "$lib/services/backup.svelte";
@@ -29,14 +28,19 @@
   setContext("search_text", search_text);
 
   /** @type {FirebaseUnsubscribe?} */
-  let unsubscribeChangelog = null;
+  let unsubscribeOnlineTasks = null;
+  /** @type {FirebaseUnsubscribe?} */
+  let unsubscribeOnlineRoom = null;
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeInvites = null;
+  /** @type {Subscription?} */
+  let unsubscribeRoom = null;
 
   /** @type {symbol | null} */
   let selection_token = null;
 
   const has_selection = $derived(!!Selected.tasks.size);
+
   $effect(() => {
     if (!user.value?.is_backup_enabled) return;
 
@@ -50,33 +54,30 @@
   });
 
   $effect(() => {
-    if (unsubscribeChangelog) unsubscribeChangelog();
+    if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
     if (!user.value?.is_friends_enabled) return;
     if (!room_ids.length) return;
 
     // Clean up existing subscription before creating a new one
-    unsubscribeChangelog = OnlineDB.Changelog.subscribe(consumeChangelog, {
-      filters: [
-        { field: "archived", operator: "==", value: false },
-        { field: "room_id", operator: "in", value: room_ids },
-      ],
-      sort: [{ field: "created_at", direction: "desc" }],
+    unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
+      filters: [{ field: "room_id", operator: "in", value: room_ids }],
     });
   });
 
   $effect(() => {
+    if (unsubscribeInvites) unsubscribeInvites();
     if (!user.value?.is_friends_enabled) return;
 
-    /** @param {Invite[]} invites */
-    const handleInvites = (invites) => untrack(() => inviteService.handleNewInvites(invites));
-
-    if (unsubscribeInvites) unsubscribeInvites();
-    unsubscribeInvites = OnlineDB.Invite.subscribe(handleInvites, {
+    // Clean up existing subscription before creating a new one
+    unsubscribeInvites = OnlineDB.Invite.subscribe((i) => DB.Invite.set(i), {
       filters: [
-        { field: "status", operator: "==", value: "pending" },
-        { field: "recipient_email_address", operator: "==", value: user.value.email },
+        {
+          or: [
+            { field: "to_email_address", operator: "==", value: user.value?.email },
+            { field: "from_email_address", operator: "==", value: user.value?.email },
+          ],
+        },
       ],
-      sort: [{ field: "created_at", direction: "desc" }],
     });
   });
 
@@ -86,22 +87,10 @@
     untrack(() => pushNotificationService.init());
   });
 
-  onMount(() => {
-    if (!user.value?.is_friends_enabled) return;
-
-    const sub = DB.Room.subscribe((rooms) => (room_ids = rooms.map((r) => r.id)));
-    return () => sub.unsubscribe();
-  });
-
-  onMount(() => {
-    const sub = DB.Task.subscribe(handleTasksUpdate, { selector: { archived: { $ne: true } } });
-    return () => sub.unsubscribe();
-  });
-
   $effect(() => {
     setTimeout(() => {
       untrack(() => cleanupOrphanedPhotos());
-    }, 5000); // Delay to avoid impacting startup performance
+    }, 5000); // Wag voor skoonmaak sodat toep vinnig kan begin.
   });
 
   $effect(() => {
@@ -120,6 +109,20 @@
         }, 10);
       }
     });
+  });
+
+  $effect(() => {
+    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
+    if (!user.value?.is_friends_enabled) return;
+
+    unsubscribeRoom = DB.Room.subscribe((rooms) => {
+      room_ids = rooms.map((r) => r.id);
+    });
+  });
+
+  onMount(() => {
+    const sub = DB.Task.subscribe(handleTasksUpdate, { selector: { archived: { $ne: true } } });
+    return () => sub.unsubscribe();
   });
 
   onMount(() => {
@@ -150,8 +153,10 @@
   });
 
   onDestroy(() => {
-    if (unsubscribeChangelog) unsubscribeChangelog();
+    if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
+    if (unsubscribeOnlineRoom) unsubscribeOnlineRoom();
     if (unsubscribeInvites) unsubscribeInvites();
+    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
   });
 
   /**
@@ -160,34 +165,6 @@
   async function handleTasksUpdate(tasks) {
     await notifications.scheduleNotifications(tasks);
     await Widget.updateTasks(tasks);
-  }
-
-  /**
-   * @param {Changelog[]} changes
-   */
-  async function consumeChangelog(changes) {
-    try {
-      if (!changes.length) return;
-
-      if (!user.value?.is_friends_enabled) return;
-
-      for (const change of changes) {
-        if (!room_ids.includes(change.room_id)) continue;
-        if (change.user_reads_list.includes(user.value.email)) continue;
-
-        await DB.Task.implementChange(change);
-        await DB.Room.implementChange(change);
-
-        if (change.user_reads_list.length >= change.total_reads_needed) {
-          await OnlineDB.Changelog.delete(change.id);
-        } else {
-          await OnlineDB.Changelog.incrementUserReads(change.id, user.value.email);
-        }
-      }
-    } catch (error) {
-      const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`Fout met verwerking van changelog veranderinge: ${error_message}`);
-    }
   }
 
   /**

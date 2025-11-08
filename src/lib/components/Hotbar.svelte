@@ -135,7 +135,7 @@
 {#if !!items.length}
   <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
     {#if !!categories.length}
-      <Tag is_selected={is_favourite_selected} onclick={selectFavourite}>
+      <Tag round is_selected={is_favourite_selected} onclick={selectFavourite}>
         <Star />
       </Tag>
     {/if}

@@ -7,7 +7,7 @@
   import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
   import user from "$lib/core/user.svelte";
   import { Alert } from "$lib/core/alert";
-  import { Info } from "$lib/icon";
+  import { Info, Loading } from "$lib/icon";
   import GetDoenitPlus from "$lib/components/GetDoenitPlus.svelte";
 
   const has_backup = $derived(Backup.last_backup_at !== t("never"));
@@ -51,8 +51,8 @@
   }
 </script>
 
-<Accordion label={t("backup_label")} disabled={!user.value} disabled_message={t("log_in_first")}>
-  {#if user.value?.is_backup_enabled}
+<Accordion label={t("backup_label")} disabled={!user.value} disabled_message={t("log_in_first")} loading={user.is_loading}>
+  {#if !!user.value?.is_backup_enabled}
     <div>
       <div class="flex items-center justify-between mb-4">
         <div>

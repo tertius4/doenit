@@ -3,7 +3,6 @@
   import { CardInvite, CardRoom } from "$lib/components/element/card";
   import { Notify } from "$lib/services/notifications/notifications";
   import Button from "$lib/components/element/button/Button.svelte";
-  import { inviteService } from "$lib/services/invites.svelte";
   import Modal from "$lib/components/modal/Modal.svelte";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { Check, Leave, Loading } from "$lib/icon";
@@ -13,32 +12,42 @@
   import user from "$lib/core/user.svelte";
   import { Alert } from "$lib/core/alert";
   import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { DB } from "$lib/DB";
-
-  /** @type {Room?} */
-  let selected_room = null;
 
   /** @type {Room[]} */
   let rooms = $state([]);
+  /** @type {Room?} */
+  let selected_room = null;
+
+  /** @type {Subscription?} */
+  let roomsSubscription = null;
 
   let open = $state(false);
   let room_name = $state("");
   let edit_room_loading = $state(false);
-  let error_message = $state("");
 
-  const invites = $derived(inviteService.invites);
+  const invites = $derived(DB.Invite.invites);
   const user_count = $derived(selected_room?.users?.length || 0);
 
-  onMount(() => {
+  $effect(() => {
+    // Verban toegang as Vriende funksie nie geaktiveer is nie.
+
+    if (user.is_loading) return;
+    if (user.value?.is_friends_enabled) return;
+
+    goto(`/plus`);
+  });
+
+  $effect(() => {
     if (!user.value?.is_friends_enabled) return;
 
-    const sub = DB.Room.subscribe((result) => (rooms = result.sort(sortByPendingAndAlphabetical)), {
-      selector: {},
-      sort: [{ name: "asc" }],
+    untrack(() => {
+      roomsSubscription = DB.Room.subscribe((result) => (rooms = result.sort(sortByPendingAndAlphabetical)), {
+        selector: {},
+        sort: [{ name: "asc" }],
+      });
     });
-
-    return () => sub.unsubscribe();
   });
 
   onMount(() => {
@@ -47,6 +56,10 @@
     }, -1));
 
     return () => backHandler.unregister(token);
+  });
+
+  onDestroy(() => {
+    roomsSubscription?.unsubscribe();
   });
 
   async function saveRoom() {
@@ -86,128 +99,160 @@
     open = false;
     edit_room_loading = false;
     room_name = "";
-    error_message = "";
   }
 
   /**
    * @param {Room?} room
    */
   async function handleLeaveRoom(room) {
-    if (!user.value) return;
-
-    if (!room) return;
-    edit_room_loading = true;
-
     try {
-      const promises = [];
+      const email_address = user.value?.email;
+      if (!email_address) return;
 
-      promises.push(
-        new Promise(async (resolve) => {
-          const email_address = user.value?.email;
-          if (!email_address) return;
+      if (!room) return;
+      edit_room_loading = true;
 
-          const invites = await OnlineDB.Invite.getAll({
-            filters: [
-              { field: "room_id", operator: "==", value: room.id },
-              { field: "status", operator: "==", value: "pending" },
-              { field: "sender_email_address", operator: "==", value: email_address },
-            ],
-          });
-
-          await Promise.all(
-            invites.map((invite) => {
-              invite.status = "cancelled";
-              return OnlineDB.Invite.update(invite.id, invite);
-            })
-          );
-
-          resolve(true);
-        })
-      );
-
-      // Remove tasks assigned to this room
-      const tasks = await DB.Task.getAll({ selector: { room_id: room.id } });
-      for (const task of tasks) {
-        task.room_id = null;
-        promises.push(DB.Task.update(task.id, task));
+      const email_addresses = [];
+      for (const { email, pending } of room.users) {
+        if (email && email !== email_address && !pending) {
+          email_addresses.push(email);
+        }
       }
 
-      promises.push(DB.Room.delete(room.id));
-
-      const email_address = user.value.email;
-      promises.push(
-        OnlineDB.Changelog.create({
-          room_id: room.id,
-          type: "left_room",
-          total_reads_needed: room.users.length,
-          user_reads_list: [email_address],
-        })
-      );
-
-      promises.push(
-        new Promise(async (resolve) => {
-          const email_addresses = [];
-          for (const { email, pending } of room.users) {
-            if (email && email !== email_address && !pending) {
-              email_addresses.push(email);
-            }
-          }
-
-          await Notify.Push.send({
-            title: t("left_group"),
-            body: t("user_left_group", { user_name: user.value.name, room_name: room.name }),
-            email_address: email_addresses,
-          });
-
-          resolve(true);
-        })
-      );
+      const promises = [
+        // Verwyder alle uitnodigings aanlyn wat verband hou met hierdie kamer
+        OnlineDB.Invite.deleteMany({
+          filters: [
+            { field: "from_email_address", operator: "==", value: email_address },
+            { field: "room_id", operator: "==", value: room.id },
+            { field: "status", operator: "==", value: "pending" },
+          ],
+        }),
+        // Ontkoppel take van die kamer
+        DB.Task.updateMany({
+          filters: { room_id: { $eq: room.id } },
+          updates: { room_id: null },
+        }),
+        // Skrap die kamer
+        DB.Room.delete(room.id),
+        // Stuur kennisgewing aan oorblywende gebruikers
+        Notify.Push.sendTemplate({
+          type: "user_left_group",
+          data: {
+            user_name: user.value?.name,
+            room_id: room.id,
+          },
+          email_address: email_addresses,
+        }),
+      ];
 
       await Promise.all(promises);
+
+      // Hierdie invite kan nie geskep word totdat al die ander invites verwyder is nie
+      const promises_1 = email_addresses.map(async (email) => {
+        await OnlineDB.Invite.create({
+          sender_name: user.value?.name ?? "",
+          from_email_address: email_address,
+          to_email_address: email,
+          room_id: room.id,
+          status: "left",
+        });
+      });
+
+      await Promise.all(promises_1);
+
       handleClose();
     } catch (error) {
-      console.error("Error leaving room:", error);
-      error_message = t("failed_to_leave_friend");
+      const error_message = error instanceof Error ? error.message : String(error);
+      Alert.error("Fout met group verlaat: " + error_message);
     }
   }
 
   /**
-   * @param {string} invite_id
+   * @param {Invite} invite
    */
-  async function acceptInvite(invite_id) {
+  async function acceptInvite(invite) {
     try {
-      const result = await inviteService.acceptInvite(invite_id);
+      const email_address = user.value?.email;
+      if (!email_address) return;
+
+      DB.Invite.remove(invite.id);
+      const promises = [
+        // Skep die Vriend-kamer
+        DB.Room.create({
+          id: invite.room_id,
+          name: invite.sender_name,
+          users: [
+            { email: email_address, pending: false },
+            { email: invite.from_email_address, pending: false },
+          ],
+        }),
+        // Aanvaar die uitnodiging aanlyn
+        updateAcceptedInvite(invite),
+        // Stuur kennisgewing aan die uitnodiger
+        Notify.Push.sendTemplate({
+          type: "friend_request_accepted",
+          data: {
+            sender_name: user.value?.name,
+          },
+          email_address: [invite.from_email_address],
+        }),
+      ];
+
+      await Promise.all(
+        promises.map((p) =>
+          p.catch((e) => {
+            throw e;
+          })
+        )
+      );
+    } catch (error) {
+      Alert.error("Fout met uitnodiging aanvaar: " + error);
+    }
+  }
+
+  /**
+   * @param {Invite} invite
+   */
+  async function declineInvite(invite) {
+    try {
+      DB.Invite.remove(invite.id);
+      await OnlineDB.Invite.updateById(invite.id, {
+        ...invite,
+        status: "declined",
+      });
+    } catch (error) {
+      Alert.error("Fout met uitnodiging verwerp: " + error);
+    }
+  }
+
+  /**
+   *
+   * @param {Invite} invite
+   */
+  async function updateAcceptedInvite(invite) {
+    try {
+      invite.status = "accepted";
+      const result = await OnlineDB.Invite.updateById(invite.id, invite);
       if (!result.success) {
-        Alert.error(result.message);
-        return;
+        Alert.error("Fout met uitnodiging opdateer: " + result.error_message);
       }
-
-      inviteService.invites = invites.filter(({ id }) => id !== invite_id);
     } catch (error) {
-      Alert.error("Error accepting invite: " + error);
-    }
-  }
-
-  /**
-   * @param {string} invite_id
-   */
-  async function declineInvite(invite_id) {
-    try {
-      const result = await inviteService.declineInvite(invite_id);
-      if (!result.success) return;
-
-      inviteService.invites = invites.filter(({ id }) => id !== invite_id);
-    } catch (error) {
-      Alert.error("Error declining invite: " + error);
+      Alert.error("Fout met uitnodiging opdateer: " + error);
     }
   }
 </script>
 
-{#if !!user.value}
+{#if !!user.is_loading}
+  <div class="text-center py-8">
+    <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+    <p>{t("loading")}</p>
+  </div>
+{:else if user.value?.is_friends_enabled}
   <div class="space-y-2">
     {#each invites as invite (invite.id)}
-      {#if invite.recipient_email_address === user.value.email}
-        <CardInvite {invite} onaccept={() => acceptInvite(invite.id)} ondecline={() => declineInvite(invite.id)} />
+      {#if invite.to_email_address === user.value.email}
+        <CardInvite {invite} onaccept={() => acceptInvite(invite)} ondecline={() => declineInvite(invite)} />
       {/if}
     {/each}
 

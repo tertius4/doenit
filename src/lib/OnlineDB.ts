@@ -1,17 +1,17 @@
-import { Table } from "./DB/_OnlineTable";
-import { ChangeLogTable } from "./DB/Changelog";
+import { Table } from "./OnlineDB/_Table";
+import { TaskTable } from "./OnlineDB/Task";
 
 class OnlineDBClass {
-  public Changelog: ChangeLogTable;
   public BackupManifest: Table<BackupManifest>;
   public Invite: Table<Invite>;
-  public User: Table<Users>;
+  public User: Table<User>;
+  public Task: TaskTable;
 
   constructor() {
     this.BackupManifest = new Table("backups");
     this.Invite = new Table("invites");
-    this.Changelog = new ChangeLogTable();
     this.User = new Table("users");
+    this.Task = new TaskTable();
   }
 }
 

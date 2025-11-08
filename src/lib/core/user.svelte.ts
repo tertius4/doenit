@@ -58,6 +58,7 @@ class User {
 }
 
 const UserValue = new Value<User>();
+UserValue.is_loading = true;
 
 export default UserValue;
 
@@ -73,6 +74,8 @@ function initializeUser() {
         } else {
           UserValue.value = new User(user);
         }
+
+        UserValue.is_loading = false;
       });
     }
   } catch (error) {

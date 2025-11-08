@@ -45,7 +45,6 @@
 {#if categories.length !== 0}
   <Accordion label={t("app_settings")}>
     <div>
-      <p class="text-sm text-muted">{t("no_categories_available")}</p>
       <h3 class="mb-1">{t("favourite_categories")}:</h3>
       <FavouriteCategorySetup />
     </div>

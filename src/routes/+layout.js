@@ -5,7 +5,7 @@ import { RateApp } from "$lib/services/rateApp";
 import { Alert } from "$lib/core/alert";
 import { DB } from "$lib/DB";
 
-// Keep this
+// Hou dit
 import { Cached } from "$lib/core/cache.svelte";
 
 export const ssr = false;
@@ -14,7 +14,7 @@ export async function load() {
   try {
     await DB.init();
 
-    RateApp.checkDailyUsage();
+    RateApp.showRatingPrompt();
     theme.init();
     text.init();
     notifications.init();

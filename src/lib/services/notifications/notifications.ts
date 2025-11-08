@@ -136,5 +136,40 @@ export class Notify {
         Alert.error(`Stuur van Push Notification het gefaal: ${error_message}`);
       }
     }
+
+    static async sendTemplate({ type, data, email_address }: { type: string; data: Record<string, any>; email_address: string[] }) {
+      if (!email_address.length) return;
+
+      if (!Notify.Push.is_initialized) {
+        await this.initialize();
+      }
+
+      try {
+        if (!user.value) throw new Error("User not authenticated");
+
+        const token = await user.value.id_token;
+
+        const users = await OnlineDB.User.getAll({
+          filters: [{ field: "email_address", operator: "in", value: email_address }],
+        });
+
+        const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ token: users[0].fcm_token, type, data }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to send push notification template");
+        }
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        Alert.error(`Stuur van Push Notification Template het gefaal: ${error_message}`);
+      }
+    }
   };
 }

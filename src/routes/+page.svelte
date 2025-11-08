@@ -86,33 +86,6 @@
       const tasks = await DB.Task.getAll({ selector: { id: { $in: unique_task_ids } } });
       const promises = tasks.map(async (task) => {
         await DB.Task.complete(task);
-        if (!task.room_id) return;
-
-        const room = await DB.Room.get(task.room_id);
-        if (!room) throw new Error("Room not found: " + task.room_id);
-        if (!user.value) return;
-
-        const email_address = user.value.email;
-        await OnlineDB.Changelog.create({
-          type: "complete",
-          task_id: task.id,
-          room_id: task.room_id || "",
-          total_reads_needed: room.users.length,
-          user_reads_list: [email_address],
-        });
-
-        const email_addresses = [];
-        for (const { email, pending } of room.users) {
-          if (email && email !== email_address && !pending) {
-            email_addresses.push(email);
-          }
-        }
-
-        await Notify.Push.send({
-          title: t("task_completed"),
-          body: t("task_was_completed", { task_name: task.name }),
-          email_address: email_addresses,
-        });
       });
 
       await Promise.all(promises).catch(() => Alert.error("Kon nie take as voltooi gemerk nie."));
@@ -196,34 +169,6 @@
    */
   async function handleSelect(task) {
     await DB.Task.complete(task);
-    if (task.room_id) {
-      if (!user.value?.is_friends_enabled) return;
-
-      const room = await DB.Room.get(task.room_id);
-      if (!room) return Alert.error("Kon nie die taak se kamer vind nie.");
-
-      const email_address = user.value.email;
-      OnlineDB.Changelog.create({
-        type: "complete",
-        task_id: task.id,
-        room_id: task.room_id || "",
-        total_reads_needed: room.users.length,
-        user_reads_list: [email_address],
-      });
-
-      const email_addresses = [];
-      for (const { email, pending } of room.users) {
-        if (email && email !== email_address && !pending) {
-          email_addresses.push(email);
-        }
-      }
-
-      await Notify.Push.send({
-        title: t("task_completed"),
-        body: t("task_was_completed", { task_name: task.name }),
-        email_address: email_addresses,
-      });
-    }
   }
 
   /**

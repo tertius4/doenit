@@ -19,7 +19,6 @@
   /** @type {Props} */
   let { start = $bindable(), end = $bindable() } = $props();
 
-  $inspect("start", start);
   const DEFAULT_HOUR = "08";
   const DEFAULT_MIN = "00";
 

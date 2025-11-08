@@ -53,16 +53,28 @@
  */
 
 /**
- * @typedef {Object} Changelog
+ * @typedef {Object} OnlineTask
  * @property {string} id - Primary key (UUID).
- * @property {boolean} archived - Indicates if the changelog entry is archived.
- * @property {string} created_at - ISO string timestamp of when the change was made.
+ * @property {string} task_id - Primary key of task (UUID).
+ * @property {string} room_id - ID of the room associated with the task.
+ * @property {string} data - Encrypted and compressed task data.
+ */
+
+/**
+ * @typedef {Object} OnlineRoom
+ * @property {string} id - Primary key (UUID).
+ * @property {string} data - Encrypted and compressed room data.
+ */
+
+/**
+ * @typedef {Object} Invite
+ * @property {string} id - Primary key (UUID).
+ * @property {string} created_at - Timestamp when the invite was created (format: "YYYY-MM-DD HH:mm:ss").
+ * @property {string} sender_name
+ * @property {string} from_email_address
+ * @property {string} to_email_address
+ * @property {"pending" | "accepted" | "declined" | "left" | "expired"} status - Current status of the invite.
  * @property {string} room_id
- * @property {number} total_reads_needed
- * @property {string[]} user_reads_list - Array of user IDs who have read this changelog entry
- * @property {ChangeType} type - Type of change (see Change typedef).
- * @property {string} [data] - Encrypted and compressed task data (if applicable).
- * @property {string} [task_id] - ID of the task affected by this change (if applicable).
  */
 
 /**
@@ -70,7 +82,7 @@
  */
 
 /**
- * @typedef {Object} Users
+ * @typedef {Object} User
  * @property {string} id - Primary key (UUID).
  * @property {string} email_address - Email address of the user.
  * @property {string} fcm_token - Firebase Cloud Messaging token for push notifications.
@@ -109,22 +121,6 @@
  */
 
 /**
- * Represents an invitation sent between users.
- * @typedef {Object} Invite
- * @property {string} id - Optional invite ID.
- * @property {string} created_at - Timestamp when the invite was created (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD"), or null.
- * @property {boolean} archived - Indicates if the invite is archived.
- * @property {string} room_id - ID of the room associated with the invite.
- * @property {string} sender_email_address - Email address of the user sending the invite.
- * @property {string} sender_name - Name of the user sending the invite.
- * @property {string} recipient_email_address - Email address of the user receiving the invite.
- * @property {"pending"|"accepted"|"declined"|"cancelled"|"expired"} status - Current status of the invite.
- * @property {string} expires_at - Timestamp when the invite expires (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD"), or null.
- * @property {string | null} [acceptedAt] - Optional timestamp when the invite was accepted (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD"), or null.
- * @property {string} [message] - Optional message attached to the invite.
- */
-
-/**
  * @typedef {Object} TaskPhoto
  * @property {string} id - Primary key (UUID).
  * @property {string} filepath - Path to the photo file.
@@ -133,4 +129,8 @@
 
 /**
  * @typedef {import('firebase/auth').Unsubscribe} FirebaseUnsubscribe
+ */
+
+/**
+ * @typedef {import('rxjs').Subscription} Subscription
  */

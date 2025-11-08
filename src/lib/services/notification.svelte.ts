@@ -201,40 +201,21 @@ class Notification {
       all_tasks = sortTasksByDueDate(all_tasks);
 
       // ID generation constants to avoid collisions
-      const PAST_TASKS_ID_BASE = 100000;
       const DAILY_REMINDER_ID_BASE = 200000;
       const TIME_SPECIFIC_ID_BASE = 300000;
 
+      // Add past task notifications
+      const past_task_notifications = this.getPastTaskNotification(all_tasks, date);
+      notifications.push(...past_task_notifications);
+
       for (let i = 0; i < 30; i++) {
-        if (this.#past_tasks_enabled) {
-          const tasks = getTasksBeforeDate(all_tasks, date);
-          if (!!tasks.length) {
-            let body = tasks
-              .map(
-                (task, idx) =>
-                  `${idx + 1}. ${task.name}${task.start_date && task.start_date.includes(" ") ? ` (${task.start_date.split(" ")[1]})` : ""}`
-              )
-              .join("\n");
-
-            if (date > new Date()) {
-              notifications.push({
-                title:
-                  tasks.length === 1 ? t("past_due_date_singular") : t("past_due_date", { task_count: tasks.length }),
-                body: body,
-                id: PAST_TASKS_ID_BASE + i,
-                schedule: { at: new Date(+date) /* Need to copy date */ },
-              });
-            }
-          }
-        }
-
         const tasks = getTasksOnDate(all_tasks, date);
         if (!!tasks.length) {
           // Create a beautiful body for the tasks
           let body = tasks
             .map(
               (task, idx) =>
-                `${idx + 1}. ${task.name}${task.start_date && task.start_date.includes(" ") ? ` (${task.start_date.split(" ")[1]})` : ""}`
+                `${idx + 1}. ${task.name}${task.start_date?.includes(" ") ? ` (${task.start_date.split(" ")[1]})` : ""}`
             )
             .join("\n");
           if (date > new Date()) {
@@ -301,14 +282,47 @@ class Notification {
     }
   }
 
+  private getPastTaskNotification(all_tasks: Task[], start_date: Date) {
+    if (!this.#past_tasks_enabled) return [];
+
+    const PAST_TASKS_ID_BASE = 100000;
+    const notifications = [];
+    for (let i = 0; i < 30; i++) {
+      let date = new Date(+start_date + i * 24 * 60 * 60 * 1000);
+
+      const tasks = getTasksBeforeDate(all_tasks, date);
+      if (!tasks.length) continue;
+
+      let body = tasks
+        .map((task, i) => {
+          const has_time = task.start_date?.includes(" ");
+          const time = has_time ? ` (${task.start_date!.split(" ")[1]})` : "";
+
+          return `${i + 1}. ${task.name}${time}`;
+        })
+        .join("\n");
+
+      if (date > new Date()) {
+        notifications.push({
+          title: tasks.length === 1 ? t("past_due_date_singular") : t("past_due_date", { task_count: tasks.length }),
+          body: body,
+          id: PAST_TASKS_ID_BASE + i,
+          schedule: { at: new Date(+date) /* Need to copy date */ },
+        });
+      }
+    }
+
+    return notifications;
+  }
+
   send(title: string, body: string) {
     LocalNotifications.schedule({
       notifications: [
         {
           title,
           body,
-          id: new Date().getTime(), // Unique ID based on timestamp
-          schedule: { at: new Date(new Date().getTime() + 1000) }, // Schedule for 1 second later
+          id: Date.now() % 1000000,
+          schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second later
         },
       ],
     });
@@ -351,7 +365,7 @@ function getTasksBeforeDate(tasks: Task[], date: Date): Task[] {
   return tasks.filter((task) => {
     if (!task.start_date) return false;
 
-    const task_date = new Date(task.start_date);
+    const task_date = new Date(task.due_date || task.start_date);
     task_date.setHours(0, 0, 0, 0);
 
     return task_date < target_date;

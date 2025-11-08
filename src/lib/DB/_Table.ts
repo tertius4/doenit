@@ -12,11 +12,11 @@ export class Table<T extends Task | Category | Room> {
     if (!item) throw new Error("Item is required");
 
     const new_item = {
-      ...item,
       archived: false,
       created_at: DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss"),
       updated_at: DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss"),
-      id: item.id || crypto.randomUUID(),
+      id: crypto.randomUUID(),
+      ...item,
     } as T;
 
     return this.collection.insert(new_item);
@@ -60,8 +60,19 @@ export class Table<T extends Task | Category | Room> {
 
     updates.updated_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
 
-    await doc.patch(updates);
-    return doc.toJSON() as T;
+    const result = await doc.patch(updates);
+    return result.toJSON() as T;
+  }
+
+  async updateMany(options: { filters: MangoQuery<T>["selector"]; updates: Partial<T> }): Promise<SimpleResult> {
+    const { filters, updates } = options;
+
+    updates.updated_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
+    await this.collection.find({ selector: filters }).update({
+      $set: updates,
+    });
+
+    return { success: true };
   }
 
   async delete(ids: string | string[]): Promise<void> {

@@ -17,7 +17,7 @@
     { Icon: Home, label: t("home"), href: "/" },
     { Icon: Check, label: t("completed_tasks"), href: "/complete" },
     { Icon: Categories, label: t("categories"), href: "/categories" },
-    { Icon: Shared, label: t("friends"), href: !!user.value?.is_friends_enabled ? "/friends" : "/plus" },
+    { Icon: Shared, label: t("friends"), href: "/friends" },
     { Icon: Settings, label: t("settings"), href: "/settings" },
   ]);
 

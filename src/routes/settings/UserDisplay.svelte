@@ -29,7 +29,21 @@
 </script>
 
 <div class="bg-surface rounded-lg items-center p-4 flex flex-col relative gap-4">
-  {#if !user.value}
+  {#if user.is_loading}
+    <div class="relative flex gap-x-2 w-full justify-start">
+      <div class="w-13 h-13 rounded-full bg-card animate-pulse"></div>
+      <div class="space-y-2">
+        <div class="bg-card h-[45%] rounded-lg w-40 animate-pulse"></div>
+        <div class="bg-card h-[45%] rounded-lg w-25 animate-pulse"></div>
+      </div>
+
+      <!-- Position center -->
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+        <p>{t("loading")}</p>
+      </div>
+    </div>
+  {:else if !user.value}
     <div class="text-center space-y-0.5">
       <h2 class="text-2xl font-semibold">{t("you_are_not_logged_in")}</h2>
       <p class="text-sm text-muted">{t("please_log_in_profile")}</p>
@@ -45,7 +59,7 @@
       onclick={handleSignIn}
     >
       {#if is_loading}
-        <Loading class="mr-3"/>
+        <Loading class="mr-3" />
         {t("loading")}
       {:else}
         <img src="google.svg" alt="Google" class="h-5 w-5 mr-3" />

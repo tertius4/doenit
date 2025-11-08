@@ -1,14 +1,14 @@
 <script>
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
-  import { untrack } from "svelte";
+  import { onMount } from "svelte";
   import { Selected } from "$lib/selected";
   import ItemName from "./ItemName.svelte";
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
-  import { Categories, Important, Shared } from "$lib/icon";
-  import TaskDueDate from "./TaskDueDate.svelte";
+  import { Camera, Categories, Clock, Important, Sync, Users } from "$lib/icon";
   import TaskContainer from "./TaskContainer.svelte";
   import DateUtil from "$lib/DateUtil";
   import { DB } from "$lib/DB";
+  import Pill from "./Pill.svelte";
 
   /**
    * @typedef {Object} Props
@@ -27,19 +27,17 @@
 
   /** @type {Category?} */
   let category = $state(null);
+  /** @type {Room?} */
+  let room = $state(null);
   let tick_animation = $state(false);
 
   const is_past = $derived(!!start_date && start_date < current_time);
-  const category_id = $derived(task.category_id);
   const is_selected = $derived(Selected.tasks.has(task.id));
   const is_ongoing = $derived(isOngoing(due_date, start_date, current_time));
 
-  $effect(() => {
-    category_id;
-
-    untrack(async () => {
-      initDefaultCategory(task);
-    });
+  onMount(async () => {
+    category = await getCategory(task);
+    room = await getRoom(task);
   });
 
   /**
@@ -69,12 +67,25 @@
   /**
    * Initializes the default category for the task.
    * @param {Task} task
+   * @returns {Promise<Category?>}
    */
-  async function initDefaultCategory(task) {
-    if (!task?.category_id) return;
+  async function getCategory(task) {
+    if (!task?.category_id) return null;
 
     const selector = { selector: { id: task.category_id, archived: { $ne: true } } };
-    category = await DB.Category.getOne(selector).catch(() => null);
+    return DB.Category.getOne(selector).catch(() => null);
+  }
+
+  /**
+   * Query the room for the task.
+   * @param {Task} task
+   * @returns {Promise<Room?>}
+   */
+  async function getRoom(task) {
+    if (!task?.room_id) return null;
+
+    const selector = { selector: { id: task.room_id, archived: { $ne: true } } };
+    return DB.Room.getOne(selector).catch(() => null);
   }
 </script>
 
@@ -95,36 +106,43 @@
 
   <div class="flex flex-wrap gap-2 pl-10 font-normal w-full">
     {#if task.start_date}
-      <TaskDueDate is_complete={false} {is_ongoing} {is_past} {is_selected} is_repeating={!!task.repeat_interval}>
-        {displayDateTime({
-          due_date: DateUtil.parseWithTimeBoundary(task.due_date),
-          start_date: DateUtil.parseWithTimeBoundary(task.start_date),
-        })}
-      </TaskDueDate>
+      <Pill {is_ongoing} {is_past} {is_selected} class="rounded-full">
+        <span class="flex gap-1 items-center">
+          <Clock class="w-sm h-sm flex-shrink-0" />
+          {displayDateTime({
+            due_date: DateUtil.parseWithTimeBoundary(task.due_date),
+            start_date: DateUtil.parseWithTimeBoundary(task.start_date),
+          })}
+        </span>
+
+        {#if !!task.repeat_interval}
+          <Sync class="w-xs h-xs" />
+        {/if}
+      </Pill>
     {/if}
 
     {#if category}
-      <div
-        class={{
-          "text-left px-1 w-fit max-w-full flex items-center h-fit gap-1 rounded opacity-80": true,
-          "bg-surface": !is_past && !is_ongoing && !is_selected,
-          "bg-error/80": is_past && !is_selected && !is_ongoing,
-          "bg-success/80": is_ongoing && !is_selected,
-          "bg-primary": is_selected,
-        }}
-      >
+      <Pill {is_ongoing} {is_past} {is_selected} class="rounded">
         <Categories class="w-sm h-sm flex-shrink-0" />
-
         <span class="truncate">{category.name}</span>
-      </div>
+      </Pill>
+    {/if}
+
+    {#if room}
+      <Pill {is_ongoing} {is_past} {is_selected} class="rounded">
+        <Users class="w-sm h-sm flex-shrink-0" />
+        <span class="truncate">{room.name}</span>
+      </Pill>
     {/if}
   </div>
 
   <div class="absolute top-1.5 right-1.5 flex gap-1">
     {#if !task.archived}
       <Important class={!task.important && "hidden"} />
+      {#if !!task.photo_ids?.length}
+        <Camera class="w-sm h-sm flex-shrink-0" />
+      {/if}
     {/if}
-    <Shared class={!task.room_id && "hidden"} />
   </div>
 
   <InputCheckbox bind:tick_animation {is_selected} {onlongpress} onselect={handleSelect} />

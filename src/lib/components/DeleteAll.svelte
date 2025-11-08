@@ -1,14 +1,12 @@
 <script>
   import { t } from "$lib/services/language.svelte";
+  import { onNavigate } from "$app/navigation";
   import { fade } from "svelte/transition";
   import { Selected } from "$lib/selected";
   import Modal from "./modal/Modal.svelte";
   import { Trash } from "$lib/icon";
-  import { DB } from "$lib/DB";
-  import { OnlineDB } from "$lib/OnlineDB";
-  import user from "$lib/core/user.svelte";
-  import { onNavigate } from "$app/navigation";
   import { page } from "$app/state";
+  import { DB } from "$lib/DB";
 
   let is_deleting = $state(false);
 
@@ -37,45 +35,7 @@
       await DB.Task.delete(ids);
     }
 
-    updateChangelog(ids);
-
     is_deleting = false;
-  }
-
-  /**
-   * @param {string[]} ids
-   */
-  async function updateChangelog(ids) {
-    if (!user.value?.is_friends_enabled) return;
-
-    const tasks = await DB.Task.getAll({ selector: { id: { $in: ids } } });
-    /** @type {string[]} */
-    const room_ids = [];
-
-    for (const task of tasks) {
-      if (task.room_id && !room_ids.includes(task.room_id)) {
-        room_ids.push(task.room_id);
-      }
-    }
-    if (!room_ids.length) return;
-
-    const rooms = await DB.Room.getAll({ selector: { id: { $in: room_ids } } });
-    if (!rooms.length) return;
-
-    for (const task of tasks) {
-      if (!task.room_id) continue;
-
-      const room = rooms.find((r) => r.id === task.room_id);
-      if (!room) continue;
-
-      OnlineDB.Changelog.create({
-        type: "delete",
-        task_id: task.id,
-        room_id: task.room_id || "",
-        total_reads_needed: room.users.length,
-        user_reads_list: [user.value.email],
-      });
-    }
   }
 </script>
 

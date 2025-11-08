@@ -7,6 +7,7 @@ export {
   getDoc,
   getDocs,
   query,
+  writeBatch,
   where,
   or,
   orderBy,

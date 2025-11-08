@@ -49,30 +49,40 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       }
 
       // Auth header (optional, but recommended)
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      const auth_header = req.headers.authorization;
+      if (!auth_header || !auth_header.startsWith("Bearer ")) {
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
 
-      const idToken = authHeader.split("Bearer ")[1];
-      await verifyToken(idToken); // Throws if invalid
+      const id_token = auth_header.split("Bearer ")[1];
+      await verifyToken(id_token); // Throws if invalid
 
       // Get notification details from body
-      const { token, title, body } = req.body;
+      const { token, title, body, type, data } = req.body;
       if (!token) {
         res.status(400).json({ error: "Missing token" });
         return;
       }
 
       // Send notification using firebase-admin
-      await admin.messaging().send({
-        token: token,
-        notification: {
-          title: title || "Doenit Kennisgewing",
-          body: body || "U het 'n nuwe kennisgewing",
-        },
-      });
+      if (title && body) {
+        await admin.messaging().send({
+          token,
+          notification: { title, body },
+        });
+      } else if (type && data) {
+        await admin.messaging().send({
+          token,
+          notification: {
+            title: '',
+            body: JSON.stringify({ data, type }),
+          },
+        });
+      } else {
+        res.status(400).json({ error: "Invalid notification payload" });
+        return;
+      }
 
       res.json({ success: true });
     } catch (error) {
