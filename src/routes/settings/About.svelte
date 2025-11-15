@@ -8,7 +8,7 @@
   // - android/app/build.gradle – versionName
   // - package.json – version
   const SUPPORT_EMAIL = "doenitapp@gmail.com";
-  const VERSION = "1.2.11";
+  const VERSION = "1.3.0";
 
   async function handleRateApp() {
     await RateApp.openStorePage();

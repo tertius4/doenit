@@ -31,6 +31,7 @@ public class MainActivity extends BridgeActivity {
 
         // Register plugins
         registerPlugin(TaskWidgetPlugin.class);
+        registerPlugin(BillingPlugin.class);
 
         super.onCreate(savedInstanceState);
 

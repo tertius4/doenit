@@ -30,10 +30,14 @@ const corsHandler = cors({
 });
 
 // Helper function to verify Firebase ID token
-async function verifyToken(idToken: string) {
+async function verifyToken(id_token: string) {
   try {
-    return admin.auth().verifyIdToken(idToken);
+    functions.logger.log("Attempting to verify token...");
+    const result = await admin.auth().verifyIdToken(id_token);
+    functions.logger.log("Token verified successfully:", result);
+    return result;
   } catch (error) {
+    functions.logger.error("Token verification error details:", error);
     throw new functions.https.HttpsError("unauthenticated", "Invalid token");
   }
 }
@@ -85,9 +89,9 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
             {} as Record<string, string>
           ),
         };
-        
+
         console.log("Sending FCM message with data:", fcmData);
-        
+
         await admin.messaging().send({
           token,
           data: fcmData,
@@ -119,6 +123,125 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       console.error("Fout met stuur van push notification:", error_message);
+      res.status(500).json({ error: error_message });
+    }
+  });
+});
+
+export const cancelSubscription = functions.https.onRequest(async (req, res) => {
+  return corsHandler(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        res.status(405).json({ error: "Method not allowed" });
+        return;
+      }
+
+      // Verify user authentication
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const id_token = authHeader.split("Bearer ")[1];
+      const decoded_token = await verifyToken(id_token);
+
+      functions.logger.log("Decoded token:", decoded_token);
+
+      if (!decoded_token) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const { purchase_token, product_id } = req.body;
+
+      if (!purchase_token || !product_id) {
+        res.status(400).json({ error: "Missing parameters" });
+        return;
+      }
+
+      const usersCollection = admin.firestore().collection("users");
+      await usersCollection.doc(decoded_token.uid).set(
+        {
+          subscription: {
+            productId: product_id,
+            purchaseToken: purchase_token,
+            platform: "android",
+            cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+            active: false,
+          },
+          is_plus_user: false,
+        },
+        { merge: true }
+      );
+
+      res.json({
+        success: true,
+        message: "Subscription cancelled",
+      });
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.error("Subscription cancellation error:", error_message);
+      res.status(500).json({ error: error_message });
+    }
+  });
+});
+
+// Verify Android Subscription function
+export const verifySubscription = functions.https.onRequest(async (req, res) => {
+  return corsHandler(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        res.status(405).json({ error: "Method not allowed" });
+        return;
+      }
+
+      // Verify user authentication
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const idToken = authHeader.split("Bearer ")[1];
+      const decodedToken = await verifyToken(idToken);
+
+      const { purchaseToken, productId } = req.body;
+
+      if (!purchaseToken || !productId) {
+        res.status(400).json({ error: "Missing parameters" });
+        return;
+      }
+
+      // In production, you would verify the purchase with Google Play API
+      // For now, we'll store the subscription info
+      // TODO: Add Google Play Developer API verification
+      // const { google } = require("googleapis");
+      // const androidPublisher = google.androidpublisher("v3");
+
+      // Store subscription status in Firestore
+      const usersCollection = admin.firestore().collection("users");
+      await usersCollection.doc(decodedToken.uid).set(
+        {
+          subscription: {
+            productId,
+            purchaseToken,
+            platform: "android",
+            verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+            active: true,
+          },
+          is_plus_user: true,
+        },
+        { merge: true }
+      );
+
+      res.json({
+        success: true,
+        message: "Subscription verified and stored",
+      });
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.error("Subscription verification error:", error_message);
       res.status(500).json({ error: error_message });
     }
   });

@@ -9,7 +9,7 @@
   import { t } from "$lib/services/language.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { OnlineDB } from "$lib/OnlineDB";
-  import user from "$lib/core/user.svelte";
+  import user, { signIn } from "$lib/core/user.svelte";
   import { Alert } from "$lib/core/alert";
   import { goto } from "$app/navigation";
   import { onDestroy, onMount, untrack } from "svelte";
@@ -34,8 +34,25 @@
     // Verban toegang as Vriende funksie nie geaktiveer is nie.
 
     if (user.is_loading) return;
-    if (user.value?.is_friends_enabled) return;
+    if (!user.value?.is_logged_in) {
+      untrack(async () => {
+        const result = await signIn();
+        if (!result.success) {
+          if (result.error_message === "USER_CANCELED") {
+            return;
+          }
 
+          Alert.error(result.error_message || t("something_went_wrong"));
+        }
+
+        if (user.value?.is_friends_enabled) return;
+        goto(`/plus`);
+      });
+
+      return;
+    }
+
+    if (user.value?.is_friends_enabled) return;
     goto(`/plus`);
   });
 

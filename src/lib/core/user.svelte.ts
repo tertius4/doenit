@@ -1,9 +1,11 @@
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { PUBLIC_ADMIN_EMAILS, PUBLIC_GOOGLE_AUTH } from "$env/static/public";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getApp, initializeApp } from "$lib/chunk/firebase-app";
-import { t } from "$lib/services/language.svelte";
 import { APP_NAME, FIREBASE_CONFIG, normalize } from "$lib";
+import { billing } from "$lib/services/billing.svelte";
+import { t } from "$lib/services/language.svelte";
 import { Capacitor } from "@capacitor/core";
+import { Value } from "$lib/utils.svelte";
 import {
   getAuth,
   signOut as firebaseSignOut,
@@ -11,16 +13,17 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { Value } from "$lib/utils.svelte";
 
 class User {
   private _user = $state() as FirebaseUser;
   private _message_token: string | null = $state(null);
 
   readonly is_logged_in = $derived(!!this._user);
-  readonly is_plus_user = $derived(this.is_logged_in && PUBLIC_ADMIN_EMAILS.includes(this._user?.email || ""));
-  readonly is_friends_enabled: boolean = $derived(this.is_plus_user);
-  readonly is_backup_enabled: boolean = $derived(true /* Gratis vir nou */ || this.is_plus_user);
+  readonly is_vip = $derived(this.is_logged_in && PUBLIC_ADMIN_EMAILS.includes(this._user?.email || ""));
+  readonly is_plus_user = $derived(this.is_logged_in && billing.is_plus_user);
+
+  readonly is_friends_enabled: boolean = $derived(this.is_vip || this.is_plus_user);
+  readonly is_backup_enabled: boolean = $derived(this.is_vip || this.is_plus_user);
 
   constructor(user: FirebaseUser) {
     this._user = user;
@@ -114,6 +117,10 @@ export async function signIn(): Promise<SimpleResult> {
     return { success: true };
   } catch (error) {
     const error_message = error instanceof Error ? error.message : JSON.stringify(error);
+    if (error_message === "The user canceled the sign-in flow.") {
+      return { success: false, error_message: "USER_CANCELED" };
+    }
+
     return { success: false, error_message: `${t("google_verification_failed")}: ${error_message}` };
   }
 }

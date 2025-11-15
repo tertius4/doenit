@@ -194,7 +194,7 @@
 <div class="text-md h-dvh relative flex flex-col text-normal bg-page **:select-none **:transition-all **:duration-300">
   <Heading />
 
-  <main class="max-w-[1000px] overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
+  <main class="max-w-[1000px] scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
     {@render children()}
   </main>
 

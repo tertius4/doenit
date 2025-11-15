@@ -87,9 +87,6 @@ export class Notify {
         const app = initializeApp(FIREBASE_CONFIG, APP_NAME);
         Notify.Push.messaging = getMessaging(app);
         Notify.Push.is_initialized = true;
-        onMessage(Notify.Push.messaging, (payload) => {
-          Alert.success(`[WERK HIERDIE OOIT?] Push Notification received: ${payload.notification?.body}`);
-        });
       } catch (error) {
         const error_message = error instanceof Error ? error.message : String(error);
         Alert.error(`Kon nie Push Notification initaliseer nie: ${error_message}`);
@@ -137,7 +134,15 @@ export class Notify {
       }
     }
 
-    static async sendTemplate({ type, data, email_address }: { type: string; data: Record<string, any>; email_address: string[] }) {
+    static async sendTemplate({
+      type,
+      data,
+      email_address,
+    }: {
+      type: string;
+      data: Record<string, any>;
+      email_address: string[];
+    }) {
       if (!email_address.length) return;
 
       if (!Notify.Push.is_initialized) {

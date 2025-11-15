@@ -19,10 +19,10 @@ export const translations = {
     large: "Groot",
 
     // App Settings
-    app_settings: "Toepassings-instellings",
+    app_settings: "Maak dit jou eie",
     favourite_categories: "Gunsteling Kategorieë",
     setup_favourite_categories: "Stel jou gunsteling kategorieë op",
-    goto_app_settings: "Gaan na toepassings-instellings om weer te verander.",
+    goto_app_settings: "Gaan na 'Maak dit jou eie' om weer te verander.",
     bulk_assign_category: "Massa-toeken van kategorie",
 
     // Language
@@ -409,7 +409,7 @@ export const translations = {
     // Doenit Plus Subscription
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Gradeer op na Plus",
-    current_plan: "Huidige Plan",
+    current_plan: "Jou Huidige Plan",
     free_plan: "Gratis",
     plus_plan: "Plus",
     subscription_price: "R20 per maand",
@@ -418,25 +418,36 @@ export const translations = {
     subscribe_now: "Teken Nou In",
     one_week_free: "1 week gratis",
     trial_then_price: "1 week gratis proeftydperk, dan R20/maand",
-    auto_renews_monthly: "Hernuwing elke maand outomaties",
+    auto_renews_monthly: "Hernu elke maand outomaties",
     cancel_anytime: "Kanselleer enige tyd",
     plus_benefits: "Plus Voordele",
-    benefit_rooms: "Sluit aan by kamers",
-    benefit_rooms_desc: "Deel take met jou vriende in gedeelde kamers",
+    benefit_rooms: "Deel take met vriende",
+    benefit_rooms_desc: "Jy kan 'n taak merk as gedeel met 'n spesifieke persoon.",
     benefit_backup: "Outomatiese Rugsteun",
-    benefit_backup_desc: "Jou data word outomaties gerugsteun",
+    benefit_backup_desc: "Jou data word outomaties geënkripteer en gerugsteun",
     unlock_plus_features: "Ontsluit Plus Funksies",
     why_plus: "Hoekom Plus?",
     plus_feature_collaboration: "Samewerking met Vriende",
     plus_feature_collaboration_desc:
-      "Skep en bestuur take met jou vriende in gedeelde kamers. Perfek vir huisgenote, spanne, of families.",
+      "Skep en bestuur take met jou vriende. Perfek vir 'n huisgenoot, kollega, of 'n vriend.",
     plus_feature_peace_of_mind: "Gemoedsrus",
     plus_feature_peace_of_mind_desc:
-      "Moenie weer bekommerd wees oor data verlies nie. Jou take word outomaties gerugsteun.",
+      "Moenie weer bekommerd wees oor data verlies nie. Jou take word outomaties daagliks gerugsteun.",
     rooms_locked: "Kamers is 'n Plus funksie",
-    rooms_locked_desc: "Gradeer op na DOenit Plus om kamers te ontsluit en take met jou vriende te deel.",
+    rooms_locked_desc: "Gradeer op na Doenit Plus om kamers te ontsluit en take met jou vriende te deel.",
     backup_locked: "Outomatiese rugsteun is 'n Plus funksie",
-    backup_locked_desc: "Gradeer op na DOenit Plus om outomatiese rugsteun te ontsluit.",
+    backup_locked_desc: "Gradeer op na Doenit Plus om outomatiese rugsteun te ontsluit.",
+    manage_subscriptions: "Bestuur Google Play Subskripsies",
+    already_free_plan: "Jy is reeds op die gratis plan.",
+    cancellation_failed: "Kansellasie het misluk",
+
+    // Billing
+    billing_init_error: "Kon nie billing begin nie",
+    billing_check_error: "Kon nie billing status nagaan nie",
+    billing_not_initialized: "Billing is nie geïnisialiseer nie",
+    subscription_success: "Subscription suksesvol!",
+    subscription_failed: "Subscription het misluk",
+    subscription_active: "Jou subscription is aktief",
 
     you: "Jy",
   },
@@ -457,11 +468,11 @@ export const translations = {
     medium: "Medium",
     large: "Large",
 
-    // App Settings
-    app_settings: "App Settings",
+    // Make it your own
+    app_settings: "Make it your own",
     favourite_categories: "Favourite Categories",
     setup_favourite_categories: "Set up your favourite categories",
-    goto_app_settings: "Go to app settings to change again.",
+    goto_app_settings: "Go to 'Make it your own' to edit again.",
     bulk_assign_category: "Bulk Assign Category",
 
     // Language
@@ -844,10 +855,10 @@ export const translations = {
     coming_soon: "This feature is coming soon",
     working_on_it: "I'm working on it…",
 
-    // DOenit Plus Subscription
+    // Doenit Plus Subscription
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Upgrade to Plus",
-    current_plan: "Current Plan",
+    current_plan: "Your Current Plan",
     free_plan: "Free",
     plus_plan: "Plus",
     subscription_price: "R20 per month",
@@ -872,9 +883,20 @@ export const translations = {
     plus_feature_peace_of_mind_desc:
       "Never worry about losing your data again. Your tasks are automatically backed up.",
     rooms_locked: "Rooms are a Plus feature",
-    rooms_locked_desc: "Upgrade to DOenit Plus to unlock rooms and share tasks with your friends.",
+    rooms_locked_desc: "Upgrade to Doenit Plus to unlock rooms and share tasks with your friends.",
     backup_locked: "Automatic backup is a Plus feature",
-    backup_locked_desc: "Upgrade to DOenit Plus to unlock automatic backup.",
+    backup_locked_desc: "Upgrade to Doenit Plus to unlock automatic backup.",
+    manage_subscriptions: "Manage Google Play Subscriptions",
+    already_free_plan: "You are already on the free plan.",
+    cancellation_failed: "Cancellation failed",
+
+    // Billing
+    billing_init_error: "Could not initialize billing",
+    billing_check_error: "Could not check billing status",
+    billing_not_initialized: "Billing is not initialized",
+    subscription_success: "Subscription successful!",
+    subscription_failed: "Subscription failed",
+    subscription_active: "Your subscription is active",
 
     you: "You",
   },

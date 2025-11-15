@@ -12,10 +12,14 @@
     is_loading = true;
     const result = await signIn();
     is_loading = false;
+    
+    if (!result.success) {
+      if (result.error_message === "USER_CANCELED") {
+        return;
+      }
 
-    if (result.success) return;
-
-    Alert.error(result.error_message || t("something_went_wrong"));
+      Alert.error(result.error_message || t("something_went_wrong"));
+    }
   }
 
   async function handleSignOut() {
@@ -95,13 +99,13 @@
 </div>
 
 <Modal bind:is_open class="max-w-[80%]!" onclose={() => (is_open = false)}>
-  <div class="font-medium mb-2 text-lg">{t("sign_out")}?</div>
+  <div class="font-medium mb-4 text-lg">{t("sign_out")}?</div>
   <div class="flex gap-1 w-full justify-between">
-    <button type="button" class="py-1 px-3 w-20 h-10 bg-card rounded-lg" onclick={() => (is_open = false)}>
+    <button type="button" class="py-1 px-3 w-25 h-10 bg-card rounded-lg" onclick={() => (is_open = false)}>
       {t("no")}
     </button>
-    <button type="button" class="py-1 px-3 w-20 h-10 bg-primary rounded-lg text-alt" onclick={() => handleSignOut()}>
-      {t("yes")}
+    <button type="button" class="py-1 px-3 w-25 h-10 bg-primary rounded-lg text-alt" onclick={() => handleSignOut()}>
+      {t("sign_out")}
     </button>
   </div>
 </Modal>

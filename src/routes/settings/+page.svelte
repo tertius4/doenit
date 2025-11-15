@@ -2,7 +2,7 @@
   import About from "./About.svelte";
   import Backup from "./Backup.svelte";
   import Notifications from "./Notifications.svelte";
-  import SupportMe from "./SupportMe.svelte";
+  import DoenitPlus from "./DoenitPlus.svelte";
   import AppSettings from "./AppSettings.svelte";
   import Appearance from "./Appearance.svelte";
   import UserDisplay from "./UserDisplay.svelte";
@@ -25,7 +25,7 @@
   <Appearance />
   <Notifications />
   <AppSettings />
+  <DoenitPlus />
   <Backup />
-  <SupportMe />
   <About />
 </div>

@@ -135,3 +135,22 @@
 /**
  * @typedef {import('rxjs').Subscription} Subscription
  */
+
+/**
+ * @typedef {Object} Product
+ * @property {string} product_id
+ * @property {string} title
+ * @property {string} description
+ * @property {string} price
+ * @property {number} price_amount_micros
+ * @property {string} price_currency_code
+ */
+
+/**
+ * @typedef {Object} Purchase
+ * @property {string} product_id
+ * @property {string} purchase_token
+ * @property {number} purchase_state
+ * @property {boolean} acknowledged
+ * @property {string} order_id
+ */
