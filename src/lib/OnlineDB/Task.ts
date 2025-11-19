@@ -13,17 +13,20 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "new_task",
       data: {
         sender_name: user.value?.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_id: category.id,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
     });
 
     return { success: true };
@@ -34,17 +37,20 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "task_updated",
       data: {
         sender_name: user.value?.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_id: category.id,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
     });
 
     return { success: true };
@@ -56,17 +62,20 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "task_deleted",
       data: {
         sender_name: user.value?.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_id: category.id,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
     });
 
     return { success: true };

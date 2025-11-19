@@ -1,4 +1,4 @@
-/** @type {Record<'en' | 'af', Record<string | symbol, string>>} */
+/** @type {Record<Language, Record<string | symbol, string>>} */
 export const translations = {
   af: {
     // System defaults
@@ -72,6 +72,7 @@ export const translations = {
     task_was_created: '"{{task_name}}" is geskep',
     failed_to_update_widget: "Kon nie widget opdateer nie:",
     delete_tasks: "Verwyder take",
+    assigned_to: "Toegewys aan",
 
     // Task Actions & Buttons
     save_changes: "Stoor veranderinge",
@@ -169,8 +170,12 @@ export const translations = {
     edit_category_name: "Wysig naam",
     categories_selected: "{{count}} Kategorieë geselekteer",
     category_selected: "1 Kategorie geselekteer",
+    no_one: "Niemand",
 
     // Friends & Social
+    choose_user: "Wie moet die taak doen?",
+    anyone: "Enigiemand",
+    choose_user_name: "Kies 'n naam vir jou gebruiker",
     connect_with_friend: "Verbind met 'n vriend",
     enter_friend_email: "Voer vriend se e-posadres in",
     send_invite: "Stuur uitnodiging",
@@ -522,6 +527,7 @@ export const translations = {
     task_was_created: '"{{task_name}}" was created',
     failed_to_update_widget: "Failed to update widget:",
     delete_tasks: "Delete tasks",
+    assigned_to: "Assigned to",
 
     // Task Actions & Buttons
     save_changes: "Save changes",
@@ -619,8 +625,11 @@ export const translations = {
     edit_category_name: "Edit name",
     categories_selected: "{{count}} Categories selected",
     category_selected: "1 Category selected",
+    no_one: "No one",
 
     // Friends & Social
+    choose_user: "Who should do the task?",
+    anyone: "Anyone",
     connect_with_friend: "Connect with a friend",
     enter_friend_email: "Enter friend's email address",
     send_invite: "Send invite",

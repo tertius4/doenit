@@ -1,7 +1,7 @@
 import DateUtil from "$lib/DateUtil";
 import type { MangoQuery, RxCollection } from "$lib/chunk/rxdb";
 
-export class Table<T extends Task | Category | Room> {
+export class Table<T extends Task | Category | User> {
   collection: RxCollection<T>;
 
   constructor(collection: RxCollection<T>) {
@@ -49,7 +49,7 @@ export class Table<T extends Task | Category | Room> {
 
   async getOne(filter: MangoQuery<T> = {}): Promise<T> {
     const doc = await this.collection.findOne(filter).exec();
-    if (!doc) throw new Error(`${this.collection.name} not found`);
+    if (!doc) throw new Error(`[DB]: ${this.collection.name} nie gevind`);
 
     return doc.toJSON() as T;
   }
@@ -75,10 +75,13 @@ export class Table<T extends Task | Category | Room> {
     return { success: true };
   }
 
-  async delete(ids: string | string[]): Promise<void> {
+  async delete(ids: (string | T) | (string | T)[]): Promise<void> {
     try {
       if (!Array.isArray(ids)) ids = [ids];
       if (!ids.length) return;
+      if (typeof ids[0] !== "string") {
+        ids = (ids as T[]).map((i) => i.id);
+      }
 
       await this.collection.find({ selector: { id: { $in: ids } } }).remove();
     } catch (e) {

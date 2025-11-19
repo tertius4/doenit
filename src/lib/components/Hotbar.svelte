@@ -15,14 +15,10 @@
 
   /** @type {Category[]} */
   let categories = $state([]);
-  /** @type {Room[]} */
-  let rooms = $state([]);
   /** @type {string[]} */
   let favourite_cat_ids = $state([]);
 
   let show_favourite_modal = $state(false);
-  /** @type {import('dexie').Subscription?} */
-  let rooms_sub = null;
 
   const is_favourite_selected = $derived(
     favourite_cat_ids.length !== 0 &&
@@ -30,7 +26,7 @@
       favourite_cat_ids.length === Selected.categories.size
   );
   const items = $derived.by(() => {
-    /** @type {{ id: string, name: string, type: "category" | "room" }[]} */
+    /** @type {{ id: string, name: string, type: "category" }[]} */
     let items = [];
 
     for (const category of categories) {
@@ -40,13 +36,6 @@
         id: category.id,
         name: category.name,
         type: "category",
-      });
-    }
-    for (const room of rooms) {
-      items.push({
-        id: room.id,
-        name: room.name,
-        type: "room",
       });
     }
 
@@ -75,39 +64,18 @@
     return () => sub.unsubscribe();
   });
 
-  $effect(() => {
-    if (!user.value?.is_friends_enabled || !!rooms_sub) return;
-
-    rooms_sub = DB.Room.subscribe((result) => (rooms = result), {
-      selector: { archived: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => rooms_sub?.unsubscribe();
-  });
-
   /**
    * Toggles selection of a hotbar item.
-   * @param {{ id: string, name: string, type: "category" | "room" }} item
+   * @param {{ id: string, name: string, type: "category" }} item
    */
   function toggle(item) {
-    const is_room = item.type === "room";
-    if (is_room) {
-      if (Selected.rooms.has(item.id)) {
-        Selected.rooms.delete(item.id);
-      } else {
-        Selected.rooms.add(item.id);
-        Selected.categories.clear();
-      }
+    if (Selected.categories.has(item.id)) {
+      Selected.categories.delete(item.id);
     } else {
-      if (Selected.categories.has(item.id)) {
-        Selected.categories.delete(item.id);
-      } else {
-        for (const cat_id of favourite_cat_ids) {
-          Selected.categories.delete(cat_id);
-        }
-        Selected.categories.add(item.id);
+      for (const cat_id of favourite_cat_ids) {
+        Selected.categories.delete(cat_id);
       }
+      Selected.categories.add(item.id);
     }
   }
 
@@ -123,7 +91,6 @@
       }
     } else {
       Selected.categories.clear();
-      Selected.rooms.clear();
 
       for (const cat_id of favourite_cat_ids) {
         Selected.categories.add(cat_id);
@@ -141,13 +108,9 @@
     {/if}
 
     {#each items as item}
-      {@const is_selected = Selected.categories.has(item.id) || Selected.rooms.has(item.id)}
+      {@const is_selected = Selected.categories.has(item.id)}
       <Tag {is_selected} onclick={() => toggle(item)}>
-        {#if item.type === "room"}
-          <Users />
-        {:else}
-          <Categories />
-        {/if}
+        <Categories />
         <span>{item.name}</span>
       </Tag>
     {/each}

@@ -123,14 +123,6 @@
         if (!Selected.categories.has(category_id)) continue;
       }
 
-      const has_room_filter_enabled = !!Selected.rooms.size;
-      if (has_room_filter_enabled) {
-        const room_id = task.room_id;
-        if (!room_id || !Selected.rooms.has(room_id)) {
-          continue;
-        }
-      }
-
       filtered_tasks.push(task);
     }
     return filtered_tasks;
@@ -211,7 +203,7 @@
     {/key}
   {:else}
     <div class="flex flex-col items-center gap-4 py-12">
-      {#if !Selected.categories.size && !Selected.rooms.size}
+      {#if !Selected.categories.size}
         <div class="text-lg">{t("empty_list")}</div>
       {:else if search_text.value?.trim().length}
         <div class="text-lg">{t("no_tasks_found_for_search")}</div>

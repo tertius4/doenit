@@ -4,17 +4,17 @@
   import CategoryButton from "./CategoryButton.svelte";
   import { t } from "$lib/services/language.svelte";
   import { selectedCategories } from "$lib/cached";
-  import { Plus, DownChevron, Loading, Users } from "$lib/icon";
+  import { Plus, DownChevron /* Loading, Users */ } from "$lib/icon";
   import { slide } from "svelte/transition";
   import { Selected } from "$lib/selected";
   import { onMount, untrack } from "svelte";
   import { DB } from "$lib/DB";
   import Tab from "./element/tabs/Tab.svelte";
   import TabsContainer from "./element/tabs/TabsContainer.svelte";
-  import user from "$lib/core/user.svelte";
-  import RoomButton from "./RoomButton.svelte";
-  import Button from "./element/button/Button.svelte";
-  import GetDoenitPlus from "./GetDoenitPlus.svelte";
+  // import user from "$lib/core/user.svelte";
+  // import RoomButton from "./RoomButton.svelte";
+  // import Button from "./element/button/Button.svelte";
+  // import GetDoenitPlus from "./GetDoenitPlus.svelte";
   import Categories from "$lib/icon/Categories.svelte";
 
   let is_adding = $state(false);
@@ -24,13 +24,13 @@
   let default_category = $state(null);
   /** @type {Category[]} */
   let categories = $state([]);
-  /** @type {Room[]} */
-  let rooms = $state([]);
+  // /** @type {Room[]} */
+  // let rooms = $state([]);
 
   let active_tab = $state("Categories");
   let active_tab_index = $state(0);
-  /** @type {import('dexie').Subscription?}*/
-  let room_sub = null;
+  // /** @type {import('dexie').Subscription?}*/
+  // let room_sub = null;
 
   $effect(() => {
     active_tab_index;
@@ -40,16 +40,16 @@
     });
   });
 
-  $effect(() => {
-    if (!user.value?.is_friends_enabled || !!room_sub) return;
+  // $effect(() => {
+  //   if (!user.value?.is_friends_enabled || !!room_sub) return;
 
-    room_sub = DB.Room.subscribe((result) => (rooms = result), {
-      selector: { archived: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
+  //   room_sub = DB.Room.subscribe((result) => (rooms = result), {
+  //     selector: { archived: { $ne: true } },
+  //     sort: [{ name: "asc" }],
+  //   });
 
-    return () => room_sub?.unsubscribe();
-  });
+  //   return () => room_sub?.unsubscribe();
+  // });
 
   onMount(async () => {
     default_category = await DB.Category.getDefault();
@@ -103,7 +103,7 @@
         <Categories />
         <span class="font-medium">Kategorieë</span>
       </button>
-      <button
+      <!-- <button
         type="button"
         class={{
           "w-full flex gap-1 items-center justify-center p-2 border-t border-x rounded-t-2xl translate-y-[1px]": true,
@@ -114,7 +114,7 @@
       >
         <Users />
         <span class="font-medium">Vriende</span>
-      </button>
+      </button> -->
     </div>
 
     <TabsContainer class="border-t border-default" tabs_length={2} {active_tab_index} onchangetab={handleTabChange}>
@@ -137,7 +137,7 @@
         </button>
       </Tab>
 
-      <Tab>
+      <!-- <Tab>
         {#if user.is_loading}
           <div class="text-center py-8 bg-surface grow">
             <Loading class="text-4xl mx-auto mb-2 opacity-50" />
@@ -150,7 +150,7 @@
         {:else}
           <GetDoenitPlus class="bg-surface" />
         {/if}
-      </Tab>
+      </Tab> -->
     </TabsContainer>
   </div>
 {/if}

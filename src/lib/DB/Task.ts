@@ -27,7 +27,7 @@ export class TaskTable extends Table<Task> {
     task.archived = false;
 
     task.name = task.name.trim();
-    task.description = task.description?.trim() ?? "";
+    // task.description = task.description?.trim() ?? "";
 
     if (task.archived && !task.completed) {
       task.archived = false;
@@ -41,7 +41,7 @@ export class TaskTable extends Table<Task> {
     const db_task = await super.create(task);
 
     // Handle online sync asynchronously and only if online
-    if (db_task.room_id && !!user.value?.is_friends_enabled) {
+    if (db_task.category_id && !!user.value?.is_friends_enabled) {
       // Don't await this - let it run in background
       this.syncTaskToOnline(db_task);
     }
@@ -72,7 +72,7 @@ export class TaskTable extends Table<Task> {
     const db_task = await super.update(id, task);
 
     // Handle online sync asynchronously and only if online
-    if (db_task?.room_id && !!user.value?.is_friends_enabled) {
+    if (db_task?.category_id && !!user.value?.is_friends_enabled) {
       // Don't await this - let it run in background
       this.syncTaskUpdateToOnline(db_task);
     }
@@ -207,11 +207,17 @@ export class TaskTable extends Table<Task> {
         throw new Error("Offline - will sync later");
       }
 
+      const category = await DB.Category.get(db_task.category_id!);
+      if (!category) return;
+
+      const email_addresses = DB.Category.getNotificationEmails(category);
+      if (!email_addresses.length) return;
+
       const encrypted_data = await Secure.compressAndEncrypt(db_task);
       await OnlineDB.Task.createWithNotification(
         {
           task_id: db_task.id,
-          room_id: db_task.room_id || "",
+          category_id: db_task.category_id || "",
           data: encrypted_data || "",
         },
         db_task
@@ -234,6 +240,12 @@ export class TaskTable extends Table<Task> {
         throw new Error("Offline - will sync later");
       }
 
+      const category = await DB.Category.get(db_task.category_id!);
+      if (!category) return;
+
+      const email_addresses = DB.Category.getNotificationEmails(category);
+      if (!email_addresses.length) return;
+
       const [encrypted_data, [online_task]] = await Promise.all([
         Secure.compressAndEncrypt(db_task),
         OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
@@ -245,7 +257,7 @@ export class TaskTable extends Table<Task> {
           {
             id: online_task.id,
             task_id: db_task.id,
-            room_id: db_task.room_id || "",
+            category_id: db_task.category_id || "",
             data: encrypted_data || "",
           },
           db_task
@@ -254,7 +266,7 @@ export class TaskTable extends Table<Task> {
         await OnlineDB.Task.createWithNotification(
           {
             task_id: db_task.id,
-            room_id: db_task.room_id || "",
+            category_id: db_task.category_id || "",
             data: encrypted_data || "",
           },
           db_task

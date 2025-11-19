@@ -9,7 +9,7 @@
 
   /**
    * Handle language change
-   * @param {'af' | 'en'} lang
+   * @param {Language} lang
    */
   function onlanguagechange(lang) {
     language.value = lang;

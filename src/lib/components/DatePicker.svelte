@@ -12,7 +12,7 @@
 
   /**
    * @typedef {Object} Props
-   * @property {string} start - Selected start date string
+   * @property {string | null} start - Selected start date string
    * @property {string | null} end - Selected end date string
    */
 
@@ -58,7 +58,7 @@
   onMount(() => (is_mounted = true));
 
   /**
-   * @param {string} start_date_str
+   * @param {string | null} start_date_str
    */
   function initStartHour(start_date_str) {
     if (!start_date_str?.includes(" ")) return DEFAULT_HOUR;
@@ -68,7 +68,7 @@
   }
 
   /**
-   * @param {string} start_date_str
+   * @param {string | null} start_date_str
    */
   function initStartMinute(start_date_str) {
     if (!start_date_str?.includes(" ")) return DEFAULT_MIN;

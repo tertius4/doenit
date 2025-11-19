@@ -16,7 +16,7 @@ export class SyncService {
   }
 
   startBackgroundSync(): void {
-    if (this.syncInterval) return; // Already running
+    if (this.syncInterval) return;
 
     // Sync every 30 seconds when online
     this.syncInterval = setInterval(() => {
@@ -52,7 +52,7 @@ export class SyncService {
 
       // Get tasks that need syncing
       const tasks = await DB.Task.getAll({
-        selector: { id: { $in: pending_task_ids }, room_id: { $exists: true } },
+        selector: { id: { $in: pending_task_ids }, category_id: { $exists: true } },
       });
       // Create hash with task IDs as keys and tasks as values (or null if not found)
       const TASK_HASH = pending_task_ids.reduce(
@@ -94,7 +94,7 @@ export class SyncService {
           continue;
         }
 
-        if (!task?.room_id) continue;
+        if (!task?.category_id) continue;
 
         try {
           const encrypted_data = await Secure.compressAndEncrypt(task);
@@ -105,7 +105,7 @@ export class SyncService {
               {
                 id: online_task.id,
                 task_id: task.id,
-                room_id: task.room_id || "",
+                category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
               task
@@ -114,7 +114,7 @@ export class SyncService {
             await OnlineDB.Task.createWithNotification(
               {
                 task_id: task.id,
-                room_id: task.room_id || "",
+                category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
               task

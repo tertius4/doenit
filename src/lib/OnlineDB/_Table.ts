@@ -19,6 +19,7 @@ import {
 } from "$lib/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 import DateUtil from "$lib/DateUtil";
+import { Alert } from "$lib/core/alert";
 
 interface QueryOptions {
   filters?: (
@@ -31,7 +32,7 @@ interface QueryOptions {
 
 type SnapshotCallback<T> = (docs: T[]) => void;
 
-export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | Invite> {
+export class Table<T extends BackupManifest | User | OnlineTask | OnlineCategory | OnlineUser | Invite> {
   private readonly name: string;
 
   constructor(name: string) {
@@ -71,10 +72,15 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | I
   }
 
   async readMany(options?: QueryOptions): Promise<T[]> {
-    const q = this.buildQuery(options);
-    const snapshot = await getDocs(q);
+    try {
+      const q = this.buildQuery(options);
+      const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
+      return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
+    } catch (e) {
+      alert(`Het gefaal om dokuments te kry van ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
+      return [];
+    }
   }
 
   async getAll(options?: QueryOptions): Promise<T[]> {
@@ -185,17 +191,7 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | I
           callback(docs);
         },
         (error) => {
-          console.error("Firestore subscription error for", this.name, ":");
-          console.error("Error code:", error.code);
-          console.error("Error message:", error.message);
-          console.error("Full error:", error);
-
-          // Handle specific error cases
-          if (error.code === "permission-denied") {
-            console.error("Permission denied - check Firestore security rules and authentication");
-          } else if (error.code === "unauthenticated") {
-            console.error("User not authenticated - make sure to sign in before accessing Firestore");
-          }
+          Alert.error(`Firestore subscription error for ${this.name}: ${error.message}`);
         }
       );
     } catch (error) {

@@ -7,6 +7,7 @@
   import Modal from "./modal/Modal.svelte";
   import { wait } from "$lib";
   import ButtonClear from "./element/button/ButtonClear.svelte";
+  import user from "$lib/core/user.svelte";
 
   let { category_id = $bindable() } = $props();
 
@@ -75,42 +76,71 @@
   {#if category}
     <ButtonClear onclick={() => (category_id = "")} class="absolute right-0 top-0 bottom-0" />
   {:else}
-  <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 ">
-    <DownChevron
-      class=" text-muted pointer-events-none"
-    />
-  </div>
+    <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0">
+      <DownChevron class=" text-muted pointer-events-none" />
+    </div>
   {/if}
 </div>
 
 <Modal bind:is_open>
   <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
-  <div class="mb-4">
+  <div class="mb-4 space-y-0.5">
     {#each categories as category}
       {@const is_selected = category.id === category_id}
       <button
         type="button"
         onclick={() => selectCategory(category.id)}
         class={[
-          "text-left flex border rounded-lg border-primary w-full py-2 outline-none",
-          is_selected && "bg-primary/20",
-          !is_selected && "border-transparent",
+          "text-left border rounded-lg border-primary w-full p-2 outline-none",
+          is_selected && "bg-primary/20 text-alt",
+          !is_selected && "border-default bg-card",
         ]}
       >
-        <div
-          class={[
-            "my-auto mx-2 flex items-center justify-center w-4 h-4 aspect-square rounded-full border",
-            is_selected ? "border-primary" : "",
-          ]}
-        >
-          {#if is_selected}
-            <div class="w-2 h-2 bg-primary rounded-full m-auto"></div>
-          {/if}
+        <div class="flex">
+          <div
+            class={[
+              "my-auto flex items-center justify-center w-4 h-4 aspect-square rounded-full border",
+              is_selected ? "border-primary" : "",
+            ]}
+          >
+            {#if is_selected}
+              <div class="w-2 h-2 bg-primary rounded-full m-auto"></div>
+            {/if}
+          </div>
+
+          <div class={["w-full p-1", !is_selected && "border-default"]}>
+            <span>{category.name}</span>
+          </div>
         </div>
 
-        <div class={["w-full p-1", !is_selected && "border-default"]}>
-          <span>{category.name}</span>
-        </div>
+        {#if user.value?.is_friends_enabled}
+          <div class="flex flex-nowrap gap-1 overflow-x-auto">
+            {#each category.users as email_address}
+              <!-- {@const user = users_map.get(email_address)} -->
+              <!-- {#if user} -->
+              <p
+                class={{
+                  "px-1.5 rounded-full  text-normal w-fit border flex gap-0.5 items-center": true,
+                  "border-primary bg-primary/40 text-alt": is_selected,
+                  "border-default bg-card": !is_selected,
+                }}
+              >
+                <!-- <img class="w-3.5 h-3.5 rounded-full" src={user.avatar} alt={user.name} referrerpolicy="no-referrer" /> -->
+                <span>{email_address}</span>
+              </p>
+              <!-- {/if} -->
+            {:else}
+              <p
+                class={{
+                  "text-muted w-fit italic": !is_selected,
+                  "text-alt opacity-50 w-fit italic": is_selected,
+                }}
+              >
+                Hierdie kategorie is privaat
+              </p>
+            {/each}
+          </div>
+        {/if}
       </button>
     {:else}
       <p class="text-muted italic">{t("no_categories_yet")}</p>

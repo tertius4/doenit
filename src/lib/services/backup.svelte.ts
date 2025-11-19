@@ -119,13 +119,13 @@ class BackupClass {
         selector: { archived: { $ne: true } },
         sort: [{ created_at: "desc" }],
       });
-      const rooms = await DB.Room.getAll({
+      const users = await DB.User.getAll({
         sort: [{ created_at: "desc" }],
       });
 
-      const encrypted_data = await this.compressAndEncrypt({ tasks, categories, rooms });
+      const encrypted_data = await this.compressAndEncrypt({ tasks, categories, users });
       const encrypted_blob = new Blob([encrypted_data], { type: "application/octet-stream" });
-      const sha256 = await this.sha256FromJson({ tasks, categories, rooms });
+      const sha256 = await this.sha256FromJson({ tasks, categories, users });
 
       const existing_backups = await OnlineDB.BackupManifest.getAll({
         filters: [
@@ -195,12 +195,12 @@ class BackupClass {
       // Clear data.
       await DB.Task.clear();
       await DB.Category.clear();
-      await DB.Room.clear();
+      await DB.User.clear();
 
       // Restore data.
       await DB.Task.createMany(data.tasks);
       await DB.Category.createMany(data.categories);
-      await DB.Room.createMany(data.rooms);
+      await DB.User.createMany(data.users);
 
       this.is_loading = false;
 

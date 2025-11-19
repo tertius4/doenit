@@ -9,12 +9,18 @@
   import Button from "./element/button/Button.svelte";
   import { t } from "$lib/services/language.svelte";
   import DatePicker from "./DatePicker.svelte";
-  import ShareTask from "./ShareTask.svelte";
   import { slide } from "svelte/transition";
-  import User from "$lib/core/user.svelte";
+  import user from "$lib/core/user.svelte";
   import { Important } from "$lib/icon";
   import { tick } from "svelte";
+  import UserPicker from "./UserPicker.svelte";
 
+  /**
+   * @typedef {Object} Props
+   * @property {Task} task
+   */
+
+  /** @type {Props & Record<string, any>} */
   let { task = $bindable(), error = $bindable(), other_interval = $bindable(), onsubmit, expanded = false } = $props();
 
   let show = $state(expanded);
@@ -49,6 +55,10 @@
     <label class="font-semibold" for="category">{t("category")}</label>
     <CategoryPicker bind:category_id={task.category_id} />
   </div>
+
+  {#if user.value?.is_friends_enabled && task.category_id}
+    <UserPicker bind:user_id={task.assigned_user_id} category_id={task.category_id} />
+  {/if}
 
   <div class="w-full">
     <label class="font-semibold" for="date">{title}</label>
@@ -90,10 +100,6 @@
         <span>{t("important")}</span>
       </Button>
     </div>
-
-    {#if User.value?.is_friends_enabled}
-      <ShareTask bind:room_id={task.room_id} />
-    {/if}
   </div>
 
   {#if Photos.PHOTOS_ENABLED}

@@ -2,9 +2,8 @@ import { cached_language } from "$lib/cached";
 import { translations } from "./language/translations";
 import { Widget } from "./widget";
 
-type LanguageValue = "af" | "en";
 class LanguageService {
-  private _value = $state<LanguageValue>("af");
+  private _value = $state<Language>("af");
   private readonly translations: Record<string | symbol, string> = $derived(translations[this._value]);
 
   constructor() {
@@ -36,7 +35,7 @@ class LanguageService {
     return this._value;
   }
 
-  private isValidLanguage(lang: any): lang is LanguageValue {
+  private isValidLanguage(lang: any): lang is Language {
     return ["af", "en"].includes(lang);
   }
 

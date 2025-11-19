@@ -19,11 +19,9 @@
   import { page } from "$app/state";
   import { DB } from "$lib/DB";
   import "../app.css";
+  import { SvelteMap } from "svelte/reactivity";
 
   let { children } = $props();
-
-  /** @type {string[]} */
-  let room_ids = $state([]);
 
   const search_text = new Value("");
   setContext("search_text", search_text);
@@ -32,11 +30,24 @@
   let unsubscribeOnlineTasks = null;
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeInvites = null;
+  /** @type {FirebaseUnsubscribe?} */
+  let unsubscribeOnlineCategory = null;
+  /** @type {FirebaseUnsubscribe?} */
+  let unsubscribeOnlineUsers = null;
   /** @type {Subscription?} */
-  let unsubscribeRoom = null;
+  let usersSubscription = null;
+  /** @type {Subscription?} */
+  let unsubscribeCategory = null;
 
-  /** @type {symbol | null} */
+  /** @type {SvelteMap<string, Category>} */
+  let categories_map = new SvelteMap();
+
+  /** @type {symbol?} */
   let selection_token = null;
+  /** @type {string[]} */
+  let category_ids = $state([]);
+  /** @type {User[]} */
+  let users = $state([]);
 
   const has_selection = $derived(!!Selected.tasks.size);
 
@@ -55,28 +66,72 @@
   $effect(() => {
     if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
     if (!user.value?.is_friends_enabled) return;
-    if (!room_ids.length) return;
+    if (!category_ids.length) return;
 
     // Clean up existing subscription before creating a new one
     unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
-      filters: [{ field: "room_id", operator: "in", value: room_ids }],
+      filters: [{ field: "category_id", operator: "in", value: category_ids }],
     });
   });
 
   $effect(() => {
-    if (unsubscribeInvites) unsubscribeInvites();
+    if (unsubscribeCategory) unsubscribeCategory.unsubscribe();
     if (!user.value?.is_friends_enabled) return;
 
     // Clean up existing subscription before creating a new one
-    unsubscribeInvites = OnlineDB.Invite.subscribe((i) => DB.Invite.set(i), {
-      filters: [
-        {
-          or: [
-            { field: "to_email_address", operator: "==", value: user.value?.email },
-            { field: "from_email_address", operator: "==", value: user.value?.email },
-          ],
-        },
-      ],
+    unsubscribeCategory = DB.Category.subscribe((c) => {
+      categories_map.clear();
+      for (const category of c) {
+        categories_map.set(category.id, category);
+      }
+    });
+
+    return () => {
+      if (unsubscribeCategory) unsubscribeCategory.unsubscribe();
+    };
+  });
+
+  $effect(() => {
+    if (!user.value?.is_friends_enabled) return;
+
+    // Clean up existing subscription before creating a new one
+    untrack(() => {
+      if (unsubscribeInvites) unsubscribeInvites();
+      unsubscribeInvites = OnlineDB.Invite.subscribe(async (i) => DB.Invite.set(i), {
+        filters: [
+          {
+            or: [
+              { field: "to_email_address", operator: "==", value: user.value?.email },
+              { field: "from_email_address", operator: "==", value: user.value?.email },
+            ],
+          },
+        ],
+        sort: [{ field: "created_at", direction: "asc" }],
+      });
+    });
+  });
+
+  $effect(() => {
+    if (!user.value?.is_friends_enabled) return;
+
+    untrack(() => {
+      usersSubscription = DB.User.subscribe((result) => (users = result), {
+        sort: [{ name: "asc" }],
+      });
+    });
+  });
+
+  $effect(() => {
+    if (unsubscribeOnlineUsers) unsubscribeOnlineUsers();
+    if (!user.value?.is_friends_enabled) return;
+
+    const user_email_addresses = users.map((u) => u.email_address);
+    if (!user_email_addresses.length) return;
+
+    untrack(() => {
+      unsubscribeOnlineUsers = OnlineDB.User.subscribe((online_users) => DB.User.sync(online_users, users), {
+        filters: [{ field: "email_address", operator: "in", value: user_email_addresses }],
+      });
     });
   });
 
@@ -93,30 +148,71 @@
   });
 
   $effect(() => {
-    has_selection;
+    if (!has_selection) return;
 
     untrack(() => {
-      if (has_selection && !selection_token) {
-        selection_token = backHandler.register(() => {
-          Selected.tasks.clear();
-          if (selection_token) {
-            backHandler.unregister(selection_token);
-            selection_token = null;
-          }
+      if (selection_token) return;
 
-          return true;
-        }, 10);
-      }
+      selection_token = backHandler.register(() => {
+        Selected.tasks.clear();
+        if (selection_token) {
+          backHandler.unregister(selection_token);
+          selection_token = null;
+        }
+
+        return true;
+      }, 10);
     });
   });
 
   $effect(() => {
-    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
+    // Hierdie kategorieë dui aan watter take om te sinkroniseer
+    if (unsubscribeOnlineCategory) unsubscribeOnlineCategory();
     if (!user.value?.is_friends_enabled) return;
 
-    unsubscribeRoom = DB.Room.subscribe((rooms) => {
-      room_ids = rooms.map((r) => r.id);
-    });
+    unsubscribeOnlineCategory = OnlineDB.Category.subscribe(
+      async (online_categories) => {
+        const category_id_set = new Set(online_categories.map((c) => c.category_id));
+        category_ids = Array.from(category_id_set);
+
+        const sync_operations = [];
+
+        for (const online_category of online_categories) {
+          const local_category = categories_map.get(online_category.category_id);
+
+          if (local_category) {
+            // Update existing category if data differs
+            if (
+              local_category.name !== online_category.name ||
+              JSON.stringify(local_category.users) !== JSON.stringify(online_category.users)
+            ) {
+              sync_operations.push(
+                DB.Category.update(online_category.category_id, {
+                  name: online_category.name,
+                  users: online_category.users,
+                })
+              );
+            }
+          } else {
+            // Create new category
+            sync_operations.push(
+              DB.Category.create({
+                id: online_category.category_id,
+                name: online_category.name,
+                users: online_category.users,
+              })
+            );
+          }
+        }
+
+        if (sync_operations.length > 0) {
+          await Promise.all(sync_operations);
+        }
+      },
+      {
+        filters: [{ field: "users", operator: "array-contains", value: user.value?.email }],
+      }
+    );
   });
 
   onMount(() => {
@@ -125,8 +221,8 @@
   });
 
   onMount(() => {
+    // Hanteering van sinkronisasie indien vanlyn
     const sync = SyncService.getInstance();
-    // Start background sync service
     sync.startBackgroundSync();
 
     return () => sync.stopBackgroundSync();
@@ -148,9 +244,7 @@
       return true;
     }, -1000);
 
-    App.addListener("backButton", () => {
-      backHandler.handle();
-    });
+    App.addListener("backButton", () => backHandler.handle());
 
     return () => {
       if (selection_token) backHandler.unregister(selection_token);
@@ -162,7 +256,7 @@
   onDestroy(() => {
     if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
     if (unsubscribeInvites) unsubscribeInvites();
-    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
+    if (unsubscribeOnlineCategory) unsubscribeOnlineCategory();
   });
 
   /**

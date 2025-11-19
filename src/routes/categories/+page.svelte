@@ -9,17 +9,39 @@
   import { goto } from "$app/navigation";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { backHandler } from "$lib/BackHandler.svelte";
+  import user from "$lib/core/user.svelte";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+  import { OnlineDB } from "$lib/OnlineDB";
+  import CardCategory from "./CardCategory.svelte";
 
   let new_category_name = $state("");
   /** @type {string?} */
   let default_id;
+  /** @type {SvelteMap<string, User>} */
+  let users_map = new SvelteMap();
+  /** @type {Subscription?} */
+  let unsubscribeUsers = null;
 
   let error_message = $state("");
   let is_editing = $state(false);
-  /** @type {{ name: string, id?: string }?} */
-  let category = $state(null);
   /** @type {Category[]} */
   let categories = $state([]);
+
+  $effect(() => {
+    if (unsubscribeUsers) unsubscribeUsers.unsubscribe();
+    if (!user.value?.is_friends_enabled) return;
+
+    unsubscribeUsers = DB.User.subscribe((u) => {
+      users_map.clear();
+      for (const user of u) {
+        users_map.set(user.email_address, user);
+      }
+    });
+
+    return () => {
+      if (unsubscribeUsers) unsubscribeUsers.unsubscribe();
+    };
+  });
 
   onMount(() => {
     const sub = DB.Category.subscribe((result) => (categories = result), {
@@ -57,42 +79,10 @@
     await DB.Category.create({
       name: new_category_name.trim(),
       is_default: false,
+      users: [],
     });
 
     new_category_name = "";
-  }
-
-  async function editCategory() {
-    if (!category?.id) return;
-    if (category.id === default_id) return;
-
-    if (!category.name.trim()) {
-      error_message = t("enter_category_name");
-      return;
-    }
-
-    await DB.Category.update(category.id, { name: category.name.trim() });
-
-    category = null;
-    is_editing = false;
-  }
-
-  /**
-   * @param {string} id
-   */
-  async function deleteCategory(id) {
-    if (id === default_id) return;
-
-    await DB.Category.archive(id);
-  }
-
-  /**
-   * @param {Category} cat
-   */
-  function openEditModal({ name, id }) {
-    category = { name, id };
-    is_editing = true;
-    error_message = "";
   }
 </script>
 
@@ -121,53 +111,7 @@
     </div>
 
     {#each categories as category (category.id)}
-      <div
-        in:slide
-        out:fly={{ x: 100 }}
-        class="grid grid-cols-[52px_1fr_48px] items-center justify-between bg-surface rounded-lg"
-      >
-        <button class="h-full w-full flex justify-center items-center" onclick={() => openEditModal(category)}>
-          <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
-            <Edit />
-          </div>
-        </button>
-
-        <div class="py-3 w-full text-lg font-semibold truncate">
-          <span>{category.name}</span>
-        </div>
-
-        <button class="h-full text-error flex items-center justify-center" onclick={() => deleteCategory(category.id)}>
-          <Trash />
-        </button>
-      </div>
+      <CardCategory {category} {default_id} {users_map} />
     {/each}
   </div>
 </div>
-
-{#if category}
-  <Modal
-    bind:is_open={is_editing}
-    onsubmit={editCategory}
-    onclose={() => {
-      error_message = "";
-    }}
-    class="space-y-4"
-  >
-    <h2 class="text-lg font-semibold">{t("edit_category_name")}</h2>
-    <InputText
-      bind:value={category.name}
-      maxlength="50"
-      focus_on_mount
-      placeholder={t("enter_category_name")}
-      class={{
-        "placeholder:text-error! border-error! bg-error/20!": !!error_message,
-      }}
-      oninput={() => (error_message = "")}
-    />
-
-    <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-lg ml-auto" type="submit">
-      <Check class="h-full" size={18} />
-      <span>{t("save")}</span>
-    </button>
-  </Modal>
-{/if}

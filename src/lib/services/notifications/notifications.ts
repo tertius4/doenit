@@ -137,10 +137,12 @@ export class Notify {
     static async sendTemplate({
       type,
       data,
+      users: online_users,
       email_address,
     }: {
       type: string;
       data: Record<string, any>;
+      users?: OnlineUser[];
       email_address: string[];
     }) {
       if (!email_address.length) return;
@@ -154,9 +156,17 @@ export class Notify {
 
         const token = await user.value.id_token;
 
-        const users = await OnlineDB.User.getAll({
-          filters: [{ field: "email_address", operator: "in", value: email_address }],
-        });
+        let users: OnlineUser[];
+        if (!online_users) {
+          users = await OnlineDB.User.readMany({
+            filters: [{ field: "email_address", operator: "in", value: email_address }],
+          });
+        } else {
+          users = online_users;
+        }
+
+        const tokens = users.map((user) => user.fcm_token).filter(Boolean);
+        if (!tokens.length) return;
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -164,7 +174,7 @@ export class Notify {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ token: users[0].fcm_token, type, data }),
+          body: JSON.stringify({ tokens, type, data }),
         });
 
         if (!response.ok) {

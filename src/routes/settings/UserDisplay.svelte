@@ -47,7 +47,7 @@
         <p>{t("loading")}</p>
       </div>
     </div>
-  {:else if !user.value}
+  {:else if !user.value?.is_logged_in}
     <div class="text-center space-y-0.5">
       <h2 class="text-2xl font-semibold">{t("you_are_not_logged_in")}</h2>
       <p class="text-sm text-muted">{t("please_log_in_profile")}</p>

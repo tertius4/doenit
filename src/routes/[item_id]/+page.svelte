@@ -120,6 +120,7 @@
 </button>
 
 <SaveChanges original={data.task} changed={task} onsave={updateTask} />
+
 <div class="mb-20">
   <EditTask bind:error bind:task bind:other_interval {onsubmit} expanded />
 

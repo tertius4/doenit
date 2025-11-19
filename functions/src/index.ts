@@ -63,8 +63,8 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       await verifyToken(id_token); // Throws if invalid
 
       // Get notification details from body
-      const { token, title, body, type, data } = req.body;
-      if (!token) {
+      const { tokens, title, body, type, data } = req.body;
+      if (!tokens) {
         res.status(400).json({ error: "Missing token" });
         return;
       }
@@ -72,10 +72,12 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       // Send notification using firebase-admin
       if (title && body) {
         // Direct notification (simple case)
-        await admin.messaging().send({
-          token,
-          notification: { title, body },
-        });
+        await admin.messaging().sendEach(
+          tokens.map((token: string) => ({
+            token,
+            notification: { title, body },
+          }))
+        );
       } else if (type && data) {
         // Structured notification - send data in payload for proper background handling
         const fcmData = {
@@ -92,28 +94,30 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
 
         console.log("Sending FCM message with data:", fcmData);
 
-        await admin.messaging().send({
-          token,
-          data: fcmData,
-          notification: {
-            title: "Doenit",
-            body: "u het 'n nuwe kennisgewing", // Simple fallback for system display
-          },
-          // Configure for both platforms
-          android: {
-            priority: "high",
-          },
-          apns: {
-            headers: {
-              "apns-priority": "10",
+        await admin.messaging().sendEach(
+          tokens.map((token: string) => ({
+            token,
+            data: fcmData,
+            notification: {
+              title: "Doenit",
+              body: "u het 'n nuwe kennisgewing", // Simple fallback for system display
             },
-            payload: {
-              aps: {
-                "content-available": 1,
+            // Configure for both platforms
+            android: {
+              priority: "high",
+            },
+            apns: {
+              headers: {
+                "apns-priority": "10",
+              },
+              payload: {
+                aps: {
+                  "content-available": 1,
+                },
               },
             },
-          },
-        });
+          }))
+        );
       } else {
         res.status(400).json({ error: "Invalid notification payload" });
         return;

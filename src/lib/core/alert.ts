@@ -39,9 +39,10 @@ export class Alert {
     toast.className =
       Alert.getClass(opts.type || "info") +
       " m-2 px-4 py-2 rounded shadow-lg text-white text-center pointer-events-auto inline-block overflow-auto max-h-[40vh] max-w-[90vw]";
-    // Create message span
+
+    // Create message span with clickable links
     const messageSpan = document.createElement("span");
-    messageSpan.textContent = opts.message;
+    messageSpan.innerHTML = Alert.linkify(opts.message);
     toast.appendChild(messageSpan);
 
     // Create OK button
@@ -58,6 +59,14 @@ export class Alert {
     Alert.container.style.top = opts.position === "top" ? "1rem" : "";
     Alert.container.style.bottom = opts.position === "bottom" ? "1rem" : "";
     Alert.container.appendChild(toast);
+  }
+
+  private static linkify(text: string): string {
+    // Regex to match URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">${url}</a>`;
+    });
   }
 
   private static getClass(type: ToastType): string {

@@ -99,6 +99,7 @@ export async function signIn(): Promise<SimpleResult> {
       return { success: true };
     }
 
+    UserValue.is_loading = true;
     await GoogleAuth.initialize({ clientId: PUBLIC_GOOGLE_AUTH });
     const gu = await GoogleAuth.signIn();
     if (!gu) throw new Error(t("sign_in_error_no_user"));
@@ -116,6 +117,7 @@ export async function signIn(): Promise<SimpleResult> {
 
     return { success: true };
   } catch (error) {
+    UserValue.is_loading = false;
     const error_message = error instanceof Error ? error.message : JSON.stringify(error);
     if (error_message === "The user canceled the sign-in flow.") {
       return { success: false, error_message: "USER_CANCELED" };

@@ -19,65 +19,48 @@
   let is_loading = $state(false);
 
   async function sendInvite() {
-    if (!user.value) {
-      error_message = t("log_in_first");
-      return;
-    }
-
-    if (!friend_email.trim()) {
-      error_message = t("required_field");
-      return;
-    }
-
-    // Moet nie invoer verander nie.
-    let email = normalize(friend_email);
-    if (!email.includes("@")) {
-      email += "@gmail.com";
-    }
-
-    if (!isValidEmail(email)) {
-      error_message = t("invalid_email");
-      return;
-    }
-
-    // Check if user is trying to invite themselves
-    // if (user.value.email === friend_email) {
-    //   error_message = t("cannot_invite_yourself");
-    //   return;
-    // }
-
     try {
-      const searched_user = await OnlineDB.User.readMany({
-        filters: [{ field: "email_address", operator: "==", value: friend_email }],
-      });
-
-      if (!searched_user.length) {
-        error_message = t("user_not_found");
-        return;
-      }
-
       is_loading = true;
       error_message = "";
       success_message = "";
 
-      const room = await DB.Room.create({
+      if (!user.value) throw t("log_in_first");
+      if (!friend_email.trim()) throw t("required_field");
+
+      // Moet nie invoer verander nie.
+      let email = normalize(friend_email);
+      if (!email.includes("@")) {
+        email += "@gmail.com";
+      }
+      if (!isValidEmail(email)) throw t("invalid_email");
+
+      // Check if user is trying to invite themselves
+      // if (user.value.email === email) {
+      //   error_message = t("cannot_invite_yourself");
+      //   return;
+      // }
+
+      const [searched_user] = await OnlineDB.User.readMany({
+        filters: [{ field: "email_address", operator: "==", value: email }],
+        limit: 1,
+      });
+      if (!searched_user) throw t("user_not_found");
+
+      await DB.User.create({
         name: email,
-        pending: true,
-        users: [
-          { email: user.value.email, pending: false },
-          { email, pending: true },
-        ],
+        is_pending: true,
+        email_address: email,
       });
       const result = await OnlineDB.Invite.create({
         sender_name: user.value.name,
         from_email_address: user.value.email,
         to_email_address: email,
         status: "pending",
-        room_id: room.id,
       });
 
       await Notify.Push.sendTemplate({
         type: "friend_request",
+        user: [searched_user],
         data: {
           sender_name: user.value.name,
         },
@@ -91,8 +74,8 @@
       is_loading = false;
       handleClose();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      error_message = `${t("add_friend_error")}: ${message}`;
+      is_loading = false;
+      error_message = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -116,7 +99,7 @@
   }
 </script>
 
-{#if !!user}
+{#if !!user.value?.is_friends_enabled}
   <button
     class={{
       "flex gap-1 w-15 rounded-full h-15 justify-center items-center px-4 py-2": true,
@@ -169,13 +152,13 @@
       </div>
 
       {#if error_message && !!friend_email?.length}
-        <div class="text-error text-sm mt-1 text-right w-full" transition:slide>
+        <div class="text-error text-sm text-right w-full" transition:slide>
           <span>{error_message}</span>
         </div>
       {/if}
 
       {#if success_message}
-        <div class="text-success text-sm mt-1 text-right w-full" transition:slide>
+        <div class="text-success text-sm text-right w-full" transition:slide>
           <span>{success_message}</span>
         </div>
       {/if}
@@ -194,12 +177,6 @@
           <span class="font-semibold">{t("send_invite")}</span>
         {/if}
       </Button>
-
-      {#if !user}
-        <div class="text-orange-500 text-xs text-center">
-          {t("log_in_first")}
-        </div>
-      {/if}
     </div>
   </div>
 {/if}
