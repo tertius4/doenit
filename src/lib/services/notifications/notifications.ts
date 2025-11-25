@@ -2,14 +2,17 @@
  * README: Notifications.
  * This file handles the admin of showing notifications, but no app specific logic should be here.
  */
-import { getMessaging, onMessage, type Messaging } from "firebase/messaging";
+import { getMessaging, type Messaging } from "firebase/messaging";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { initializeApp } from "$lib/chunk/firebase-app";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 import { Alert } from "$lib/core/alert";
 import { PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
+
+// TODO: Candidate for core or base
+// TODO: Refactor notifications
 
 // Local Notification configuration
 const localConfig = {
@@ -33,7 +36,8 @@ export class Notify {
         });
         this.is_initialized = true;
       } catch (error) {
-        alert(`Local Notification initialization failed: ${error.message}`);
+        const error_message = error instanceof Error ? error.message : String(error);
+        alert(`Kon nie plaaslike kennisgewing inisialiseer nie: ${error_message}`);
       }
     }
 
@@ -50,10 +54,9 @@ export class Notify {
             },
           ],
         });
-        return { status: "success" };
       } catch (error) {
-        alert(`Local Notification send failed: ${error.message}`);
-        return { status: "failed", error: error.message };
+        const error_message = error instanceof Error ? error.message : String(error);
+        alert(`Kon nie plaaslike kennisgewing stuur nie: ${error_message}`);
       }
     }
 
@@ -70,10 +73,9 @@ export class Notify {
             },
           ],
         });
-        return { status: "success" };
       } catch (error) {
-        alert(`Local Notification schedule failed: ${error.message}`);
-        return { status: "failed", error: error.message };
+        const error_message = error instanceof Error ? error.message : String(error);
+        alert(`Kon nie plaaslike kennisgewing skeduleer nie: ${error_message}`);
       }
     }
   };
@@ -107,9 +109,8 @@ export class Notify {
       }
 
       try {
-        if (!user.value) throw new Error("User not authenticated");
-
-        const token = await user.value.id_token;
+        const token = user.getToken ? await user.getToken() : null;
+        if (!token) throw new Error("User not authenticated");
 
         const users = await OnlineDB.User.getAll({
           filters: [{ field: "email_address", operator: "in", value: email_address }],
@@ -137,12 +138,10 @@ export class Notify {
     static async sendTemplate({
       type,
       data,
-      users: online_users,
       email_address,
     }: {
       type: string;
       data: Record<string, any>;
-      users?: OnlineUser[];
       email_address: string[];
     }) {
       if (!email_address.length) return;
@@ -152,21 +151,14 @@ export class Notify {
       }
 
       try {
-        if (!user.value) throw new Error("User not authenticated");
+        const token = user.getToken ? await user.getToken() : null;
+        if (!token) throw new Error("User not authenticated");
 
-        const token = await user.value.id_token;
-
-        let users: OnlineUser[];
-        if (!online_users) {
-          users = await OnlineDB.User.readMany({
-            filters: [{ field: "email_address", operator: "in", value: email_address }],
-          });
-        } else {
-          users = online_users;
-        }
-
-        const tokens = users.map((user) => user.fcm_token).filter(Boolean);
-        if (!tokens.length) return;
+        const users = await OnlineDB.User.getAll({
+          filters: [{ field: "email_address", operator: "in", value: email_address }],
+        });
+        const usersWithTokens = users.filter((user) => user.fcm_token);
+        if (!usersWithTokens.length) return;
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -174,7 +166,15 @@ export class Notify {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ tokens, type, data }),
+          body: JSON.stringify({
+            users: usersWithTokens.map((u) => ({
+              fcm_token: u.fcm_token,
+              language_code: u.language_code || "af",
+              email_address: u.email_address,
+            })),
+            type,
+            data,
+          }),
         });
 
         if (!response.ok) {

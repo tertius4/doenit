@@ -1,9 +1,9 @@
 import type { RxCollection } from "$lib/chunk/rxdb";
 import { Table } from "./_Table";
 import { OnlineDB } from "$lib/OnlineDB";
-import user from "$lib/core/user.svelte";
-import { DB } from "$lib/DB";
+import { user } from "$lib/base/user.svelte";
 import { Alert } from "$lib/core/alert";
+import { DB } from "$lib/DB";
 
 export class UserTable extends Table<User> {
   constructor(collection: RxCollection<User>) {
@@ -26,7 +26,7 @@ export class UserTable extends Table<User> {
     if (!Array.isArray(users)) users = [users];
     if (!users.length) return;
 
-    const my_email_address = user.value?.email;
+    const my_email_address = user.email_address;
     if (!my_email_address) return;
 
     const email_addresses = [];
@@ -50,7 +50,7 @@ export class UserTable extends Table<User> {
     // Hierdie moet gebeur na die ander invites geskrap is.
     const leavePromises = email_addresses.map((email) =>
       OnlineDB.Invite.create({
-        sender_name: user.value?.name ?? "",
+        sender_name: user.name ?? "",
         from_email_address: my_email_address,
         to_email_address: email,
         status: "left",

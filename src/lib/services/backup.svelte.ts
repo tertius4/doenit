@@ -3,9 +3,9 @@ import { t } from "$lib/services/language.svelte";
 import Files from "$lib/services/files.svelte";
 import * as env from "$env/static/public";
 import { OnlineDB } from "$lib/OnlineDB";
-import User from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { Alert } from "$lib/core/alert";
-import DateUtil from "$lib/DateUtil";
+import { DateUtil } from "$lib/core/date_util";
 import { DB } from "$lib/DB";
 
 class BackupClass {
@@ -82,7 +82,7 @@ class BackupClass {
 
   private async getLastBackupTime(): Promise<string | null> {
     try {
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) return null;
 
       const [backup] = await OnlineDB.BackupManifest.getAll({
@@ -108,7 +108,7 @@ class BackupClass {
     try {
       this.is_loading = true;
 
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) throw Error(t("user_not_logged_in"));
 
       const tasks = await DB.Task.getAll({
@@ -214,7 +214,7 @@ class BackupClass {
 
   async getBackup(): Promise<Result<BackupManifest>> {
     try {
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) return { success: false, error_message: t("user_not_logged_in") };
 
       const backup_manifests = await OnlineDB.BackupManifest.getAll({

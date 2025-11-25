@@ -1,7 +1,7 @@
 <script>
   import { Edit, Clock, Check, Trash } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
 
   /**
    * @typedef {Object} Props

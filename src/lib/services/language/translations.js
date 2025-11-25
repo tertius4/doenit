@@ -171,6 +171,8 @@ export const translations = {
     categories_selected: "{{count}} Kategorieë geselekteer",
     category_selected: "1 Kategorie geselekteer",
     no_one: "Niemand",
+    share_category: "Wie kan hierdie kategorie en sy take sien?",
+    shared_categories: "Gedeelde Kategorieë",
 
     // Friends & Social
     choose_user: "Wie moet die taak doen?",
@@ -626,6 +628,8 @@ export const translations = {
     categories_selected: "{{count}} Categories selected",
     category_selected: "1 Category selected",
     no_one: "No one",
+    share_category: "Who can see this category and its tasks?",
+    shared_categories: "Shared Categories",
 
     // Friends & Social
     choose_user: "Who should do the task?",

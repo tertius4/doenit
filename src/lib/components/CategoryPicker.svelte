@@ -1,49 +1,29 @@
 <script>
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { DownChevron, Plus, Times } from "$lib/icon";
-  import { onMount, tick } from "svelte";
-  import { DB } from "$lib/DB";
+  import { DownChevron, Plus } from "$lib/icon";
   import Modal from "./modal/Modal.svelte";
   import { wait } from "$lib";
   import ButtonClear from "./element/button/ButtonClear.svelte";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
 
   let { category_id = $bindable() } = $props();
 
-  /** @type {Category[]} */
-  let categories = $state([]);
+  const categoriesContext = getCategoriesContext();
+  const usersContext = getUsersContext();
+
   let is_open = $state(false);
   let is_adding = $state(false);
 
-  const category = $derived(categories.find((c) => c.id === category_id));
+  const category = $derived(categoriesContext.getCategoryById(category_id));
 
   $effect(() => {
     if (category_id === null) {
       is_adding = true;
     }
   });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe(assignCategories, {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  /**
-   * @param {Category[]} new_categories
-   */
-  function assignCategories(new_categories) {
-    const is_mounted = !categories.length;
-    categories = new_categories;
-
-    if (is_mounted) return;
-    const category_exists = categories.some((c) => c.id === category_id);
-    if (!category_exists) category_id = "";
-  }
 
   /**
    * Select a category
@@ -85,8 +65,12 @@
 <Modal bind:is_open>
   <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
   <div class="mb-4 space-y-0.5">
-    {#each categories as category}
+    {#each categoriesContext.categories as category, i}
       {@const is_selected = category.id === category_id}
+      {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
+      {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
+        <h2 class="font-semibold">{t("shared_categories")}</h2>
+      {/if}
       <button
         type="button"
         onclick={() => selectCategory(category.id)}
@@ -113,31 +97,27 @@
           </div>
         </div>
 
-        {#if user.value?.is_friends_enabled}
+        {#if user.is_friends_enabled}
           <div class="flex flex-nowrap gap-1 overflow-x-auto">
             {#each category.users as email_address}
-              <!-- {@const user = users_map.get(email_address)} -->
-              <!-- {#if user} -->
-              <p
-                class={{
-                  "px-1.5 rounded-full  text-normal w-fit border flex gap-0.5 items-center": true,
-                  "border-primary bg-primary/40 text-alt": is_selected,
-                  "border-default bg-card": !is_selected,
-                }}
-              >
-                <!-- <img class="w-3.5 h-3.5 rounded-full" src={user.avatar} alt={user.name} referrerpolicy="no-referrer" /> -->
-                <span>{email_address}</span>
-              </p>
-              <!-- {/if} -->
-            {:else}
-              <p
-                class={{
-                  "text-muted w-fit italic": !is_selected,
-                  "text-alt opacity-50 w-fit italic": is_selected,
-                }}
-              >
-                Hierdie kategorie is privaat
-              </p>
+              {@const user = usersContext.getUserByEmail(email_address)}
+              {#if user}
+                <p
+                  class={{
+                    "px-1.5 rounded-full  text-normal w-fit border flex gap-0.5 items-center": true,
+                    "border-primary bg-primary/40 text-alt": is_selected,
+                    "border-default bg-card": !is_selected,
+                  }}
+                >
+                  <img
+                    class="w-3.5 h-3.5 rounded-full"
+                    src={user.avatar}
+                    alt={user.name}
+                    referrerpolicy="no-referrer"
+                  />
+                  <span>{user.name}</span>
+                </p>
+              {/if}
             {/each}
           </div>
         {/if}

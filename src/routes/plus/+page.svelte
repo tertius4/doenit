@@ -1,8 +1,8 @@
 <script>
   import { t } from "$lib/services/language.svelte";
   import { Crown, Check, Users, DownloadCloud } from "$lib/icon";
-  import user, { signIn } from "$lib/core/user.svelte";
-  import { billing } from "$lib/services/billing.svelte";
+  import { user } from "$lib/base/user.svelte";
+  import { billing } from "$lib/core/billing.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { onMount } from "svelte";
@@ -49,8 +49,8 @@
   async function handleSubscribe() {
     try {
       is_loading = true;
-      if (!user.value) {
-        const result = await signIn();
+      if (!user.is_logged_in) {
+        const result = await user.signIn();
         if (!result.success) {
           if (result.error_message === "USER_CANCELED") {
             is_loading = false;
@@ -71,11 +71,8 @@
   }
 
   async function handleCancelSubscription() {
-    // TODO: Voeg "Is jy seker?" bevestiging by
-
     try {
       is_cancelling = true;
-      // await billing.changeToFreePlan();
       await Browser.open({ url: "https://play.google.com/store/account/subscriptions" });
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);

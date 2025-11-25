@@ -2,9 +2,10 @@
  * This file may only import files, that does not import any other files in src.
  */
 
-import { t, language } from "./services/language.svelte";
+import { t } from "./services/language.svelte";
 import * as env from "$env/static/public";
-import DateUtil from "./DateUtil";
+import { DateUtil } from "./core/date_util.js";
+import { user } from "./base/user.svelte";
 
 export const AFRIKAANS = Symbol("af");
 export const ENGLISH = Symbol("en");
@@ -26,12 +27,14 @@ export const FIREBASE_CONFIG = {
 /** @type {{ value: symbol | null }} */
 export let BACK_BUTTON_FUNCTION = { value: null };
 
+// TODO: Migrate these date functions to /core/date_util.js
+
 /**
  * Get the current locale for date formatting
  * @returns {string} The locale string (e.g., "af-ZA" or "en-US")
  */
 function getCurrentLocale() {
-  return language.value === "af" ? "af-ZA" : "en-US";
+  return user.language_code === "af" ? "af-ZA" : "en-US";
 }
 
 /**

@@ -12,8 +12,8 @@
 
   /**
    * @typedef {Object} Props
-   * @property {string | null} start - Selected start date string
-   * @property {string | null} end - Selected end date string
+   * @property {string?} start - Selected start date string
+   * @property {string?} end - Selected end date string
    */
 
   /** @type {Props} */

@@ -71,15 +71,15 @@ class CacheHandler<T> {
 }
 
 export class Cached {
-  static readonly defaultCategories = new CacheHandler<string[]>("selected_categories");
-  static readonly theme = new CacheHandler<"light" | "dark" | null>("theme");
   static readonly notificationTime = new CacheHandler<string | null>("time");
-  static readonly notificationPastTasks = new CacheHandler<boolean>("past_tasks");
   static readonly language = new CacheHandler<"af" | "en" | null>("language");
   static readonly textSettings = new CacheHandler<{ size: 16 | 20 | 24 }>("text_settings");
+
+  static readonly defaultCategories = new CacheHandler<string[]>("selected_categories");
+  static readonly notificationPastTasks = new CacheHandler<boolean>("past_tasks");
   static readonly lastBackup = new CacheHandler<string | null>("last_backup");
   static readonly automaticBackup = new CacheHandler<boolean>("automatic_backup");
   static readonly rateUs = new CacheHandler<RateUsSetting>("rate_us");
-  static readonly favouriteCategories = new CacheHandler<Category['id']>("favourite_categories");
+  static readonly favouriteCategories = new CacheHandler<Category["id"]>("favourite_categories");
   static readonly pendingTaskSync = new CacheHandler<string[]>("pending_task_sync");
 }

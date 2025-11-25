@@ -5,10 +5,10 @@
   import TaskContainer from "./TaskContainer.svelte";
   import { Selected } from "$lib/selected";
   import ItemName from "./ItemName.svelte";
-  import DateUtil from "$lib/DateUtil";
-  import { onMount } from "svelte";
+  import { DateUtil } from "$lib/core/date_util";
   import Pill from "./Pill.svelte";
-  import { DB } from "$lib/DB";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
 
   /**
    * @typedef {Object} Props
@@ -22,23 +22,21 @@
   /** @type {Props & Record<string, any>} */
   const { current_time, task, onselect = () => {}, onclick = () => {}, onlongpress = () => {}, ...rest } = $props();
 
+  const usersContext = getUsersContext();
+  const categoriesContext = getCategoriesContext();
+
   const due_date = DateUtil.parseWithTimeBoundary(task.due_date, "end");
   const start_date = DateUtil.parseWithTimeBoundary(task.start_date, !!due_date ? "start" : "end");
 
-  /** @type {Category?} */
-  let category = $state(null);
-  /** @type {User?} */
-  let user = $state(null);
   let tick_animation = $state(false);
 
   const is_past = $derived(!!start_date && start_date < current_time);
   const is_selected = $derived(Selected.tasks.has(task.id));
   const is_ongoing = $derived(isOngoing(due_date, start_date, current_time));
-
-  onMount(async () => {
-    category = await getCategory(task);
-    user = await getAssignedUser(task);
-  });
+  /** @type {Category | undefined} */
+  const category = $derived(task.category_id ? categoriesContext.getCategoryById(task.category_id) : undefined);
+  /** @type {User | undefined} */
+  const user = $derived(task.assigned_user_email ? usersContext.getUserByEmail(task.assigned_user_email) : undefined);
 
   /**
    * Handles the selection of a completed task.
@@ -46,6 +44,12 @@
    */
   function handleSelect(event) {
     event.stopPropagation();
+    if (Selected.tasks.has(task.id)) {
+      Selected.tasks.delete(task.id);
+      tick_animation = false;
+      return;
+    }
+
     setTimeout(() => onselect(task), COMPLETE_TASK_DELAY_MS);
   }
 
@@ -63,31 +67,6 @@
       return DateUtil.isSameDay(today, start_date) && today <= start_date;
     }
   }
-
-  /**
-   * Initializes the default category for the task.
-   * @param {Task} task
-   * @returns {Promise<Category?>}
-   */
-  async function getCategory(task) {
-    if (!task?.category_id) return null;
-
-    const selector = { selector: { id: task.category_id } };
-    return DB.Category.getOne(selector).catch(() => null);
-  }
-
-  /**
-   * Initializes the default category for the task.
-   * @param {Task} task
-   * @returns {Promise<User?>}
-   */
-  async function getAssignedUser(task) {
-    if (!task?.category_id) return null;
-    if (!task?.assigned_user_id) return null;
-
-    const selector = { selector: { id: task.assigned_user_id } };
-    return DB.User.getOne(selector).catch(() => null);
-  }
 </script>
 
 <TaskContainer
@@ -103,7 +82,7 @@
   {onclick}
   {onlongpress}
 >
-  <ItemName name={task.name} {tick_animation} description={task.description} />
+  <ItemName name={task.name} {tick_animation} description={""} />
 
   <div class="flex flex-wrap gap-2 pl-10 font-normal w-full">
     {#if task.start_date}
@@ -130,8 +109,13 @@
     {/if}
 
     {#if user}
-      <Pill {is_ongoing} {is_past} {is_selected} class="rounded">
-        <Users class="w-sm h-sm flex-shrink-0" />
+      <Pill {is_ongoing} {is_past} {is_selected} class="rounded-full">
+        <img
+          class="w-sm h-sm rounded-full flex-shrink-0"
+          src={user.avatar}
+          alt={user.name}
+          referrerpolicy="no-referrer"
+        />
         <span class="truncate">{user.name}</span>
       </Pill>
     {/if}

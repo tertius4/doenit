@@ -1,14 +1,11 @@
 <script>
   import InputCheckbox from "$lib/components/element/input/InputCheckbox.svelte";
-  import { Notify } from "$lib/services/notifications/notifications.js";
   import SaveChanges from "$lib/components/SaveChanges.svelte";
   import { Photos } from "$lib/services/photos.svelte.js";
   import Modal from "$lib/components/modal/Modal.svelte";
   import EditTask from "$lib/components/EditTask.svelte";
   import { t } from "$lib/services/language.svelte";
   import { SvelteSet } from "svelte/reactivity";
-  import { OnlineDB } from "$lib/OnlineDB.js";
-  import user from "$lib/core/user.svelte.js";
   import { Alert } from "$lib/core/alert.js";
   import { goto } from "$app/navigation";
   import { setContext } from "svelte";

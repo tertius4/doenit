@@ -1,5 +1,6 @@
 <script>
   import { t } from "$lib/services/language.svelte";
+  import { user as current_user } from "$lib/base/user.svelte";
 
   /**
    * @typedef {Object} Props
@@ -10,6 +11,8 @@
 
   /** @type {Props} */
   const { user, is_selected, onclick } = $props();
+
+  const is_me = $derived(current_user.email_address === user.email_address);
 </script>
 
 <button
@@ -28,7 +31,7 @@
 
   <div class="space-y-0.5">
     <h2 class="text-left text-2xl font-semibold">
-      {user.name}
+      {user.name}{is_me ? ` (${t("you")})` : ""}
     </h2>
     <div class="flex flex-nowrap gap-2 items-center overflow-x-auto">
       {#if user.is_pending}

@@ -1,8 +1,5 @@
 import { PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
-import { t } from "$lib/services/language.svelte";
 import { Capacitor } from "@capacitor/core";
-import user, { signIn } from "$lib/core/user.svelte";
-import { Alert } from "$lib/core/alert";
 
 interface BillingPlugin {
   initialize(): Promise<void>;
@@ -15,6 +12,7 @@ interface BillingPlugin {
 const BillingService = Capacitor.registerPlugin<BillingPlugin>("BillingService");
 
 class Billing {
+  getToken: (() => Promise<string>) | null = null;
   #initialized = $state(false);
   #is_plus_user = $state(false);
   #subscription_product: Product | null = $state(null);
@@ -39,10 +37,7 @@ class Billing {
   }
 
   async init() {
-    if (!Capacitor.isNativePlatform()) {
-      console.warn("Billing only works on native platforms");
-      return;
-    }
+    if (!Capacitor.isNativePlatform()) return;
 
     try {
       await BillingService.initialize();
@@ -54,8 +49,8 @@ class Billing {
       // Kyk vir bestaande aankope
       await this.checkSubscriptionStatus();
     } catch (error) {
-      console.error("Failed to initialize billing:", error);
-      Alert.error(t("billing_init_error"));
+      const error_message = error instanceof Error ? error.message : String(error);
+      alert(`Kon nie betaaldiens-initialisering voltooi nie: ${error_message}`);
     }
   }
 
@@ -69,7 +64,8 @@ class Billing {
         this.#subscription_product = products[0];
       }
     } catch (error) {
-      console.error("Failed to load products:", error);
+      const error_message = error instanceof Error ? error.message : String(error);
+      alert(`Kon nie produkte laai nie: ${error_message}`);
     }
   }
 
@@ -95,13 +91,13 @@ class Billing {
       }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`${t("billing_check_error")}: ${error_message}`);
+      alert(`Kon nie intekenstatus nagaan nie: ${error_message}`);
     }
   }
 
   async subscribe() {
     if (!this.#initialized) {
-      Alert.error(t("billing_not_initialized"));
+      alert("Betalingsdiens is nie geïnitialiseer nie.");
       return;
     }
 
@@ -121,72 +117,11 @@ class Billing {
       await this.acknowledgePurchase(purchase_token);
       // Herlaai subscription status
       await this.checkSubscriptionStatus();
-
-      Alert.success(t("subscription_success"));
     } catch (error: any) {
       const error_message = error instanceof Error ? error.message : String(error);
-      if (error_message === "User cancelled") {
-        console.log("User cancelled subscription");
-      } else {
-        const error_message = error instanceof Error ? error.message : String(error);
-        Alert.error(`${t("subscription_failed")}: ${error_message}`);
+      if (error_message !== "User cancelled") {
+        alert(`Kon nie 'subscribe' nie: ${error_message}`);
       }
-    }
-  }
-
-  async changeToFreePlan() {
-    if (!this.#initialized) {
-      Alert.error(t("billing_not_initialized"));
-      return;
-    }
-
-    if (!this.#is_plus_user) {
-      Alert.show({ message: t("already_free_plan") });
-      return;
-    }
-
-    try {
-      if (!user.value) {
-        const result = await signIn();
-        if (!result.success) {
-          if (result.error_message === "USER_CANCELED") {
-            return;
-          }
-
-          throw result.error_message || t("something_went_wrong");
-        }
-      }
-
-      const id_token = await user.value?.id_token;
-      if (!id_token) {
-        Alert.error(t("authentication_required"));
-        return;
-      }
-
-      // Call backend to cancel subscription
-      const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/cancelSubscription`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${id_token}`,
-        },
-        body: JSON.stringify({
-          purchase_token: this.#current_purchase?.purchase_token,
-          product_id: this.#current_purchase?.product_id,
-        }),
-      });
-
-      if (!response.ok) {
-        const error_data = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(error_data.error || "Failed to cancel subscription");
-      }
-
-      // Reset local state
-      this.#is_plus_user = false;
-      this.#current_purchase = null;
-    } catch (error) {
-      const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`${t("cancellation_failed")}: ${error_message}`);
     }
   }
 
@@ -200,8 +135,8 @@ class Billing {
 
   private async verifyPurchaseWithBackend(purchase: Purchase) {
     try {
-      const id_token = await user.value?.id_token;
-      if (!id_token) return;
+      const id_token = this.getToken ? await this.getToken() : null;
+      if (!id_token) throw new Error("Gebruiker is nie geverifieer nie.");
 
       const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/verifySubscription`, {
         method: "POST",
@@ -216,10 +151,12 @@ class Billing {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to verify purchase");
+        const error_data = await response.json();
+        throw new Error(error_data.error || "Iets het verkeerd geloop tydens verifikasie.");
       }
     } catch (error) {
-      console.error("Failed to verify purchase with backend:", error);
+      const error_message = error instanceof Error ? error.message : String(error);
+      alert(`Kon nie aankoop met backend verifieer nie: ${error_message}`);
     }
   }
 }

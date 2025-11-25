@@ -1,7 +1,7 @@
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
 import { Secure } from "$lib/core/secure";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 
 export class SyncService {
@@ -20,7 +20,7 @@ export class SyncService {
 
     // Sync every 30 seconds when online
     this.syncInterval = setInterval(() => {
-      if (navigator.onLine && user.value?.is_friends_enabled) {
+      if (navigator.onLine && user.is_friends_enabled) {
         this.syncPendingTasks().catch(console.warn);
       }
     }, 30000);
@@ -40,7 +40,7 @@ export class SyncService {
   }
 
   private handleOnline = (): void => {
-    if (user.value?.is_friends_enabled) {
+    if (user.is_friends_enabled) {
       this.syncPendingTasks().catch(console.warn);
     }
   };

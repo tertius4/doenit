@@ -32,13 +32,35 @@ export class DateUtil {
     return result;
   }
 
+  static isSameDay(date1: Date | null, date2: Date | null): boolean {
+    if (!date1 || !date2) return false;
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  }
+
+  static isDateInRange(date: Date, start: Date, end: Date): boolean {
+    if (!start || !end) return false;
+
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const s = new Date(start);
+    s.setHours(0, 0, 0, 0);
+    const e = new Date(end);
+    e.setHours(0, 0, 0, 0);
+    
+    return d >= s && d <= e;
+  }
+
   /**
    * Returns a Date object representing the start or end of the day based on the provided date string.
    * @param {string | null} date Date in the format "YYYY-MM-DD HH:mm"
    * @param {'end' | 'start'} type
    * @return {Date | null} Returns a Date object representing the start or end of the day.
    */
-  static parseWithTimeBoundary(date: string | null, type: "end" | "start"): Date | null {
+  static parseWithTimeBoundary(date: string | null, type: "end" | "start" = "start"): Date | null {
     if (!date) return null;
 
     const [day, time] = date.split(" ");

@@ -2,7 +2,7 @@
   import CardFriend from "./CardFriend.svelte";
   import InputText from "$lib/components/element/input/InputText.svelte";
   import Modal from "$lib/components/modal/Modal.svelte";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
   import { DB } from "$lib/DB";
   import { Check } from "$lib/icon";
   import Edit from "$lib/icon/Edit.svelte";
@@ -11,32 +11,41 @@
   import { t } from "$lib/services/language.svelte";
   import { SvelteSet } from "svelte/reactivity";
   import { fly, slide } from "svelte/transition";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
 
   /**
    * @typedef {Object} Props
    * @property {Category} category
-   * @property {string?} default_id
-   * @property {import('svelte/reactivity').SvelteMap<string, User>} users_map
+   * @property {string} [default_id]
    */
 
   /** @type {Props} */
-  const { category, default_id, users_map } = $props();
+  const { category, default_id } = $props();
 
-  const users = category.users.filter((email) => !!email && email !== user.value?.email);
-  /** @type {SvelteSet<User>} */
+  const usersContext = getUsersContext();
+
+  const original_users = new SvelteSet(category.users || []);
+
+  /** @type {SvelteSet<string>} */
   let edit_users = new SvelteSet();
 
   let error_message = $state("");
   let is_editing = $state(false);
 
+  const is_shared = $derived(!!category.users.length && user.is_friends_enabled);
+  const users = $derived(category.users.map((email) => usersContext.getUserByEmail(email)) || []);
+
   async function deleteCategory() {
     if (category.id === default_id) return;
 
     await DB.Category.delete(category.id);
-    if (!user.value?.is_friends_enabled) return;
 
-    const users = (category.users || []).filter((email) => email !== user.value?.email);
-    await OnlineDB.Category.update(category.id, {
+    if (!user.is_friends_enabled) return;
+    const [online_category] = await OnlineDB.Category.getAll({
+      filters: [{ field: "category_id", operator: "==", value: category.id }],
+    });
+    const users = (category.users || []).filter((email) => email !== user.email_address);
+    await OnlineDB.Category.updateById(online_category.id, {
       category_id: category.id,
       users,
     });
@@ -49,57 +58,36 @@
 
     edit_users.clear();
     for (const email_address of category.users) {
-      const user = users_map.get(email_address);
+      const user = usersContext.map.get(email_address);
       if (!user) continue;
 
-      edit_users.add(user);
+      edit_users.add(user.email_address);
     }
   }
 
   async function editCategory() {
-    if (!category?.id) return;
-    if (category.id === default_id) return;
+    try {
+      if (!category?.id) return;
+      if (category.id === default_id) return;
 
-    const name = category.name.trim();
-    if (!name) {
-      error_message = t("enter_category_name");
-      return;
-    }
-
-    const email_addresses = [...edit_users].map((u) => u.email_address);
-    if (email_addresses.length && user.value?.email) {
-      email_addresses.push(user.value?.email);
-    }
-    await DB.Category.update(category.id, {
-      name: name,
-      users: email_addresses,
-    });
-
-    if (!user.value?.is_friends_enabled) return;
-
-    const [online_category] = await OnlineDB.Category.getAll({
-      filters: [{ field: "category_id", operator: "==", value: category.id }],
-    });
-
-    if (!!email_addresses.length) {
-      if (!!category.users?.length && !!online_category) {
-        await OnlineDB.Category.update(online_category.id, {
-          name: name,
-          category_id: category.id,
-          users: email_addresses,
-        });
-      } else {
-        await OnlineDB.Category.create({
-          name: name,
-          category_id: category.id,
-          users: email_addresses,
-        });
+      const name = category.name.trim();
+      if (!name) {
+        error_message = t("enter_category_name");
+        return;
       }
-    } else if (!!online_category) {
-      await OnlineDB.Category.delete(online_category.id);
-    }
 
-    is_editing = false;
+      const email_addresses = [...edit_users];
+
+      await DB.Category.update(category.id, {
+        name: name,
+        users: email_addresses,
+      });
+
+      is_editing = false;
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      alert("Error in editCategory: " + error_message);
+    }
   }
 </script>
 
@@ -119,19 +107,28 @@
       <Trash />
     </button>
   </div>
-  <div class="flex flex-nowrap gap-2 px-2 pb-2 overflow-x-auto">
-    {#each users as email_address}
-      {@const user = users_map.get(email_address)}
-      {#if user}
-        <p class="px-1.5 rounded-full bg-card text-normal w-fit border border-default flex gap-0.5 items-center">
-          <img class="w-3.5 h-3.5 rounded-full" src={user.avatar} alt={user.name} referrerpolicy="no-referrer" />
-          {user.name}
-        </p>
-      {/if}
-    {:else}
-      <p class="text-muted w-fit italic">Hierdie kategorie is privaat</p>
-    {/each}
-  </div>
+
+  {#if is_shared}
+    <div class="flex flex-nowrap gap-2 px-2 pb-2 overflow-x-auto">
+      {#each users as _user (_user?.email_address)}
+        {#if _user}
+          {@const is_me = _user.email_address === user?.email_address}
+          <div class="px-1.5 rounded-full bg-card text-normal w-fit border border-default flex gap-0.5 items-center">
+            {#if _user.avatar}
+              <img class="w-3.5 h-3.5 rounded-full" src={_user.avatar} alt={_user.name} referrerpolicy="no-referrer" />
+            {:else}
+              <div
+                class="w-3.5 h-3.5 rounded-full bg-page flex items-center justify-center text-xs font-medium text-alt"
+              >
+                {_user.name.charAt(0).toUpperCase() ?? "?"}
+              </div>
+            {/if}
+            <span>{is_me ? t("you") : _user.name}</span>
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <Modal
@@ -154,22 +151,23 @@
     oninput={() => (error_message = "")}
   />
 
-  {#if !!user.value?.is_friends_enabled}
-    {@const users = [...users_map.values()]}
-    {#if !!users.length}
+  {#if !!user.is_friends_enabled}
+    {#if !!usersContext.map.size}
       <div class="flex flex-col gap-1 overflow-y-auto h-fit">
-        <span class="font-semibold">Wie kan hierdie kategorie en sy take sien?</span>
-        {#each users as user}
-          {@const is_selected = !!category.id && edit_users.has(user)}
+        <span class="font-semibold">{t("share_category")}</span>
+        {#each usersContext.users as category_user}
+          {@const is_me = category_user.email_address === user.email_address}
+          {@const is_selected = !!category.id && edit_users.has(category_user.email_address)}
 
           <CardFriend
-            {user}
+            disabled={is_me || original_users.has(category_user.email_address)}
+            user={category_user}
             {is_selected}
             onclick={() => {
               if (is_selected) {
-                edit_users.delete(user);
+                edit_users.delete(category_user.email_address);
               } else {
-                edit_users.add(user);
+                edit_users.add(category_user.email_address);
               }
             }}
           />

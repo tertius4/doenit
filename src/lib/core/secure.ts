@@ -1,5 +1,4 @@
 import * as env from "$env/static/public";
-import { Cached } from "./cache.svelte";
 
 export class Secure {
   static async compressAndEncrypt(data: Record<string, any>): Promise<string | undefined> {
@@ -34,11 +33,7 @@ export class Secure {
       return result;
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      if (Cached.language.value === "en") {
-        alert(`Failed to compress and encrypt data: ${error_message}`);
-      } else {
-        alert(`Kon nie data kompreseer en enkripteer nie: ${error_message}`);
-      }
+      alert(`Kon nie data kompreseer en enkripteer nie: ${error_message}`);
     }
   }
 
@@ -71,11 +66,7 @@ export class Secure {
       return result;
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      if (Cached.language.value === "en") {
-        alert(`Error decrypting and decompressing data: ${error_message}`);
-      } else {
-        alert(`Fout tydens dekripsie en dekompressie: ${error_message}`);
-      }
+      alert(`Fout tydens dekripsie en dekompressie: ${error_message}`);
     }
   }
 

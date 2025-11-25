@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Alert } from "$lib/core/alert";
 import { OnlineDB } from "$lib/OnlineDB";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { t } from "./language.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { DB } from "$lib/DB";
@@ -15,12 +15,15 @@ class PushNotificationService {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-      // Request permission
+      // Request FCM permission
       const permission = await FirebaseMessaging.requestPermissions();
       if (permission.receive !== "granted") {
         Alert.error(t("push_notification_permission_not_granted"));
         return;
       }
+
+      // Request Local Notifications permission (needed to show foreground notifications)
+      await LocalNotifications.requestPermissions();
 
       // Get FCM token
       const result = await FirebaseMessaging.getToken();
@@ -41,37 +44,37 @@ class PushNotificationService {
   }
 
   private async syncUserData(token: string) {
-    if (!user.value) return;
+    if (!user.is_plus_user) return; // Sinkroniseer slegs vir Plus gebruikers om privaatheid te beskerm
 
-    const [online_user] = await OnlineDB.User.getAll({
-      filters: [{ field: "email_address", operator: "==", value: user.value.email }],
+    const [me] = await OnlineDB.User.getAll({
+      filters: [{ field: "email_address", operator: "==", value: user.email_address }],
       limit: 1,
     });
 
-    if (online_user) {
+    if (me) {
       let is_updated = false;
 
       // Kyk vir enige veranderinge - Hierdie is al gebruiks inligting wat gestoor word.
-      if (!is_updated && online_user.avatar !== user.value.avatar) is_updated = true;
-      if (!is_updated && online_user.name !== user.value.name) is_updated = true;
-      if (!is_updated && online_user.email_address !== user.value.email) is_updated = true;
-      if (!is_updated && online_user.fcm_token !== token) is_updated = true;
-      if (!is_updated && online_user.language_code !== (Cached.language.value || "af")) is_updated = true;
+      if (!is_updated && me.avatar !== user.avatar) is_updated = true;
+      if (!is_updated && me.name !== user.name) is_updated = true;
+      if (!is_updated && me.email_address !== user.email_address) is_updated = true;
+      if (!is_updated && me.fcm_token !== token) is_updated = true;
+      if (!is_updated && me.language_code !== user.language_code) is_updated = true;
 
       if (!is_updated) return;
-      await OnlineDB.User.updateById(online_user.id, {
+      await OnlineDB.User.updateById(me.id, {
         fcm_token: token,
-        avatar: user.value.avatar,
-        name: user.value.name,
-        email_address: user.value.email,
+        avatar: user.avatar,
+        name: user.name,
+        email_address: user.email_address,
         language_code: Cached.language.value || "af",
       });
     } else {
       await OnlineDB.User.create({
         fcm_token: token,
-        avatar: user.value.avatar,
-        name: user.value.name,
-        email_address: user.value.email,
+        avatar: user.avatar,
+        name: user.name,
+        email_address: user.email_address,
         language_code: Cached.language.value || "af",
       });
     }
@@ -115,7 +118,20 @@ class PushNotificationService {
       // Debug: Log the entire action object to see what we're receiving
       console.log("Full action object:", JSON.stringify(action, null, 2));
 
-      // Try to get data from the FCM data payload first (new format)
+      // Check if this is a notification-only message (title + body, no data payload)
+      if (action.notification?.title && action.notification?.body && !action.data) {
+        console.log("Received notification-only message - displaying directly");
+        // For notification-only messages, display them immediately as local notifications
+        const formatted_notification = {
+          id: Date.now() % 1000000,
+          title: action.notification.title,
+          body: action.notification.body,
+        };
+        await LocalNotifications.schedule({ notifications: [formatted_notification] });
+        return;
+      }
+
+      // Try to get data from the FCM data payload
       let notificationData = null;
       let notificationType = null;
 
@@ -174,31 +190,9 @@ class PushNotificationService {
         id: Date.now() % 1000000,
         title: this.getTitle(type),
         body: body,
-        schedule: { at: new Date(Date.now() + 1000) },
       };
 
       // Show local notification with formatted content
-      await LocalNotifications.schedule({ notifications: [formatted_notification] });
-    } catch (error) {
-      Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
-    }
-  }
-
-  private async handleInviteNotification(notification: any) {
-    try {
-      // Legacy format - parse JSON from body
-      const { type, data } = JSON.parse(notification.body) || {};
-      const body = await this.getBody(type, data);
-      if (!body) return;
-
-      const formatted_notification = {
-        id: Date.now() % 1000000,
-        title: this.getTitle(type),
-        body: body,
-        schedule: { at: new Date(Date.now() + 1000) },
-      };
-
-      // Show local notification with custom actions
       await LocalNotifications.schedule({ notifications: [formatted_notification] });
     } catch (error) {
       Alert.error(`${t("error_showing_invite_notification")}: ${error}`);

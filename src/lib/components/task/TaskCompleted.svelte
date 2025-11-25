@@ -7,7 +7,7 @@
   import TaskDueDate from "./TaskDueDate.svelte";
   import { Categories, Sync } from "$lib/icon";
   import TaskContainer from "./TaskContainer.svelte";
-  import DateUtil from "$lib/DateUtil";
+  import { DateUtil } from "$lib/core/date_util";
   import { DB } from "$lib/DB";
 
   /**

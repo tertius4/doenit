@@ -78,14 +78,12 @@
    */
   function filterTasks(tasks, search_text) {
     return tasks.filter((task) => {
-      if (!!search_text?.trim().length) {
-        const normalized_search = normalize(search_text);
-        const in_name = normalize(task.name).includes(normalized_search);
-        const in_description = normalize(task.description || "").includes(normalized_search);
-        if (!in_name && !in_description) return false;
-      }
+      if (!search_text?.trim().length) return true;
 
-      return true;
+      const normalized_search = normalize(search_text);
+      const in_name = normalize(task.name).includes(normalized_search);
+      const in_description = normalize(task.description || "").includes(normalized_search);
+      return !in_name && !in_description;
     });
   }
 </script>

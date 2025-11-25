@@ -1,4 +1,4 @@
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
 
@@ -14,7 +14,7 @@ export class InviteTable {
 
   async set(invites: Invite[]) {
     try {
-      const email_address = user.value?.email;
+      const email_address = user.email_address;
       const users = await DB.User.getAll();
       this.invites = [];
 

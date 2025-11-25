@@ -1,6 +1,6 @@
 <script>
   import { displayPrettyDate, normalize, sortTasksByDueDate } from "$lib";
-  import { Notify } from "$lib/services/notifications/notifications";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import TaskComponent from "$lib/components/task/Task.svelte";
   import { getContext, onMount, tick } from "svelte";
   import { goto, pushState } from "$app/navigation";
@@ -10,25 +10,22 @@
   import { Haptics } from "@capacitor/haptics";
   import { fade } from "svelte/transition";
   import { Selected } from "$lib/selected";
-  import { OnlineDB } from "$lib/OnlineDB";
-  import user from "$lib/core/user.svelte";
   import { Alert } from "$lib/core/alert";
   import { Plus } from "$lib/icon";
   import { DB } from "$lib/DB";
 
   Selected.tasks.clear();
 
+  const categoriesContext = getCategoriesContext();
+
   /** @type {Task[]} */
   let tasks = $state([]);
-  /** @type {Category[]} */
-  let categories = $state([]);
   let current_time = new SvelteDate();
 
   /** @type {Value<string>}*/
   const search_text = getContext("search_text");
 
   const filtered_tasks = $derived(filterTasksByCategory(tasks, search_text.value));
-  const default_category = $derived(categories.find(({ is_default }) => is_default));
 
   onMount(() => {
     // Calculate ms until next minute (00 seconds)
@@ -58,15 +55,6 @@
   onMount(() => {
     const sub = DB.Task.subscribe((result) => (tasks = sortTasksByDueDate(result)), {
       selector: { archived: { $ne: true } },
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true } },
-      sort: [{ name: "asc" }],
     });
 
     return () => sub.unsubscribe();
@@ -107,7 +95,7 @@
   function filterTasksByCategory(tasks, search_text) {
     const has_search_text = !!search_text?.trim().length;
     const normalized_search = normalize(search_text ?? "");
-    const default_category_id = default_category?.id ?? "";
+    const default_category_id = categoriesContext.default_category?.id ?? "";
 
     const filtered_tasks = [];
     for (let i = 0; i < tasks.length; i++) {
@@ -160,7 +148,12 @@
    * @param {Task} task
    */
   async function handleSelect(task) {
-    await DB.Task.complete(task);
+    if (Selected.tasks.has(task.id)) {
+      Selected.tasks.delete(task.id);
+    } else {
+      Selected.tasks.clear();
+      await DB.Task.complete(task);
+    }
   }
 
   /**

@@ -1,61 +1,22 @@
 <script>
   import InputText from "$lib/components/element/input/InputText.svelte";
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import { Trash, Plus, Edit, Check } from "$lib/icon";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
+  import { backHandler } from "$lib/BackHandler.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { fly, slide } from "svelte/transition";
+  import CardCategory from "./CardCategory.svelte";
+  import { BACK_BUTTON_FUNCTION } from "$lib";
+  import { goto } from "$app/navigation";
+  import { Plus } from "$lib/icon";
   import { onMount } from "svelte";
   import { DB } from "$lib/DB";
-  import { goto } from "$app/navigation";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { backHandler } from "$lib/BackHandler.svelte";
-  import user from "$lib/core/user.svelte";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
-  import { OnlineDB } from "$lib/OnlineDB";
-  import CardCategory from "./CardCategory.svelte";
+
+  const categoriesContext = getCategoriesContext();
 
   let new_category_name = $state("");
-  /** @type {string?} */
-  let default_id;
-  /** @type {SvelteMap<string, User>} */
-  let users_map = new SvelteMap();
-  /** @type {Subscription?} */
-  let unsubscribeUsers = null;
 
   let error_message = $state("");
   let is_editing = $state(false);
-  /** @type {Category[]} */
-  let categories = $state([]);
-
-  $effect(() => {
-    if (unsubscribeUsers) unsubscribeUsers.unsubscribe();
-    if (!user.value?.is_friends_enabled) return;
-
-    unsubscribeUsers = DB.User.subscribe((u) => {
-      users_map.clear();
-      for (const user of u) {
-        users_map.set(user.email_address, user);
-      }
-    });
-
-    return () => {
-      if (unsubscribeUsers) unsubscribeUsers.unsubscribe();
-    };
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  onMount(async () => {
-    const category = await DB.Category.getDefault();
-    default_id = category.id;
-  });
 
   onMount(() => {
     const token = (BACK_BUTTON_FUNCTION.value = backHandler.register(async () => {
@@ -110,8 +71,12 @@
       <div class="text-lg font-semibold">{t("DEFAULT_NAME")}</div>
     </div>
 
-    {#each categories as category (category.id)}
-      <CardCategory {category} {default_id} {users_map} />
+    {#each categoriesContext.categories as category, i (category.id)}
+      {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
+      {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
+        <h2 class="font-semibold">{t("shared_categories")}</h2>
+      {/if}
+      <CardCategory {category} default_id={categoriesContext.default_category?.id} />
     {/each}
   </div>
 </div>

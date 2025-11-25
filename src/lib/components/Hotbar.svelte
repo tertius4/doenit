@@ -1,24 +1,22 @@
 <script>
-  import { onMount, untrack } from "svelte";
-  import { DB } from "$lib/DB";
+  import { untrack } from "svelte";
   import { Selected } from "$lib/selected";
   import Categories from "$lib/icon/Categories.svelte";
   import { sortByField } from "$lib";
-  import { Check, Info, Star, Users } from "$lib/icon";
+  import { Check, Info, Star } from "$lib/icon";
   import Tag from "./Tag.svelte";
   import { Cached } from "$lib/core/cache.svelte";
   import Modal from "./modal/Modal.svelte";
   import FavouriteCategorySetup from "./FavouriteCategorySetup.svelte";
   import { t } from "$lib/services/language.svelte";
   import Button from "./element/button/Button.svelte";
-  import user from "$lib/core/user.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
 
-  /** @type {Category[]} */
-  let categories = $state([]);
   /** @type {string[]} */
   let favourite_cat_ids = $state([]);
-
   let show_favourite_modal = $state(false);
+
+  const categoriesContext = getCategoriesContext();
 
   const is_favourite_selected = $derived(
     favourite_cat_ids.length !== 0 &&
@@ -29,7 +27,7 @@
     /** @type {{ id: string, name: string, type: "category" }[]} */
     let items = [];
 
-    for (const category of categories) {
+    for (const category of categoriesContext.categories) {
       if (favourite_cat_ids.includes(category.id)) continue;
 
       items.push({
@@ -53,15 +51,6 @@
         Selected.categories.add(id);
       }
     });
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
   });
 
   /**
@@ -101,7 +90,7 @@
 
 {#if !!items.length}
   <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
-    {#if !!categories.length}
+    {#if !!categoriesContext.categories.length}
       <Tag round is_selected={is_favourite_selected} onclick={selectFavourite}>
         <Star />
       </Tag>

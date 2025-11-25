@@ -28,6 +28,7 @@
     const category = await DB.Category.create({
       name: new_category_name.trim(),
       is_default: false,
+      users: [],
     });
 
     new_category_name = "";

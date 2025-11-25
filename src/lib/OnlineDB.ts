@@ -1,16 +1,17 @@
+import { CategoryTable } from "./OnlineDB/Category";
 import { Table } from "./OnlineDB/_Table";
 import { TaskTable } from "./OnlineDB/Task";
 
 class OnlineDBClass {
   public BackupManifest: Table<BackupManifest>;
-  public Category: Table<OnlineCategory>;
+  public Category: CategoryTable;
   public User: Table<OnlineUser>;
   public Invite: Table<Invite>;
   public Task: TaskTable;
 
   constructor() {
     this.BackupManifest = new Table("backups");
-    this.Category = new Table("categories");
+    this.Category = new CategoryTable();
     this.Invite = new Table("invites");
     this.User = new Table("users");
     this.Task = new TaskTable();

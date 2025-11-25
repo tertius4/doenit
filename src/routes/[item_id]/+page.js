@@ -12,7 +12,7 @@ export async function load({ params, parent }) {
     /** @type {Task} */
     task: {
       id: origin_task.id,
-      completed_at: null,
+      completed_at: origin_task.completed_at,
       created_at: origin_task.created_at,
       updated_at: origin_task.updated_at,
       name: origin_task.name,
@@ -27,7 +27,7 @@ export async function load({ params, parent }) {
       repeat_specific_days: origin_task.repeat_specific_days || [],
       archived: origin_task.archived || false,
       category_id: origin_task.category_id || undefined,
-      assigned_user_id: origin_task.assigned_user_id || undefined,
+      assigned_user_email: origin_task.assigned_user_email || undefined,
     },
   };
 }

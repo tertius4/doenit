@@ -59,13 +59,17 @@ async function initDB() {
           oldDoc.room_id = undefined;
           return oldDoc;
         },
-        8: function (oldDoc) {
+        8: (oldDoc) => oldDoc,
+        9: (oldDoc) => {
+          oldDoc.assigned_user_email = null;
+          oldDoc.assigned_user_id = undefined;
+
           return oldDoc;
         },
       },
       schema: {
         title: "task",
-        version: 8,
+        version: 9,
         description: "describes a task",
         type: "object",
         properties: {
@@ -85,7 +89,7 @@ async function initDB() {
           important: { type: "boolean" },
           urgent: { type: "boolean" },
           category_id: { type: ["string", "null"] },
-          assigned_user_id: { type: ["string", "null"] },
+          assigned_user_email: { type: ["string", "null"] },
           archived: { type: "boolean" },
           created_at: { type: "string" },
           updated_at: { type: "string" },

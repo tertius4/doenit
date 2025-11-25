@@ -2,9 +2,9 @@
   import { Notify } from "$lib/services/notifications/notifications";
   import { CardInvite } from "$lib/components/element/card";
   import { backHandler } from "$lib/BackHandler.svelte";
-  import { onDestroy, onMount, untrack } from "svelte";
-  import user, { signIn } from "$lib/core/user.svelte";
-  import { Check, Leave, Loading } from "$lib/icon";
+  import { onMount, untrack } from "svelte";
+  import { user } from "$lib/base/user.svelte";
+  import { Check, Loading } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { OnlineDB } from "$lib/OnlineDB";
@@ -12,51 +12,35 @@
   import { goto } from "$app/navigation";
   import { DB } from "$lib/DB";
   import CardFriend from "./CardFriend.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
 
-  /** @type {User[]} */
-  let users = $state([]);
-  let is_open = $state(false);
-
-  /** @type {Subscription?} */
-  let usersSubscription = null;
-  /** @type {User?} */
-  let selected_user = $state(null);
+  const usersContext = getUsersContext();
 
   const invites = $derived(DB.Invite.invites);
-
-  $effect(() => {
-    if (!user.value?.is_friends_enabled) return;
-
-    untrack(() => {
-      usersSubscription = DB.User.subscribe((result) => (users = result), {
-        sort: [{ name: "asc" }],
-      });
-    });
-  });
 
   $effect(() => {
     // Verban toegang as Vriende funksie nie geaktiveer is nie.
 
     if (user.is_loading) return;
-    if (!user.value?.is_logged_in) {
+    if (!user.is_logged_in) {
       untrack(async () => {
-        const result = await signIn();
+        const result = await user.signIn();
         if (!result.success) {
           if (result.error_message === "USER_CANCELED") {
-            return;
+            return goto(`/plus`);
           }
 
           Alert.error(result.error_message || t("something_went_wrong"));
         }
 
-        if (user.value?.is_friends_enabled) return;
+        if (user.is_friends_enabled) return;
         goto(`/plus`);
       });
 
       return;
     }
 
-    if (user.value?.is_friends_enabled) return;
+    if (user.is_friends_enabled) return;
     goto(`/plus`);
   });
 
@@ -68,25 +52,30 @@
     return () => backHandler.unregister(token);
   });
 
-  onDestroy(() => {
-    usersSubscription?.unsubscribe();
-  });
-
   /**
    * @param {Invite} invite
    */
   async function acceptInvite(invite) {
     try {
-      const email_address = user.value?.email;
+      const email_address = user.email_address;
       if (!email_address) return;
 
       DB.Invite.remove(invite.id);
       const promises = [
         // Skep die Vriend
-        DB.User.create({
-          name: invite.sender_name,
-          email_address: invite.from_email_address,
-          is_pending: false,
+        OnlineDB.User.readMany({
+          filters: [{ field: "email_address", operator: "==", value: invite.from_email_address }],
+        }).then(async (result) => {
+          if (!result?.length) throw new Error("Fout met gebruiker lees");
+
+          const online_user = result[0];
+          await DB.User.create({
+            email_address: online_user.email_address,
+            avatar: online_user.avatar,
+            name: online_user.name,
+            uid: online_user.id,
+            is_pending: false,
+          });
         }),
         // Aanvaar die uitnodiging aanlyn
         updateAcceptedInvite(invite),
@@ -94,7 +83,7 @@
         Notify.Push.sendTemplate({
           type: "friend_request_accepted",
           data: {
-            sender_name: user.value?.name,
+            sender_name: user.name,
           },
           email_address: [invite.from_email_address],
         }),
@@ -149,16 +138,20 @@
     <Loading class="text-4xl mx-auto mb-2 opacity-50" />
     <p>{t("loading")}</p>
   </div>
-{:else if user.value?.is_friends_enabled}
+{:else if user.is_friends_enabled}
   <div class="space-y-2">
     {#each invites as invite (invite.id)}
-      {#if invite.to_email_address === user.value.email}
+      {#if invite.to_email_address === user.email_address}
         <CardInvite {invite} onaccept={() => acceptInvite(invite)} ondecline={() => declineInvite(invite)} />
       {/if}
     {/each}
 
-    {#each users as user}
-      <CardFriend {user} />
+    <CardFriend user={usersContext.getUserByEmail(user.email_address)} />
+
+    {#each usersContext.users as _user}
+      {#if user.email_address !== _user.email_address}
+        <CardFriend user={_user} />
+      {/if}
     {:else}
       <div class="text-center py-8">
         <Check class="text-4xl mx-auto mb-2 opacity-50" />

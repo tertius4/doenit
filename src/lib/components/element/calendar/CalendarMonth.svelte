@@ -1,5 +1,6 @@
 <script>
   import CalendarDay from "./CalendarDay.svelte";
+  import { DateUtil } from "$lib/core/date_util.js";
 
   /**
    * @typedef {Object} Props
@@ -82,26 +83,6 @@
 
     return days;
   });
-
-  function isSameDay(date1, date2) {
-    if (!date1 || !date2) return false;
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
-  }
-
-  function isDateInRange(date, start, end) {
-    if (!start || !end) return false;
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const s = new Date(start);
-    s.setHours(0, 0, 0, 0);
-    const e = new Date(end);
-    e.setHours(0, 0, 0, 0);
-    return d >= s && d <= e;
-  }
 </script>
 
 <div class="w-full">
@@ -115,12 +96,12 @@
     {#each calendarDays as { date, isOtherMonth }}
       <CalendarDay
         {date}
-        is_today={isSameDay(date, today)}
+        is_today={DateUtil.isSameDay(date, today)}
         is_other_month={isOtherMonth}
-        is_selected={isSameDay(date, start_date) || isSameDay(date, end_date)}
-        is_in_range={isDateInRange(date, start_date, end_date)}
-        is_range_start={isSameDay(date, start_date)}
-        is_range_end={isSameDay(date, end_date)}
+        is_selected={DateUtil.isSameDay(date, start_date) || DateUtil.isSameDay(date, end_date)}
+        is_in_range={DateUtil.isDateInRange(date, start_date, end_date)}
+        is_range_start={DateUtil.isSameDay(date, start_date)}
+        is_range_end={DateUtil.isSameDay(date, end_date)}
         onclick={ondayclick}
       />
     {/each}

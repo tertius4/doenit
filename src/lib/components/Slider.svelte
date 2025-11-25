@@ -8,7 +8,7 @@
    * @property {(val: string) => void} [onchange] - Callback when the selected value changes
    */
 
-  /** @type {Props} */
+  /** @type {Props & Record<string, any>} */
   let { options = [], value = $bindable(""), onchange, ...rest } = $props();
 
   const item_height = 32;

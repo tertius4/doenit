@@ -1,4 +1,4 @@
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { DB } from "$lib/DB";
 import { Notify } from "$lib/services/notifications/notifications";
 import { Table } from "./_Table";
@@ -22,9 +22,9 @@ export class TaskTable extends Table<OnlineTask> {
     await Notify.Push.sendTemplate({
       type: "new_task",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        category_id: category.id,
+        category_name: category.name,
       },
       email_address: email_addresses,
     });
@@ -46,9 +46,9 @@ export class TaskTable extends Table<OnlineTask> {
     await Notify.Push.sendTemplate({
       type: "task_updated",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        category_id: category.id,
+        category_name: category.name,
       },
       email_address: email_addresses,
     });
@@ -71,9 +71,9 @@ export class TaskTable extends Table<OnlineTask> {
     await Notify.Push.sendTemplate({
       type: "task_deleted",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        category_id: category.id,
+        category_name: category.name,
       },
       email_address: email_addresses,
     });

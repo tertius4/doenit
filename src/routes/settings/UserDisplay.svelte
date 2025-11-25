@@ -1,7 +1,7 @@
 <script>
   import Modal from "$lib/components/modal/Modal.svelte";
   import { Alert } from "$lib/core/alert";
-  import user, { signIn, signOut } from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
   import { Loading } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
 
@@ -10,9 +10,9 @@
 
   async function handleSignIn() {
     is_loading = true;
-    const result = await signIn();
+    const result = await user.signIn();
     is_loading = false;
-    
+
     if (!result.success) {
       if (result.error_message === "USER_CANCELED") {
         return;
@@ -25,7 +25,7 @@
   async function handleSignOut() {
     is_open = false;
 
-    const result = await signOut();
+    const result = await user.signOut();
     if (result.success) return;
 
     Alert.error(result.error_message || t("something_went_wrong"));
@@ -47,7 +47,7 @@
         <p>{t("loading")}</p>
       </div>
     </div>
-  {:else if !user.value?.is_logged_in}
+  {:else if !user.is_logged_in}
     <div class="text-center space-y-0.5">
       <h2 class="text-2xl font-semibold">{t("you_are_not_logged_in")}</h2>
       <p class="text-sm text-muted">{t("please_log_in_profile")}</p>
@@ -77,21 +77,16 @@
       class="flex justify-start gap-4 w-full"
       onclick={() => (is_open = true)}
     >
-      {#if user.value.avatar}
-        <img
-          src={user.value.avatar}
-          alt={t("profile")}
-          class="w-13 h-13 my-auto rounded-full"
-          referrerpolicy="no-referrer"
-        />
+      {#if user.avatar}
+        <img src={user.avatar} alt={t("profile")} class="w-13 h-13 my-auto rounded-full" referrerpolicy="no-referrer" />
       {/if}
 
       <div class="space-y-0.5">
         <h2 class="text-left text-2xl font-semibold">
-          {user.value.name}
+          {user.name}
         </h2>
         <p class="text-left text-sm font-medium text-muted">
-          {user.value.email}
+          {user.email_address}
         </p>
       </div>
     </button>

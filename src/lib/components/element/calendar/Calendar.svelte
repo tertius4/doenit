@@ -6,7 +6,7 @@
   import DownChevron from "$lib/icon/DownChevron.svelte";
   import { t } from "$lib/services/language.svelte";
   import { untrack } from "svelte";
-  import DateUtil from "$lib/DateUtil";
+  import { DateUtil } from "$lib/core/date_util";
 
   /**
    * @typedef {Object} Props

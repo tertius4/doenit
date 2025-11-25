@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as cors from "cors";
+import { Message } from "firebase-admin/lib/messaging/messaging-api";
 
 // Initialize Firebase Admin
 admin.initializeApp({
@@ -63,48 +64,45 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       await verifyToken(id_token); // Throws if invalid
 
       // Get notification details from body
-      const { tokens, title, body, type, data } = req.body;
-      if (!tokens) {
-        res.status(400).json({ error: "Missing token" });
+      const { users, title, body, type, data } = req.body;
+
+      if (!users || !Array.isArray(users)) {
+        res.status(400).json({ error: "Missing or invalid users array" });
         return;
       }
 
       // Send notification using firebase-admin
       if (title && body) {
-        // Direct notification (simple case)
+        // Direct notification (simple case) - send to all users with same content
         await admin.messaging().sendEach(
-          tokens.map((token: string) => ({
-            token,
+          users.map((user: any) => ({
+            token: user.fcm_token,
             notification: { title, body },
           }))
         );
       } else if (type && data) {
-        // Structured notification - send data in payload for proper background handling
-        const fcmData = {
-          type: type,
-          // Flatten the data object into string values (FCM requirement)
-          ...Object.keys(data).reduce(
-            (acc, key) => {
-              acc[key] = String(data[key]);
-              return acc;
-            },
-            {} as Record<string, string>
-          ),
-        };
+        // Structured notification - format per user's language preference
+        const messages = users.map((user: any) => {
+          const lang = (user.language_code || "af") as "af" | "en";
+          const formattedTitle = getTemplateTitle(type, lang);
+          const formattedBody = getTemplateBody(type, lang, data);
 
-        console.log("Sending FCM message with data:", fcmData);
-
-        await admin.messaging().sendEach(
-          tokens.map((token: string) => ({
-            token,
-            data: fcmData,
+          const message: Message = {
+            token: user.fcm_token,
             notification: {
-              title: "Doenit",
-              body: "u het 'n nuwe kennisgewing", // Simple fallback for system display
+              title: formattedTitle,
+              body: formattedBody,
             },
+
             // Configure for both platforms
             android: {
-              priority: "high",
+              priority: "high" as const,
+              notification: {
+                channelId: "default",
+                priority: "high" as const,
+                defaultSound: true,
+                defaultVibrateTimings: true,
+              },
             },
             apns: {
               headers: {
@@ -112,12 +110,21 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
               },
               payload: {
                 aps: {
-                  "content-available": 1,
+                  alert: {
+                    title: formattedTitle,
+                    body: formattedBody,
+                  },
+                  sound: "default",
+                  badge: 1,
                 },
               },
             },
-          }))
-        );
+          };
+
+          return message;
+        });
+
+        await admin.messaging().sendEach(messages);
       } else {
         res.status(400).json({ error: "Invalid notification payload" });
         return;
@@ -250,3 +257,88 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
     }
   });
 });
+
+function getTemplateTitle(type: string, lang: "af" | "en"): string {
+  const is_english = lang === "en";
+  switch (type) {
+    case "friend_request":
+      if (is_english) {
+        return "New Friend Request";
+      } else {
+        return "Nuwe Vriend Versoek";
+      }
+    case "new_task":
+      if (is_english) {
+        return "New Task Assigned";
+      } else {
+        return "Nuwe Taak Toegeken";
+      }
+    case "task_updated":
+      if (is_english) {
+        return "Task Updated";
+      } else {
+        return "Taak Opgedateer";
+      }
+    case "user_left_group":
+      if (is_english) {
+        return "User Left Group";
+      } else {
+        return "Gebruiker Het Groep Verlaat";
+      }
+    case "friend_request_accepted":
+      if (is_english) {
+        return "Friend Request Accepted";
+      } else {
+        return "Vriend Versoek Aanvaar";
+      }
+    default:
+      if (is_english) {
+        return "Notification";
+      } else {
+        return "Kennisgewing";
+      }
+  }
+}
+
+function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, string>): string {
+  const is_english = lang === "en";
+
+  switch (type) {
+    case "friend_request":
+      if (is_english) {
+        return "You have a new friend request";
+      } else {
+        return "Jy het 'n nuwe vriend versoek";
+      }
+    case "new_task":
+      if (is_english) {
+        return `New task "${data.task_name}" assigned in ${data.category_name}`;
+      } else {
+        return `Nuwe taak "${data.task_name}" toegeken in ${data.category_name}`;
+      }
+    case "task_updated":
+      if (is_english) {
+        return `Task "${data.task_name}" updated in ${data.category_name}`;
+      } else {
+        return `Taak "${data.task_name}" opgedateer in ${data.category_name}`;
+      }
+    case "user_left_group":
+      if (is_english) {
+        return `${data.user_name} left ${data.category_name}`;
+      } else {
+        return `${data.user_name} het ${data.category_name} verlaat`;
+      }
+    case "friend_request_accepted":
+      if (is_english) {
+        return `${data.sender_name} accepted your friend request`;
+      } else {
+        return `${data.sender_name} het jou vriend versoek aanvaar`;
+      }
+    default:
+      if (is_english) {
+        return "You have a new notification";
+      } else {
+        return "Jy het 'n nuwe kennisgewing";
+      }
+  }
+}

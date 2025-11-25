@@ -14,7 +14,7 @@ export async function load() {
       repeat_interval_number: 1,
       archived: false,
       category_id: undefined,
-      assigned_user_id: undefined,
+      assigned_user_email: undefined,
       photo_ids: [],
     },
   };

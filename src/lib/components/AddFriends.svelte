@@ -5,7 +5,7 @@
   import Button from "./element/button/Button.svelte";
   import { Plus, UserPlus } from "$lib/icon";
   import { isValidEmail, normalize } from "$lib";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
   import Loading from "$lib/icon/Loading.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { DB } from "$lib/DB";
@@ -24,7 +24,7 @@
       error_message = "";
       success_message = "";
 
-      if (!user.value) throw t("log_in_first");
+      if (!user.is_logged_in) throw t("log_in_first");
       if (!friend_email.trim()) throw t("required_field");
 
       // Moet nie invoer verander nie.
@@ -47,22 +47,24 @@
       if (!searched_user) throw t("user_not_found");
 
       await DB.User.create({
-        name: email,
+        // TODO: Sensitive info?
+        name: searched_user.name,
         is_pending: true,
-        email_address: email,
+        email_address: searched_user.email_address,
+        avatar: searched_user.avatar,
+        uid: searched_user.id,
       });
       const result = await OnlineDB.Invite.create({
-        sender_name: user.value.name,
-        from_email_address: user.value.email,
+        sender_name: user.name ?? "",
+        from_email_address: user.email_address ?? "",
         to_email_address: email,
         status: "pending",
       });
 
       await Notify.Push.sendTemplate({
         type: "friend_request",
-        user: [searched_user],
         data: {
-          sender_name: user.value.name,
+          sender_name: user.name,
         },
         email_address: [email],
       });
@@ -99,7 +101,7 @@
   }
 </script>
 
-{#if !!user.value?.is_friends_enabled}
+{#if !!user.is_friends_enabled}
   <button
     class={{
       "flex gap-1 w-15 rounded-full h-15 justify-center items-center px-4 py-2": true,

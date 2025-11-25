@@ -1,4 +1,4 @@
-import DateUtil from "$lib/DateUtil";
+import { DateUtil } from "$lib/core/date_util";
 import type { MangoQuery, RxCollection } from "$lib/chunk/rxdb";
 
 export class Table<T extends Task | Category | User> {

@@ -15,7 +15,7 @@
  * @property {number} repeat_interval_number - Number representing the repeat interval.
  * @property {boolean} important - Indicates if the task is marked as important.
  * @property {string} [category_id] - Optional category ID associated with the task.
- * @property {string} [assigned_user_id] - Optional user ID assigned to the task.
+ * @property {string} [assigned_user_email] - Optional user email assigned to the task.
  * @property {string[]} [photo_ids] - Array of photo IDs (filenames) attached to this task.
  */
 
@@ -35,11 +35,14 @@
 /**
  * Represents a connection with another user.
  * @typedef {Object} User
+ * @property {string} uid - Firebase User ID.
  * @property {string} id - Primary key (UUID).
  * @property {string} name - Name of the user.
  * @property {string} [avatar] - URL to the user's avatar image.
- * @property {boolean} is_pending - Indicates if the connection is pending.
+ * @property {boolean} [is_pending] - Indicates if the connection is pending.
  * @property {string} email_address - Email address of the user.
+ * @property {string} created_at - Timestamp when the user was created.
+ * @property {string} updated_at - Timestamp when the user was last updated.
  */
 
 /**
@@ -74,7 +77,7 @@
 /**
  * @typedef {Object} OnlineUser
  * @property {string} id - Primary key (UUID).
- * @property {string} avatar - URL to the user's avatar image.
+ * @property {string | undefined} avatar - URL to the user's avatar image.
  * @property {string} name - Name of the user.
  * @property {Language} language_code - Used for push notification translations.
  * @property {string} email_address - Email address of the user.
@@ -134,13 +137,28 @@
  */
 
 /**
+ * Represents the type of toast notification.
+ * @typedef {'success' | 'error' | 'info'} ToastType
+ */
+
+/**
+ * Configuration options for displaying a toast notification.
+ * @typedef {Object} ToastOptions
+ * @property {string} message - The message to display in the toast.
+ * @property {ToastType} [type] - The type of toast notification (default varies by implementation).
+ * @property {number} [duration] - Duration in milliseconds before the toast disappears.
+ * @property {'top' | 'bottom'} [position] - Position where the toast appears on screen.
+ */
+
+/**
  * @template T
  * @typedef {{ success: true, data: T } | { success: false, error_message: string, data?: * }} Result<T>
  */
 
 /** @typedef {'af' | 'en'} Language */
-/** @typedef {'dark' | 'light'} ThemeValue */
+/** @typedef {'dark' | 'light'} Theme */
 /** @typedef {{ success: true } | { success: false, error_message: string }} SimpleResult */
+/** @typedef {16 | 18 | 20 } TextSize */
 
 /**
  * @template T

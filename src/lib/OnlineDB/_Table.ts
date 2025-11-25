@@ -18,7 +18,7 @@ import {
   type WhereFilterOp,
 } from "$lib/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
-import DateUtil from "$lib/DateUtil";
+import {DateUtil} from "$lib/core/date_util";
 import { Alert } from "$lib/core/alert";
 
 interface QueryOptions {

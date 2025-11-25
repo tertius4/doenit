@@ -4,13 +4,14 @@
   import CategoryPicker from "$lib/components/CategoryPicker.svelte";
   import Herhaling from "$lib/components/task/Herhaling.svelte";
   import DatePickerShortcut from "./DatePickerShortcut.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
   import PhotoGallery from "./photo/PhotoGallery.svelte";
   import { Photos } from "$lib/services/photos.svelte";
   import Button from "./element/button/Button.svelte";
   import { t } from "$lib/services/language.svelte";
   import DatePicker from "./DatePicker.svelte";
   import { slide } from "svelte/transition";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
   import { Important } from "$lib/icon";
   import { tick } from "svelte";
   import UserPicker from "./UserPicker.svelte";
@@ -23,11 +24,18 @@
   /** @type {Props & Record<string, any>} */
   let { task = $bindable(), error = $bindable(), other_interval = $bindable(), onsubmit, expanded = false } = $props();
 
+  const usersContext = getUsersContext();
+
   let show = $state(expanded);
   let loading = $state(false);
   let invalid = $state(false);
+  let task_user = $state(task.assigned_user_email ? usersContext.getUserByEmail(task.assigned_user_email) : undefined);
 
   const title = $derived(!!task.start_date ? t("date") : t("due_date"));
+
+  $effect(() => {
+    task.assigned_user_email = task_user?.email_address;
+  });
 
   /**
    * Handle form submission
@@ -56,8 +64,8 @@
     <CategoryPicker bind:category_id={task.category_id} />
   </div>
 
-  {#if user.value?.is_friends_enabled && task.category_id}
-    <UserPicker bind:user_id={task.assigned_user_id} category_id={task.category_id} />
+  {#if user.is_friends_enabled && task.category_id}
+    <UserPicker bind:user={task_user} category_id={task.category_id} />
   {/if}
 
   <div class="w-full">

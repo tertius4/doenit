@@ -1,16 +1,17 @@
 <script>
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { Cached } from "$lib/core/cache.svelte";
   import { SvelteSet } from "svelte/reactivity";
   import Tag from "$lib/components/Tag.svelte";
   import { onMount, untrack } from "svelte";
-  import { DB } from "$lib/DB";
   import { Selected } from "$lib/selected";
-  import { slide } from "svelte/transition";
 
-  /** @type {Category[]} */
-  let categories = $state([]);
+  const categoriesContext = getCategoriesContext();
+
   let is_initialized = $state(false);
 
+  /** @type {Category[]} */
+  const categories = $derived([...categoriesContext.categories].sort(sortCategories));
   /** @type {SvelteSet<Category['id']>} */
   const selected_category_ids = new SvelteSet();
 
@@ -22,25 +23,6 @@
 
       Cached.favouriteCategories.value = [...selected_category_ids].join(",");
     });
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe(
-      (result) =>
-        (categories = result.sort((a, b) => {
-          const aSelected = selected_category_ids.has(a.id) ? 1 : 0;
-          const bSelected = selected_category_ids.has(b.id) ? 1 : 0;
-          if (aSelected !== bSelected) {
-            return bSelected - aSelected; // selected first
-          }
-          return a.name.localeCompare(b.name);
-        })),
-      {
-        selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      }
-    );
-
-    return () => sub.unsubscribe();
   });
 
   onMount(async () => {
@@ -64,6 +46,19 @@
       selected_category_ids.add(category_id);
       Selected.categories.add(category_id);
     }
+  }
+
+  /**
+   * @param {Category} a
+   * @param {Category} b
+   */
+  function sortCategories(a, b) {
+    const aSelected = selected_category_ids.has(a.id) ? 1 : 0;
+    const bSelected = selected_category_ids.has(b.id) ? 1 : 0;
+    if (aSelected !== bSelected) {
+      return bSelected - aSelected; // selected first
+    }
+    return a.name.localeCompare(b.name);
   }
 </script>
 
