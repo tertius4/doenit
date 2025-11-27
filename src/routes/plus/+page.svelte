@@ -1,6 +1,6 @@
 <script>
   import { t } from "$lib/services/language.svelte";
-  import { Crown, Check, Users, DownloadCloud } from "$lib/icon";
+  import { Crown, Check, Users, DownloadCloud, Google, Loading } from "$lib/icon";
   import { user } from "$lib/base/user.svelte";
   import { billing } from "$lib/core/billing.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
@@ -99,7 +99,7 @@
     <div class="mt-4 bg-surface rounded-lg p-4 border border-primary">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-t-secondary">{t("current_plan")}</p>
+          <p class="text-sm">{t("current_plan")}</p>
           <p class="text-lg font-semibold text-primary">{t("plus_plan")}</p>
         </div>
         <Crown class="text-3xl text-primary" />
@@ -112,10 +112,11 @@
       >
         {#if is_cancelling}
           <div class="flex items-center justify-center gap-2">
-            <div class="w-4 h-4 border-2 border-t-primary/30 border-t-t-primary rounded-full animate-spin"></div>
+            <Loading />
             {t("loading")}
           </div>
         {:else}
+          <Google />
           {t("manage_subscriptions")}
         {/if}
       </button>
@@ -124,7 +125,7 @@
     <div class="mt-4 bg-surface rounded-lg p-4 border border-default">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-t-secondary">{t("current_plan")}</p>
+          <p class="text-sm">{t("current_plan")}</p>
           <p class="text-lg font-semibold">{t("free_plan")}</p>
         </div>
       </div>
@@ -174,7 +175,7 @@
             </div>
             <div class="flex-1">
               <h3 class="font-semibold text-lg mb-1">{benefit.title}</h3>
-              <p class="text-t-secondary text-sm">{benefit.description}</p>
+              <p class="text-sm">{benefit.description}</p>
             </div>
             {#if billing.is_plus_user}
               <Check class="text-2xl text-success flex-shrink-0" />
@@ -192,12 +193,12 @@
     <div class="bg-surface rounded-lg p-4 border border-default space-y-4">
       <div>
         <h3 class="font-semibold mb-2">{t("plus_feature_collaboration")}</h3>
-        <p class="text-t-secondary text-sm">{t("plus_feature_collaboration_desc")}</p>
+        <p class="text-sm">{t("plus_feature_collaboration_desc")}</p>
       </div>
 
       <div class="border-t border-default pt-4">
         <h3 class="font-semibold mb-2">{t("plus_feature_peace_of_mind")}</h3>
-        <p class="text-t-secondary text-sm">{t("plus_feature_peace_of_mind_desc")}</p>
+        <p class="text-sm">{t("plus_feature_peace_of_mind_desc")}</p>
       </div>
     </div>
   </div>

@@ -133,7 +133,8 @@ export class CategoriesContext {
     }
   }
 
-  getCategoryById(id: string): Category | undefined {
+  getCategoryById(id: string | undefined): Category | undefined {
+    if (!id) return undefined;
     return this.map.get(id);
   }
 }

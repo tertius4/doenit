@@ -22,7 +22,7 @@
   }
 </script>
 
-<section class="rounded-md p-4 bg-surface space-y-3 text-t-secondary">
+<section class="rounded-md p-4 bg-surface space-y-3">
   <h3 class="font-semibold text-lg mb-2">{t("about_doenit")}</h3>
 
   <div class="flex justify-between">

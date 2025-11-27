@@ -11,7 +11,7 @@
    */
 
   /** @type {Props} */
-  const { user, is_selectable, is_selected, disabled = false, onclick } = $props();
+  const { user, is_selectable = true, is_selected, disabled = false, onclick } = $props();
 
   function handleSelect() {
     if (disabled || !is_selectable) return;

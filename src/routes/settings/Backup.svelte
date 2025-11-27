@@ -61,7 +61,7 @@
     <div>
       <div class="flex items-center justify-between mb-4">
         <div>
-          <p class="font-medium text-t-secondary">{t("automatic_backup")}</p>
+          <p class="font-medium">{t("automatic_backup")}</p>
         </div>
         <InputSwitch bind:value={Backup.automatic_backup} />
       </div>

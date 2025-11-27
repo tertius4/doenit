@@ -163,6 +163,12 @@ class UserState {
       }
 
       // TODO: Figure out what do to with the user data.
+      
+      this.#uid = null;
+      this.#id = null;
+      this.#name = null;
+      this.#email_address = null;
+      this.#avatar = null;
 
       return { success: true };
     } catch (error) {

@@ -95,7 +95,7 @@
         <!-- Time picker with better layout -->
         <div>
           <span class="flex items-center gap-2 text-sm font-medium mb-2">
-            <Clock size={16} class="text-t-secondary/60" />
+            <Clock size={16} />
             {t("reminder_time")}
           </span>
           <div class="h-12 relative">

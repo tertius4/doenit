@@ -415,6 +415,7 @@ export const translations = {
     working_on_it: "Ek werk daaraan…",
 
     // Doenit Plus Subscription
+    manage: "Bestuur",
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Gradeer op na Plus",
     current_plan: "Jou Huidige Plan",
@@ -871,6 +872,7 @@ export const translations = {
     working_on_it: "I'm working on it…",
 
     // Doenit Plus Subscription
+    manage: "Manage",
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Upgrade to Plus",
     current_plan: "Your Current Plan",

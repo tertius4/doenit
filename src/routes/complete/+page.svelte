@@ -99,11 +99,11 @@
   {:else}
     {#if search_text.value?.trim().length}
       <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg text-t-secondary">{t("no_tasks_found_for_search")}</div>
+        <div class="text-lg">{t("no_tasks_found_for_search")}</div>
       </div>
     {:else}
       <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg text-t-secondary">{t("no_completed_tasks")}</div>
+        <div class="text-lg">{t("no_completed_tasks")}</div>
       </div>
     {/if}
   {/each}

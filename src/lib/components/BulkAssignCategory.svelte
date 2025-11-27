@@ -9,6 +9,7 @@
   import { user } from "$lib/base/user.svelte";
   import { waitAtLeast } from "$lib";
   import { DB } from "$lib/DB";
+  import UserTag from "./element/UserTag.svelte";
 
   /**
    * @typedef {Object} Props
@@ -23,8 +24,12 @@
 
   let is_open = $state(false);
   let is_adding = $state(false);
-  /** @type {string?} */
-  let category_id = $state(null);
+  /** @type {string | undefined} */
+  let category_id = $state(undefined);
+
+  const category = $derived(categoriesContext.getCategoryById(category_id));
+  const is_shared = $derived(!!category?.users.length && user.is_friends_enabled);
+  const users = $derived(category?.users.map((email) => usersContext.getUserByEmail(email)) || []);
 
   /**
    * Select a category
@@ -97,26 +102,11 @@
             </div>
           </div>
 
-          {#if user.is_friends_enabled && !!category.users?.length}
-            <div class="flex flex-nowrap gap-1 overflow-x-auto">
-              {#each category.users as email_address}
-                {@const user = usersContext.getUserByEmail(email_address)}
+          {#if is_shared}
+            <div class="flex flex-nowrap gap-1 pb-2 overflow-x-auto">
+              {#each users as user (user?.email_address)}
                 {#if user}
-                  <p
-                    class={{
-                      "px-1.5 rounded-full  text-normal w-fit border flex gap-0.5 items-center": true,
-                      "border-primary bg-primary/40 text-alt": is_selected,
-                      "border-default bg-card": !is_selected,
-                    }}
-                  >
-                    <img
-                      class="w-3.5 h-3.5 rounded-full"
-                      src={user.avatar}
-                      alt={user.name}
-                      referrerpolicy="no-referrer"
-                    />
-                    <span>{user.name}</span>
-                  </p>
+                  <UserTag {user} />
                 {/if}
               {/each}
             </div>

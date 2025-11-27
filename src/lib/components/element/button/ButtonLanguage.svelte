@@ -14,7 +14,7 @@
   <img src={flagSrc} alt="{languageName} flag" class="w-fit h-full object-cover rounded-sm" />
   <span
     class={{
-      "text-t-secondary text-sm": true,
+      "text-sm": true,
       "font-semibold": selected,
       "font-medium": !selected,
     }}

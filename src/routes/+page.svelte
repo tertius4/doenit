@@ -192,7 +192,7 @@
 
     {#if !is_same_display_date}
       {#key display_date}
-        <div in:fade={{ delay: 700 }} class="text-sm font-semibold pt-1 text-t-secondary">
+        <div in:fade={{ delay: 700 }} class="text-sm font-semibold pt-1">
           {display_date}
         </div>
       {/key}

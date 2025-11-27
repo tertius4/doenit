@@ -110,7 +110,7 @@
   </div>
 
   {#if is_shared}
-    <div class="flex flex-nowrap gap-1 pb-2 overflow-x-auto">
+    <div class="flex flex-nowrap gap-1 pb-2 px-2 overflow-x-auto">
       {#each users as user (user?.email_address)}
         {#if user}
           <UserTag {user} />

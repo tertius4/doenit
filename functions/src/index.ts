@@ -217,9 +217,9 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       const idToken = authHeader.split("Bearer ")[1];
       const decodedToken = await verifyToken(idToken);
 
-      const { purchaseToken, productId } = req.body;
+      const { purchase_token, product_id } = req.body;
 
-      if (!purchaseToken || !productId) {
+      if (!purchase_token || !product_id) {
         res.status(400).json({ error: "Missing parameters" });
         return;
       }
@@ -235,8 +235,8 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       await usersCollection.doc(decodedToken.uid).set(
         {
           subscription: {
-            productId,
-            purchaseToken,
+            productId: product_id,
+            purchaseToken: purchase_token,
             platform: "android",
             verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
             active: true,
