@@ -6,7 +6,7 @@
   import { selectedCategories } from "$lib/cached";
   import { Plus, DownChevron } from "$lib/icon";
   import { slide } from "svelte/transition";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { onMount, untrack } from "svelte";
   import Tab from "./element/tabs/Tab.svelte";
   import TabsContainer from "./element/tabs/TabsContainer.svelte";

@@ -122,7 +122,17 @@ export class Notify {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ token: users[0].fcm_token, title, body }),
+          body: JSON.stringify({
+            title,
+            body,
+            users: [
+              {
+                fcm_token: users[0].fcm_token,
+                language_code: users[0].language_code || "af",
+                email_address: users[0].email_address,
+              },
+            ],
+          }),
         });
 
         if (!response.ok) {
@@ -157,8 +167,8 @@ export class Notify {
         const users = await OnlineDB.User.getAll({
           filters: [{ field: "email_address", operator: "in", value: email_address }],
         });
-        const usersWithTokens = users.filter((user) => user.fcm_token);
-        if (!usersWithTokens.length) return;
+        const users_with_tokens = users.filter((user) => user.fcm_token);
+        if (!users_with_tokens.length) return;
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -167,7 +177,7 @@ export class Notify {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            users: usersWithTokens.map((u) => ({
+            users: users_with_tokens.map((u) => ({
               fcm_token: u.fcm_token,
               language_code: u.language_code || "af",
               email_address: u.email_address,

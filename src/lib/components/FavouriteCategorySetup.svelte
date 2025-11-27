@@ -4,7 +4,7 @@
   import { SvelteSet } from "svelte/reactivity";
   import Tag from "$lib/components/Tag.svelte";
   import { onMount, untrack } from "svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
 
   const categoriesContext = getCategoriesContext();
 

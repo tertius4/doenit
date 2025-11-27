@@ -5,30 +5,36 @@
    * @typedef {Object} Props
    * @property {User} user
    * @property {boolean} [is_selected]
+   * @property {boolean} [is_selectable]
    * @property {boolean} [disabled]
    * @property {() => *} onclick
    */
 
   /** @type {Props} */
-  const { user, is_selected, disabled, onclick } = $props();
+  const { user, is_selectable, is_selected, disabled = false, onclick } = $props();
+
+  function handleSelect() {
+    if (disabled || !is_selectable) return;
+    if (onclick) onclick();
+  }
 </script>
 
 <button
   aria-label="{user.name} se kaart"
+  onclick={handleSelect}
   type="button"
   class={{
     "flex justify-start w-full border rounded-lg p-2": true,
     "bg-card border-default": !is_selected || disabled,
     "bg-primary/20 border-primary": is_selected && !disabled,
   }}
-  {onclick}
 >
-  {#if !disabled}
+  {#if is_selectable}
     <div
       class={{
         "rounded-full w-5 h-5 my-auto flex items-center justify-center border": true,
-        "border-primary bg-card": is_selected,
-        "border-default bg-surface": !is_selected,
+        "border-primary bg-card": is_selected || disabled,
+        "border-default bg-surface": !is_selected && !disabled,
       }}
     >
       {#if is_selected}

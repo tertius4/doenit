@@ -4,7 +4,7 @@
   import ButtonBack from "$lib/components/element/button/ButtonBack.svelte";
   import DeleteAll from "$lib/components/DeleteAll.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import ButtonSearchTask from "$lib/components/element/button/ButtonSearchTask.svelte";
   import { getContext, onMount, untrack } from "svelte";
   import { backHandler } from "$lib/BackHandler.svelte";

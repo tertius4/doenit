@@ -11,8 +11,11 @@
   import { setContext } from "svelte";
   import { Trash } from "$lib/icon";
   import { DB } from "$lib/DB.js";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte.js";
 
   const { data } = $props();
+
+  const categories_context = getCategoriesContext();
 
   let task = $state(data.task);
   let is_deleting = $state(false);
@@ -56,6 +59,20 @@
     try {
       if (task.repeat_interval_number > 1) {
         task.repeat_interval = other_interval;
+      }
+
+      // Validate category and assigned user
+      if (task.category_id) {
+        const category = categories_context.getCategoryById(task.category_id);
+        if (!category) {
+          task.category_id = undefined;
+          task.assigned_user_email = undefined;
+        } else {
+          const selected_user = category.users.find((u) => u === task.assigned_user_email);
+          if (!selected_user) {
+            task.assigned_user_email = undefined;
+          }
+        }
       }
 
       const updated_task = await DB.Task.update(task.id, task);

@@ -81,7 +81,7 @@
             <Check class="text-lg flex-shrink-0 text-alt" />
           {/if}
           <span class="truncate">
-            {#if room_user.email === user.value?.email}
+            {#if room_user.email === user.email_address}
               {t("you")}
             {:else}
               {room_user.email}

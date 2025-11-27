@@ -4,6 +4,7 @@
    * @property {boolean} is_selected
    * @property {boolean} [round=false]
    * @property {() => void} onclick
+   * @property {import("svelte").Snippet} children
    */
 
   /** @type {Props & Record<string, any>} */

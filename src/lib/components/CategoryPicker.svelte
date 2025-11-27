@@ -8,6 +8,7 @@
   import { user } from "$lib/base/user.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { getUsersContext } from "$lib/contexts/users.svelte";
+  import UserTag from "./element/UserTag.svelte";
 
   let { category_id = $bindable() } = $props();
 
@@ -69,7 +70,7 @@
       {@const is_selected = category.id === category_id}
       {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
       {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
-        <h2 class="font-semibold">{t("shared_categories")}</h2>
+        <h2 class="font-semibold my-1">{t("shared_categories")}</h2>
       {/if}
       <button
         type="button"
@@ -97,26 +98,12 @@
           </div>
         </div>
 
-        {#if user.is_friends_enabled}
+        {#if user.is_friends_enabled && !!category.users.length}
           <div class="flex flex-nowrap gap-1 overflow-x-auto">
-            {#each category.users as email_address}
+            {#each category.users as email_address (email_address)}
               {@const user = usersContext.getUserByEmail(email_address)}
               {#if user}
-                <p
-                  class={{
-                    "px-1.5 rounded-full  text-normal w-fit border flex gap-0.5 items-center": true,
-                    "border-primary bg-primary/40 text-alt": is_selected,
-                    "border-default bg-card": !is_selected,
-                  }}
-                >
-                  <img
-                    class="w-3.5 h-3.5 rounded-full"
-                    src={user.avatar}
-                    alt={user.name}
-                    referrerpolicy="no-referrer"
-                  />
-                  <span>{user.name}</span>
-                </p>
+                <UserTag {user} {is_selected} />
               {/if}
             {/each}
           </div>

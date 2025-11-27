@@ -1,6 +1,6 @@
 <script>
   import { untrack } from "svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import Categories from "$lib/icon/Categories.svelte";
   import { sortByField } from "$lib";
   import { Check, Info, Star } from "$lib/icon";
@@ -58,6 +58,7 @@
    * @param {{ id: string, name: string, type: "category" }} item
    */
   function toggle(item) {
+    Selected.do_now = false;
     if (Selected.categories.has(item.id)) {
       Selected.categories.delete(item.id);
     } else {
@@ -80,11 +81,17 @@
       }
     } else {
       Selected.categories.clear();
+      Selected.do_now = false;
 
       for (const cat_id of favourite_cat_ids) {
         Selected.categories.add(cat_id);
       }
     }
+  }
+
+  function selectDoNow() {
+    Selected.do_now = !Selected.do_now;
+    Selected.categories.clear();
   }
 </script>
 
@@ -95,6 +102,10 @@
         <Star />
       </Tag>
     {/if}
+
+    <Tag onclick={selectDoNow} is_selected={Selected.do_now}>
+      <span>{t("do_now")}</span>
+    </Tag>
 
     {#each items as item}
       {@const is_selected = Selected.categories.has(item.id)}

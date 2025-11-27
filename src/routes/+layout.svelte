@@ -13,7 +13,7 @@
   import { Widget } from "$lib/core/widget";
   import { Value } from "$lib/utils.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { Alert } from "$lib/core/alert";
   import Heading from "./Heading.svelte";
   import { goto } from "$app/navigation";

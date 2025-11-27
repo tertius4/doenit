@@ -3,7 +3,7 @@
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import TaskContainer from "./TaskContainer.svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import ItemName from "./ItemName.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import Pill from "./Pill.svelte";

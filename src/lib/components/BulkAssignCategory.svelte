@@ -5,7 +5,7 @@
   import { t } from "$lib/services/language.svelte";
   import { Categories, Plus } from "$lib/icon";
   import Modal from "./modal/Modal.svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { user } from "$lib/base/user.svelte";
   import { waitAtLeast } from "$lib";
   import { DB } from "$lib/DB";
@@ -97,7 +97,7 @@
             </div>
           </div>
 
-          {#if user.value?.is_friends_enabled}
+          {#if user.is_friends_enabled && !!category.users?.length}
             <div class="flex flex-nowrap gap-1 overflow-x-auto">
               {#each category.users as email_address}
                 {@const user = usersContext.getUserByEmail(email_address)}

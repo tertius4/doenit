@@ -14,7 +14,6 @@ export const ssr = false;
 export async function load() {
   try {
     await DB.init();
-    billing.init();
     user.init();
 
     RateApp.showRatingPrompt();

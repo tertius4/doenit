@@ -7,6 +7,7 @@
   import { fade } from "svelte/transition";
   import { user } from "$lib/base/user.svelte";
   import { Times } from "$lib/icon";
+  import { Capacitor } from "@capacitor/core";
 
   /**
    * @typedef {Object} Props
@@ -22,6 +23,8 @@
     is_open;
 
     untrack(async () => {
+      if (!Capacitor.isNativePlatform()) return;
+
       const info = await Device.getInfo();
       if (+info.osVersion <= 14) return;
 

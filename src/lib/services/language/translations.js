@@ -157,6 +157,7 @@ export const translations = {
     sat: "Sa",
 
     // Categories
+    do_now: "Doen nou",
     add_category: "Voeg Kategorie By",
     category: "Kategorie",
     all_categories: "Alle Kategorieë",
@@ -614,6 +615,7 @@ export const translations = {
     sat: "Sat",
 
     // Categories
+    do_now: "Do Now",
     add_category: "Add Category",
     category: "Category",
     all_categories: "All Categories",

@@ -12,6 +12,7 @@
   import { SvelteSet } from "svelte/reactivity";
   import { fly, slide } from "svelte/transition";
   import { getUsersContext } from "$lib/contexts/users.svelte";
+  import UserTag from "$lib/components/element/UserTag.svelte";
 
   /**
    * @typedef {Object} Props
@@ -109,22 +110,10 @@
   </div>
 
   {#if is_shared}
-    <div class="flex flex-nowrap gap-2 px-2 pb-2 overflow-x-auto">
-      {#each users as _user (_user?.email_address)}
-        {#if _user}
-          {@const is_me = _user.email_address === user?.email_address}
-          <div class="px-1.5 rounded-full bg-card text-normal w-fit border border-default flex gap-0.5 items-center">
-            {#if _user.avatar}
-              <img class="w-3.5 h-3.5 rounded-full" src={_user.avatar} alt={_user.name} referrerpolicy="no-referrer" />
-            {:else}
-              <div
-                class="w-3.5 h-3.5 rounded-full bg-page flex items-center justify-center text-xs font-medium text-alt"
-              >
-                {_user.name.charAt(0).toUpperCase() ?? "?"}
-              </div>
-            {/if}
-            <span>{is_me ? t("you") : _user.name}</span>
-          </div>
+    <div class="flex flex-nowrap gap-1 pb-2 overflow-x-auto">
+      {#each users as user (user?.email_address)}
+        {#if user}
+          <UserTag {user} />
         {/if}
       {/each}
     </div>
@@ -160,7 +149,7 @@
           {@const is_selected = !!category.id && edit_users.has(category_user.email_address)}
 
           <CardFriend
-            disabled={is_me || original_users.has(category_user.email_address)}
+            is_selectable={!is_me && !original_users.has(category_user.email_address)}
             user={category_user}
             {is_selected}
             onclick={() => {

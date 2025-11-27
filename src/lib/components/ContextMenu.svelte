@@ -2,7 +2,7 @@
   import BulkAssignCategory from "./BulkAssignCategory.svelte";
   import ShareIcon from "$lib/icon/Share.svelte";
   import { slide } from "svelte/transition";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { Share } from "@capacitor/share";
   import { DB } from "$lib/DB";
   import { t } from "$lib/services/language.svelte";

@@ -2,7 +2,7 @@
   import { t } from "$lib/services/language.svelte";
   import { onNavigate } from "$app/navigation";
   import { fade } from "svelte/transition";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import Modal from "./modal/Modal.svelte";
   import { Trash } from "$lib/icon";
   import { page } from "$app/state";

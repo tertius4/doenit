@@ -1,7 +1,7 @@
 <script>
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import { onMount } from "svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import ItemName from "./ItemName.svelte";
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import TaskDueDate from "./TaskDueDate.svelte";

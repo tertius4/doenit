@@ -35,7 +35,7 @@
       if (!isValidEmail(email)) throw t("invalid_email");
 
       // Check if user is trying to invite themselves
-      // if (user.value.email === email) {
+      // if (user.email_address === email) {
       //   error_message = t("cannot_invite_yourself");
       //   return;
       // }
@@ -47,7 +47,6 @@
       if (!searched_user) throw t("user_not_found");
 
       await DB.User.create({
-        // TODO: Sensitive info?
         name: searched_user.name,
         is_pending: true,
         email_address: searched_user.email_address,

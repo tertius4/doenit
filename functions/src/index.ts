@@ -66,7 +66,7 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       // Get notification details from body
       const { users, title, body, type, data } = req.body;
 
-      if (!users || !Array.isArray(users)) {
+      if (!users?.length) {
         res.status(400).json({ error: "Missing or invalid users array" });
         return;
       }

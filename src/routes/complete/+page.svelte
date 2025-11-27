@@ -1,7 +1,7 @@
 <script>
   import TaskCompleted from "$lib/components/task/TaskCompleted.svelte";
   import { Haptics } from "@capacitor/haptics";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { goto } from "$app/navigation";
   import { getContext, onMount } from "svelte";
   import { DB } from "$lib/DB";

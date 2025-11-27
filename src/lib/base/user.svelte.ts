@@ -202,6 +202,7 @@ class UserState {
     auth.onAuthStateChanged(async (firebase_user) => {
       if (!firebase_user) return;
 
+      billing.init();
       billing.getToken = firebase_user.getIdToken.bind(firebase_user);
       this.getToken = firebase_user.getIdToken.bind(firebase_user);
       const user_data: Partial<User> = {

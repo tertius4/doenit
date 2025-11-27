@@ -9,7 +9,7 @@
   import { navigating, page } from "$app/state";
   import { Haptics } from "@capacitor/haptics";
   import { fade } from "svelte/transition";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { Alert } from "$lib/core/alert";
   import { Plus } from "$lib/icon";
   import { DB } from "$lib/DB";
@@ -105,10 +105,23 @@
         if (!in_name) continue;
       }
 
-      const has_cat_filter_enabled = !!Selected.categories.size;
-      if (has_cat_filter_enabled) {
-        const category_id = task.category_id ?? default_category_id;
-        if (!Selected.categories.has(category_id)) continue;
+      if (Selected.do_now) {
+        const now = new Date();
+        const start_date = task.start_date ? new Date(task.start_date) : null;
+        start_date?.setHours(0, 0, 0, 0);
+
+        const temp_due_date = task.due_date || task.start_date;
+        const due_date = temp_due_date ? new Date(temp_due_date) : null;
+        due_date?.setHours(23, 59, 59, 999);
+
+        const is_available = !start_date || (!!start_date && start_date <= now && due_date >= now);
+        if (!is_available) continue;
+      } else {
+        const has_cat_filter_enabled = !!Selected.categories.size;
+        if (has_cat_filter_enabled) {
+          const category_id = task.category_id ?? default_category_id;
+          if (!Selected.categories.has(category_id)) continue;
+        }
       }
 
       filtered_tasks.push(task);
