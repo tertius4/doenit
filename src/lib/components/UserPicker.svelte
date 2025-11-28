@@ -38,7 +38,15 @@
         onclick={() => (is_open = true)}
       >
         {#if user}
-          <span>{user.name}</span>
+          <div class="flex items-center gap-1">
+            <img
+              src={user.avatar}
+              alt={t("profile")}
+              class="inline-block w-5 h-5 rounded-full mr-2 align-middle"
+              referrerpolicy="no-referrer"
+            />
+            <div>{user.name}</div>
+          </div>
         {:else}
           <span class="text-muted">{t("anyone")}</span>
         {/if}

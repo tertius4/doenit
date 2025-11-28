@@ -45,11 +45,9 @@ class PushNotificationService {
 
   private async syncUserData(token: string) {
     if (!user.is_plus_user) return; // Sinkroniseer slegs vir Plus gebruikers om privaatheid te beskerm
+    if (!user.uid) return;
 
-    const [me] = await OnlineDB.User.getAll({
-      filters: [{ field: "email_address", operator: "==", value: user.email_address }],
-      limit: 1,
-    });
+    const me = await OnlineDB.User.read(user.uid);
 
     if (me) {
       let is_updated = false;
@@ -57,13 +55,15 @@ class PushNotificationService {
       // Kyk vir enige veranderinge - Hierdie is al gebruiks inligting wat gestoor word.
       if (!is_updated && me.avatar !== user.avatar) is_updated = true;
       if (!is_updated && me.name !== user.name) is_updated = true;
+      if (!is_updated && me.uid !== user.uid) is_updated = true;
       if (!is_updated && me.email_address !== user.email_address) is_updated = true;
       if (!is_updated && me.fcm_token !== token) is_updated = true;
       if (!is_updated && me.language_code !== user.language_code) is_updated = true;
 
       if (!is_updated) return;
-      await OnlineDB.User.updateById(me.id, {
+      await OnlineDB.User.updateById(me.uid, {
         fcm_token: token,
+        uid: user.uid,
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,
@@ -72,6 +72,7 @@ class PushNotificationService {
     } else {
       await OnlineDB.User.create({
         fcm_token: token,
+        uid: user.uid,
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,

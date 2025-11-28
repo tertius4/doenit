@@ -46,6 +46,7 @@ export class UsersContext {
     const fcm_token = user.getToken ? await user.getToken() : null;
     const result = await OnlineDB.User.create({
       name: user.name || "Me",
+      uid: user.uid || "",
       language_code: user.language_code!,
       fcm_token,
       email_address: user.email_address || "",

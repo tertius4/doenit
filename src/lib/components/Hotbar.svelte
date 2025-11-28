@@ -1,89 +1,55 @@
 <script>
-  import { untrack } from "svelte";
   import { Selected } from "$lib/selected.svelte";
   import Categories from "$lib/icon/Categories.svelte";
-  import { sortByField } from "$lib";
   import { Check, Info, Star } from "$lib/icon";
   import Tag from "./Tag.svelte";
-  import { Cached } from "$lib/core/cache.svelte";
   import Modal from "./modal/Modal.svelte";
   import FavouriteCategorySetup from "./FavouriteCategorySetup.svelte";
   import { t } from "$lib/services/language.svelte";
   import Button from "./element/button/Button.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { user } from "$lib/base/user.svelte";
 
-  /** @type {string[]} */
-  let favourite_cat_ids = $state([]);
   let show_favourite_modal = $state(false);
 
   const categoriesContext = getCategoriesContext();
 
   const is_favourite_selected = $derived(
-    favourite_cat_ids.length !== 0 &&
-      favourite_cat_ids.every((id) => Selected.categories.has(id)) &&
-      favourite_cat_ids.length === Selected.categories.size
+    !!user.favourite_category_ids.length &&
+      user.favourite_category_ids.every((id) => Selected.categories.has(id)) &&
+      user.favourite_category_ids.length === Selected.categories.size
   );
-  const items = $derived.by(() => {
-    /** @type {{ id: string, name: string, type: "category" }[]} */
-    let items = [];
-
-    for (const category of categoriesContext.categories) {
-      if (favourite_cat_ids.includes(category.id)) continue;
-
-      items.push({
-        id: category.id,
-        name: category.name,
-        type: "category",
-      });
-    }
-
-    return sortByField(items, "name");
-  });
-
-  $effect(() => {
-    const ids = Cached.favouriteCategories.value?.split(",") ?? [];
-
-    untrack(() => {
-      for (const id of ids) {
-        if (!id) continue;
-
-        favourite_cat_ids.push(id);
-        Selected.categories.add(id);
-      }
-    });
-  });
 
   /**
    * Toggles selection of a hotbar item.
-   * @param {{ id: string, name: string, type: "category" }} item
+   * @param {Category} category
    */
-  function toggle(item) {
+  function toggle(category) {
     Selected.do_now = false;
-    if (Selected.categories.has(item.id)) {
-      Selected.categories.delete(item.id);
+
+    if (Selected.categories.has(category.id)) {
+      Selected.categories.delete(category.id);
     } else {
-      for (const cat_id of favourite_cat_ids) {
-        Selected.categories.delete(cat_id);
+      for (const category_id of user.favourite_category_ids) {
+        Selected.categories.delete(category_id);
       }
-      Selected.categories.add(item.id);
+      Selected.categories.add(category.id);
     }
   }
 
   function selectFavourite() {
-    if (favourite_cat_ids.length === 0) {
+    if (!user.favourite_category_ids.length) {
       show_favourite_modal = true;
       return;
     }
 
     if (is_favourite_selected) {
-      for (const cat_id of favourite_cat_ids) {
-        Selected.categories.delete(cat_id);
-      }
+      Selected.categories.clear();
     } else {
       Selected.categories.clear();
       Selected.do_now = false;
 
-      for (const cat_id of favourite_cat_ids) {
+      for (const cat_id of user.favourite_category_ids) {
         Selected.categories.add(cat_id);
       }
     }
@@ -95,7 +61,7 @@
   }
 </script>
 
-{#if !!items.length}
+{#if !!categoriesContext.categories.length}
   <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
     {#if !!categoriesContext.categories.length}
       <Tag round is_selected={is_favourite_selected} onclick={selectFavourite}>
@@ -107,11 +73,11 @@
       <span>{t("do_now")}</span>
     </Tag>
 
-    {#each items as item}
-      {@const is_selected = Selected.categories.has(item.id)}
-      <Tag {is_selected} onclick={() => toggle(item)}>
+    {#each categoriesContext.categories as category}
+      {@const is_selected = Selected.categories.has(category.id)}
+      <Tag {is_selected} onclick={() => toggle(category)}>
         <Categories />
-        <span>{item.name}</span>
+        <span>{category.name}</span>
       </Tag>
     {/each}
   </nav>

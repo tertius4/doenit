@@ -7,7 +7,7 @@ import { t } from "$lib/services/language.svelte";
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
-import { Widget } from "../core/widget";
+import { Widget } from "$lib/core/widget";
 import { billing } from "$lib/core/billing.svelte";
 import { Alert } from "$lib/core/alert";
 
@@ -20,6 +20,7 @@ class UserState {
   #avatar: string | null = $state(null);
 
   // App Settings
+  #favourite_category_ids: string[] = $state([]);
   #language_code: Language | null = $state(null);
   #text_size: TextSize = $state(16);
   #theme: Theme = $state("dark");
@@ -60,6 +61,15 @@ class UserState {
 
   get language_code() {
     return this.#language_code;
+  }
+
+  get favourite_category_ids() {
+    return this.#favourite_category_ids;
+  }
+
+  set favourite_category_ids(ids: string[]) {
+    this.#favourite_category_ids = ids;
+    this.saveUserData();
   }
 
   set language_code(lang: Language | null) {
@@ -163,7 +173,7 @@ class UserState {
       }
 
       // TODO: Figure out what do to with the user data.
-      
+
       this.#uid = null;
       this.#id = null;
       this.#name = null;
@@ -185,7 +195,7 @@ class UserState {
         this.#text_size = user.text_size || "16";
         this.#theme = user.theme || "dark";
         this.#notifications = user.notifications || { enabled: true, time: "08:00" };
-
+        this.#favourite_category_ids = user.favourite_category_ids || [];
         this.#id = user.id || null;
         this.#uid = user.uid || null;
         this.#name = user.name || null;
@@ -243,6 +253,7 @@ class UserState {
       uid: this.#uid,
       name: this.#name,
       email_address: this.#email_address,
+      favourite_category_ids: this.#favourite_category_ids,
       avatar: this.#avatar,
       language_code: this.#language_code,
       text_size: this.#text_size,

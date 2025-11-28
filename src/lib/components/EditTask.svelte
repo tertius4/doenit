@@ -15,6 +15,7 @@
   import { Important } from "$lib/icon";
   import { tick } from "svelte";
   import UserPicker from "./UserPicker.svelte";
+  import { Selected } from "$lib/selected.svelte";
 
   /**
    * @typedef {Object} Props
@@ -23,6 +24,7 @@
 
   /** @type {Props & Record<string, any>} */
   let { task = $bindable(), error = $bindable(), other_interval = $bindable(), onsubmit, expanded = false } = $props();
+  task.category_id ??= Selected.categories.size === 1 ? Selected.categories.values().next().value : undefined;
 
   const usersContext = getUsersContext();
 

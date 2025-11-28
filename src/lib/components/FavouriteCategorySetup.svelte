@@ -5,6 +5,7 @@
   import Tag from "$lib/components/Tag.svelte";
   import { onMount, untrack } from "svelte";
   import { Selected } from "$lib/selected.svelte";
+  import { user } from "$lib/base/user.svelte";
 
   const categoriesContext = getCategoriesContext();
 
@@ -21,18 +22,17 @@
     untrack(() => {
       if (!is_initialized) return;
 
-      Cached.favouriteCategories.value = [...selected_category_ids].join(",");
+      user.favourite_category_ids = [...selected_category_ids];
     });
   });
 
   onMount(async () => {
-    is_initialized = true;
-    const ids = Cached.favouriteCategories.value?.split(",") ?? [];
-    for (const id of ids) {
+    for (const id of user.favourite_category_ids) {
       if (!id) continue;
 
       selected_category_ids.add(id);
     }
+    is_initialized = true;
   });
 
   /**

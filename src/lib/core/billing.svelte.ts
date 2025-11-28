@@ -1,4 +1,4 @@
-import { PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
+import { PUBLIC_APP_ID, PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
 import { Capacitor } from "@capacitor/core";
 
 interface BillingPlugin {
@@ -138,6 +138,8 @@ class Billing {
       const id_token = this.getToken ? await this.getToken() : null;
       if (!id_token) throw new Error("Gebruiker is nie geverifieer nie.");
 
+      const package_name = PUBLIC_APP_ID ?? "doenit.app";
+
       const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/verifySubscription`, {
         method: "POST",
         headers: {
@@ -147,6 +149,7 @@ class Billing {
         body: JSON.stringify({
           purchase_token: purchase.purchase_token,
           product_id: purchase.product_id,
+          package_name: package_name,
         }),
       });
 

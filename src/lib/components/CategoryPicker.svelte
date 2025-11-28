@@ -99,10 +99,15 @@
         </div>
 
         {#if user.is_friends_enabled && !!category.users.length}
+          {@const me = usersContext.getUserByEmail(user.email_address || "")}
           <div class="flex flex-nowrap gap-1 overflow-x-auto">
+            {#if me}
+              <UserTag user={me} {is_selected} />
+            {/if}
             {#each category.users as email_address (email_address)}
               {@const user = usersContext.getUserByEmail(email_address)}
-              {#if user}
+              {@const is_me = !!me && user?.email_address === me?.email_address}
+              {#if user && !is_me}
                 <UserTag {user} {is_selected} />
               {/if}
             {/each}
@@ -124,7 +129,7 @@
       }}
     >
       <Plus />
-      <span>{t("add_category")}</span>
+      <span class="block font-medium my-2">{t("add_category")}</span>
     </button>
   </div>
 </Modal>

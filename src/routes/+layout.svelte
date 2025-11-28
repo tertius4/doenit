@@ -2,8 +2,9 @@
   import { CategoriesContext, setCategoriesContext } from "$lib/contexts/categories.svelte";
   import { pushNotificationService } from "$lib/services/pushNotifications.svelte";
   import { UsersContext, setUsersContext } from "$lib/contexts/users.svelte";
+  import { setTasksContext, TasksContext } from "$lib/contexts/tasks.svelte";
   import { notifications } from "$lib/services/notification.svelte";
-  import { onDestroy, onMount, setContext, untrack } from "svelte";
+  import { onDestroy, onMount, setContext, tick, untrack } from "svelte";
   import { SyncService } from "$lib/services/syncService";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { Photos } from "$lib/services/photos.svelte";
@@ -16,10 +17,10 @@
   import { Selected } from "$lib/selected.svelte";
   import { Alert } from "$lib/core/alert";
   import Heading from "./Heading.svelte";
-  import { goto } from "$app/navigation";
+  import { goto, pushState } from "$app/navigation";
   import Footer from "./Footer.svelte";
   import { App } from "@capacitor/app";
-  import { page } from "$app/state";
+  import { navigating, page } from "$app/state";
   import { DB } from "$lib/DB";
   import "../app.css";
 
@@ -30,6 +31,7 @@
 
   const usersContext = setUsersContext(new UsersContext());
   const categoriesContext = setCategoriesContext(new CategoriesContext());
+  const tasksContext = setTasksContext(new TasksContext());
 
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeOnlineTasks = null;
@@ -182,9 +184,38 @@
   async function handleTasksUpdate(tasks) {
     await notifications.scheduleNotifications(tasks);
 
-    tasks = sortTasksByDueDate(tasks).slice(0, 20);
+    tasks = sortTasksByDueDate(tasks);
+    tasksContext.setTasks(tasks);
 
-    await Widget.updateTasks(tasks, categoriesContext.categories);
+    const { searchParams, origin, pathname } = page.url;
+    const task_id = navigating.from?.params?.item_id || searchParams.get("new_id");
+    if (!!task_id) scrollToTask(task_id);
+
+    const completed_task_ids = searchParams.get("completed_task_ids");
+    if (!!completed_task_ids) {
+      const task_ids = [...new Set(completed_task_ids.split(","))];
+
+      const completed_tasks = [];
+      for (const id of task_ids) {
+        const task = tasksContext.getTaskById(id);
+        if (task) completed_tasks.push(task);
+      }
+
+      const promises = completed_tasks.map(async (task) => DB.Task.complete(task));
+      const result = await Promise.all(promises);
+
+      const has_failed_tasks = result.some((res) => !res);
+      if (has_failed_tasks) Alert.error("Fout met take voltooi.");
+    }
+
+    // Update the URL without reloading the page
+    searchParams.delete("new_id");
+    searchParams.delete("completed_task_ids");
+    const url_search = !!searchParams.size ? `${page.url.search}` : "";
+    const new_url = `${origin}${pathname}${url_search}`;
+    pushState(new_url, {});
+
+    await Widget.updateTasks(tasks.slice(0, 20), categoriesContext.categories);
   }
 
   /**
@@ -194,7 +225,7 @@
     if (!Photos.PHOTOS_ENABLED) return;
 
     try {
-      const tasks = await DB.Task.getAll();
+      const tasks = tasksContext.tasks;
       const photo_ids = tasks.flatMap((task) => task.photo_ids || []).filter(Boolean);
 
       await Photos.cleanupOrphanedPhotos(photo_ids);
@@ -202,6 +233,20 @@
       const error_message = error instanceof Error ? error.message : String(error);
       Alert.error(`Fout tydens wees-foto skoonmaak: ${error_message}`);
     }
+  }
+
+  /**
+   * @param {string} task_id
+   */
+  function scrollToTask(task_id) {
+    const element = document.getElementById(task_id);
+    if (!element) return;
+
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "start",
+    });
   }
 </script>
 

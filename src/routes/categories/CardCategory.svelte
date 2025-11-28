@@ -110,9 +110,15 @@
   </div>
 
   {#if is_shared}
+    {@const me = usersContext.getUserByEmail(user.email_address || "")}
     <div class="flex flex-nowrap gap-1 pb-2 px-2 overflow-x-auto">
+      {#if me}
+        <UserTag user={me} />
+      {/if}
+      
       {#each users as user (user?.email_address)}
-        {#if user}
+        {@const is_me = !!me && user?.email_address === me?.email_address}
+        {#if user && !is_me}
           <UserTag {user} />
         {/if}
       {/each}

@@ -3,9 +3,9 @@
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import Accordion from "$lib/components/element/Accordion.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Cached } from "$lib/core/cache.svelte";
   import { SvelteSet } from "svelte/reactivity";
   import { onMount } from "svelte";
+  import { user } from "$lib/base/user.svelte";
 
   const categoriesContext = getCategoriesContext();
 
@@ -15,8 +15,7 @@
   const categories = $derived([...categoriesContext.categories].sort(sortCategories));
 
   onMount(async () => {
-    const ids = Cached.favouriteCategories.value?.split(",") ?? [];
-    for (const id of ids) {
+    for (const id of user.favourite_category_ids) {
       if (!id) continue;
 
       selected_category_ids.add(id);

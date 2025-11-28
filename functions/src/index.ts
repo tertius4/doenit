@@ -2,12 +2,10 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as cors from "cors";
 import { Message } from "firebase-admin/lib/messaging/messaging-api";
+import { google } from "googleapis";
 
 // Initialize Firebase Admin
-admin.initializeApp({
-  projectId: process.env.PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
-});
+admin.initializeApp();
 
 // CORS configuration - Allow localhost and Capacitor app origins
 const corsHandler = cors({
@@ -33,13 +31,54 @@ const corsHandler = cors({
 // Helper function to verify Firebase ID token
 async function verifyToken(id_token: string) {
   try {
-    functions.logger.log("Attempting to verify token...");
     const result = await admin.auth().verifyIdToken(id_token);
-    functions.logger.log("Token verified successfully:", result);
     return result;
   } catch (error) {
-    functions.logger.error("Token verification error details:", error);
+    functions.logger.error("Token verification error:", error);
     throw new functions.https.HttpsError("unauthenticated", "Invalid token");
+  }
+}
+
+// Helper function to verify Google Play purchase
+async function verifyGooglePlayPurchase(packageName: string, productId: string, purchaseToken: string) {
+  try {
+    // Initialize Google Auth with service account
+    const auth = new google.auth.GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+      // You'll need to set up service account credentials
+      keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || './service-account-key.json'
+    });
+
+    const androidpublisher = google.androidpublisher({
+      version: 'v3',
+      auth: auth
+    });
+
+    // Verify the subscription purchase
+    const response = await androidpublisher.purchases.subscriptions.get({
+      packageName: packageName,
+      subscriptionId: productId,
+      token: purchaseToken
+    });
+
+    const purchase = response.data;
+    
+    // Check if subscription is valid and active
+    const isValid = purchase && 
+                   purchase.startTimeMillis && 
+                   purchase.expiryTimeMillis && 
+                   parseInt(purchase.expiryTimeMillis) > Date.now() &&
+                   (purchase.paymentState === 1); // 1 = Received
+
+    return {
+      isValid,
+      expiryTime: purchase?.expiryTimeMillis ? new Date(parseInt(purchase.expiryTimeMillis)) : null,
+      autoRenewing: purchase?.autoRenewing || false,
+      orderId: purchase?.orderId || null
+    };
+  } catch (error) {
+    functions.logger.error("Google Play verification error:", error);
+    throw new Error("Failed to verify purchase with Google Play");
   }
 }
 
@@ -157,13 +196,6 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
       const id_token = authHeader.split("Bearer ")[1];
       const decoded_token = await verifyToken(id_token);
 
-      functions.logger.log("Decoded token:", decoded_token);
-
-      if (!decoded_token) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-
       const { purchase_token, product_id } = req.body;
 
       if (!purchase_token || !product_id) {
@@ -171,8 +203,11 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
         return;
       }
 
-      const usersCollection = admin.firestore().collection("users");
-      await usersCollection.doc(decoded_token.uid).set(
+      // Use UID directly instead of email query
+      const db = admin.firestore();
+      const userDocRef = db.collection("users").doc(decoded_token.uid);
+      
+      await userDocRef.set(
         {
           subscription: {
             productId: product_id,
@@ -192,7 +227,7 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
       });
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      console.error("Subscription cancellation error:", error_message);
+      functions.logger.error("Subscription cancellation error:", error_message);
       res.status(500).json({ error: error_message });
     }
   });
@@ -217,43 +252,101 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       const idToken = authHeader.split("Bearer ")[1];
       const decodedToken = await verifyToken(idToken);
 
-      const { purchase_token, product_id } = req.body;
+      const { purchase_token, product_id, package_name } = req.body;
 
-      if (!purchase_token || !product_id) {
-        res.status(400).json({ error: "Missing parameters" });
+      if (!purchase_token || !product_id || !package_name) {
+        res.status(400).json({ 
+          error: "Missing required parameters: purchase_token, product_id, package_name" 
+        });
         return;
       }
 
-      // In production, you would verify the purchase with Google Play API
-      // For now, we'll store the subscription info
-      // TODO: Add Google Play Developer API verification
-      // const { google } = require("googleapis");
-      // const androidPublisher = google.androidpublisher("v3");
+      const db = admin.firestore();
+      const userDocRef = db.collection("users").doc(decodedToken.uid);
 
-      // Store subscription status in Firestore
-      const usersCollection = admin.firestore().collection("users");
-      await usersCollection.doc(decodedToken.uid).set(
-        {
-          subscription: {
-            productId: product_id,
-            purchaseToken: purchase_token,
-            platform: "android",
-            verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-            active: true,
+      // Check if this purchase token has already been processed to prevent duplicates
+      const existingDoc = await userDocRef.get();
+      if (existingDoc.exists) {
+        const userData = existingDoc.data();
+        if (userData?.subscription?.purchaseToken === purchase_token && userData?.subscription?.active) {
+          res.json({
+            success: true,
+            message: "Subscription already verified",
+            alreadyProcessed: true
+          });
+          return;
+        }
+      }
+
+      try {
+        // Actually verify the purchase with Google Play
+        const verificationResult = await verifyGooglePlayPurchase(
+          package_name, 
+          product_id, 
+          purchase_token
+        );
+
+        if (!verificationResult.isValid) {
+          res.status(400).json({ 
+            error: "Invalid or expired subscription",
+            details: "Purchase verification failed with Google Play"
+          });
+          return;
+        }
+
+        // Store verified subscription info
+        await userDocRef.set(
+          {
+            subscription: {
+              productId: product_id,
+              purchaseToken: purchase_token,
+              packageName: package_name,
+              platform: "android",
+              verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+              expiryTime: verificationResult.expiryTime,
+              autoRenewing: verificationResult.autoRenewing,
+              orderId: verificationResult.orderId,
+              active: true,
+            },
+            is_plus_user: true,
           },
-          is_plus_user: true,
-        },
-        { merge: true }
-      );
+          { merge: true }
+        );
 
-      res.json({
-        success: true,
-        message: "Subscription verified and stored",
-      });
+        functions.logger.info(`Subscription verified successfully for user: ${decodedToken.uid}`);
+
+        res.json({
+          success: true,
+          message: "Subscription verified and activated",
+          subscription: {
+            expiryTime: verificationResult.expiryTime,
+            autoRenewing: verificationResult.autoRenewing
+          }
+        });
+
+      } catch (verificationError) {
+        functions.logger.error("Google Play verification failed:", verificationError);
+        
+        // Don't give users premium access if verification fails
+        res.status(400).json({ 
+          error: "Subscription verification failed",
+          details: "Could not verify purchase with Google Play Store"
+        });
+        return;
+      }
+
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      console.error("Subscription verification error:", error_message);
-      res.status(500).json({ error: error_message });
+      functions.logger.error("Subscription verification error:", error_message);
+      
+      // Categorize errors for better debugging
+      if (error_message.includes("unauthenticated")) {
+        res.status(401).json({ error: "Authentication failed" });
+      } else if (error_message.includes("not found")) {
+        res.status(404).json({ error: "User not found" });
+      } else {
+        res.status(500).json({ error: "Internal server error" });
+      }
     }
   });
 });

@@ -293,7 +293,7 @@ export function displayPrettyDate(start_date, end_date) {
     return t("ongoing");
   }
 
-  if (DateUtil.isSameDay(start_date_obj, today)) return t("today");
+  if (DateUtil.isSameDay(start_date_obj, today)) return t("ongoing");
 
   const tomorrow = new Date(Date.now() + 86400000);
   if (DateUtil.isSameDay(start_date_obj, tomorrow)) return t("tomorrow");
@@ -399,85 +399,109 @@ export function sortTasksByDueDate(tasks) {
   try {
     if (!tasks?.length) return [];
 
-    let past_tasks = [];
-    let ongoing_tasks = [];
-    let today_tasks = [];
-    let tomorrow_tasks = [];
-    let day_after_tomorrow_tasks = [];
-    let this_week_tasks = [];
-    let this_month_tasks = [];
-    let next_month_tasks = [];
-    let later_tasks = [];
-    let no_date = [];
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today).setDate(new Date(today).getDate() + 1);
-    const day_after_tomorrow = new Date(today).setDate(new Date(today).getDate() + 2);
-    const this_week_start = new Date();
-    this_week_start.setDate(this_week_start.getDate() - this_week_start.getDay());
-    const this_week_end = new Date(this_week_start);
-    this_week_end.setDate(this_week_end.getDate() + 6);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
-    const current_month = new Date().getMonth();
-    const current_year = new Date().getFullYear();
+    const thisWeekEnd = new Date(today);
+    thisWeekEnd.setDate(thisWeekEnd.getDate() + (6 - thisWeekEnd.getDay()));
+    thisWeekEnd.setHours(23, 59, 59, 999); // For range inclusion
 
-    const next_month = (current_month + 1) % 12;
-    const next_month_year = next_month === 0 ? current_year + 1 : current_year;
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const nextMonth = (currentMonth + 1) % 12;
+    const nextMonthYear = nextMonth === 0 ? currentYear + 1 : currentYear;
+    const nextMonthEnd = new Date(nextMonthYear, nextMonth + 1, 0);
+    nextMonthEnd.setHours(23, 59, 59, 999); // For range inclusion
 
-    tasks = sortByField(tasks, "name", "asc");
+    const datesContext = {
+      today,
+      tomorrow,
+      dayAfterTomorrow,
+      thisWeekEnd,
+      currentMonth,
+      currentYear,
+      nextMonth,
+      nextMonthYear,
+    };
 
-    for (const task of tasks) {
-      if (!task.start_date) {
-        no_date.push(task);
-        continue;
-      }
+    // Custom comparator for single sort
+    tasks.sort((a, b) => {
+      const catA = getTaskDateRank(a, datesContext);
+      const catB = getTaskDateRank(b, datesContext);
+      if (catA !== catB) return catA - catB;
 
-      const start_date = new Date(task.start_date);
-      start_date.setHours(0, 0, 0, 0);
-      const due_date = new Date(task.due_date || task.start_date);
-      due_date.setHours(23, 59, 59, 999);
+      // Then by priority desc (true should be first)
+      const priA = a.important ? 1 : 0;
+      const priB = b.important ? 1 : 0;
+      if (priA !== priB) return priB - priA; // Descending
 
-      const is_start_on_or_before = DateUtil.isSameDay(start_date, today) || +start_date <= +today;
-      if (task.due_date && is_start_on_or_before && +due_date >= +today) {
-        ongoing_tasks.push(task);
-      } else if (+due_date < +today) {
-        past_tasks.push(task);
-      } else if (+due_date === +today) {
-        today_tasks.push(task);
-      } else if (+due_date === tomorrow) {
-        tomorrow_tasks.push(task);
-      } else if (+due_date === day_after_tomorrow) {
-        day_after_tomorrow_tasks.push(task);
-      } else if (due_date >= this_week_start && due_date <= this_week_end) {
-        this_week_tasks.push(task);
-      } else if (due_date.getMonth() === current_month && due_date.getFullYear() === current_year) {
-        this_month_tasks.push(task);
-      } else if (due_date.getMonth() === next_month && due_date.getFullYear() === next_month_year) {
-        next_month_tasks.push(task);
-      } else {
-        later_tasks.push(task);
-      }
-    }
+      // Same category: sort by start_date asc (use Infinity for no date)
+      const startA = a.start_date ? new Date(a.start_date).getTime() : Infinity;
+      const startB = b.start_date ? new Date(b.start_date).getTime() : Infinity;
+      if (startA !== startB) return startA - startB;
 
-    const sorted_tasks = [
-      ...sortTasksByPriority(sortByField(past_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(ongoing_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(today_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(tomorrow_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(day_after_tomorrow_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(this_week_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(this_month_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(next_month_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(sortByField(later_tasks, "start_date", "asc")),
-      ...sortTasksByPriority(no_date),
-    ];
+      // Finally by name asc as tiebreaker
+      return (a.name ?? "").localeCompare(b.name ?? "");
+    });
 
-    return sorted_tasks;
+    return tasks;
   } catch (error) {
     console.warn("Error sorting tasks by due date:", error);
     return tasks;
   }
+}
+
+/**
+ *
+ * @param {Task} task
+ * @param {Object} dates
+ * @param {Date} dates.today
+ * @param {Date} dates.tomorrow
+ * @param {Date} dates.dayAfterTomorrow
+ * @param {Date} dates.thisWeekEnd
+ * @param {number} dates.currentMonth
+ * @param {number} dates.currentYear
+ * @param {number} dates.nextMonth
+ * @param {number} dates.nextMonthYear
+ * @returns {number}
+ */
+function getTaskDateRank(
+  task,
+  { today, tomorrow, dayAfterTomorrow, thisWeekEnd, currentMonth, currentYear, nextMonth, nextMonthYear }
+) {
+  if (!task.start_date) return 9; // no_date
+
+  const startDay = new Date(task.start_date);
+  startDay.setHours(0, 0, 0, 0);
+
+  const due_day = new Date(task.due_date || task.start_date);
+  due_day.setHours(0, 0, 0, 0);
+  const due_end = new Date(due_day);
+  due_end.setHours(23, 59, 59, 999); // For range checks
+
+  const is_started = startDay.getTime() <= today.getTime();
+  const is_ongoing = task.due_date && is_started && due_day.getTime() >= today.getTime();
+  if (is_ongoing) return 1; // ongoing
+
+  if (due_day.getTime() < today.getTime()) return 0; // past
+
+  if (due_day.getTime() === today.getTime()) return 1; // today
+
+  if (due_day.getTime() === tomorrow.getTime()) return 3; // tomorrow
+
+  if (due_day.getTime() === dayAfterTomorrow.getTime()) return 4; // day after
+
+  if (due_end <= thisWeekEnd) return 5; // this week (excluding earlier)
+
+  if (due_day.getMonth() === currentMonth && due_day.getFullYear() === currentYear) return 6; // this month (excluding earlier)
+
+  if (due_day.getMonth() === nextMonth && due_day.getFullYear() === nextMonthYear) return 7; // next month
+
+  return 8; // later
 }
 
 /**

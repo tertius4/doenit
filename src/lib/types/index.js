@@ -79,6 +79,7 @@
  * @property {string} id - Primary key (UUID).
  * @property {string | undefined} avatar - URL to the user's avatar image.
  * @property {string} name - Name of the user.
+ * @property {string} uid - Firebase User ID.
  * @property {Language} language_code - Used for push notification translations.
  * @property {string} email_address - Email address of the user.
  * @property {string} fcm_token - Firebase Cloud Messaging token for push notifications.
