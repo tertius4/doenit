@@ -27,10 +27,6 @@
   /** @type {string | undefined} */
   let category_id = $state(undefined);
 
-  const category = $derived(categoriesContext.getCategoryById(category_id));
-  const is_shared = $derived(!!category?.users.length && user.is_friends_enabled);
-  const users = $derived(category?.users.map((email) => usersContext.getUserByEmail(email)) || []);
-
   /**
    * Select a category
    * @param {string} id
@@ -71,6 +67,7 @@
     <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
     <div class="mb-4 space-y-0.5">
       {#each categoriesContext.categories as category, i}
+        {@const is_shared = !!category?.users.length && user.is_friends_enabled}
         {@const is_selected = category.id === category_id}
         {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
         {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
@@ -103,6 +100,7 @@
           </div>
 
           {#if is_shared}
+            {@const users = category.users.map((email) => usersContext.getUserByEmail(email)).filter((u) => u)}
             <div class="flex flex-nowrap gap-1 pb-2 overflow-x-auto">
               {#each users as user (user?.email_address)}
                 {#if user}

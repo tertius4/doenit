@@ -176,6 +176,8 @@ export const translations = {
     shared_categories: "Gedeelde Kategorieë",
 
     // Friends & Social
+    leave_friend: "Verlaat Vriend",
+    note_still_sharing_categories: "Nota: U sal steeds bestaande kategorieë en hul take deel.",
     choose_user: "Wie moet die taak doen?",
     anyone: "Enigiemand",
     choose_user_name: "Kies 'n naam vir jou gebruiker",
@@ -194,7 +196,6 @@ export const translations = {
     cannot_invite_yourself: "Jy kan nie jouself uitnooi nie",
     sync_success: "Take gesinkroniseer",
     sync_error: "Sinkronisasie fout",
-    leave_friend: "Verlaat",
     left_group: "Groep Verlaat",
     user_left_group: '{{user_name}} het die groep "{{room_name}}" verlaat',
     user_not_found: "Gebruiker nie gevind nie",
@@ -446,7 +447,7 @@ export const translations = {
     rooms_locked_desc: "Gradeer op na Doenit Plus om kamers te ontsluit en take met jou vriende te deel.",
     backup_locked: "Outomatiese rugsteun is 'n Plus funksie",
     backup_locked_desc: "Gradeer op na Doenit Plus om outomatiese rugsteun te ontsluit.",
-    manage_subscriptions: "Bestuur Google Play Subskripsies",
+    manage_subscriptions: "Bestuur Subskripsies",
     already_free_plan: "Jy is reeds op die gratis plan.",
     cancellation_failed: "Kansellasie het misluk",
 
@@ -635,6 +636,8 @@ export const translations = {
     shared_categories: "Shared Categories",
 
     // Friends & Social
+    leave_friend: "Leave Friend",
+    note_still_sharing_categories: "Note: You will still be sharing existing categories and their tasks.",
     choose_user: "Who should do the task?",
     anyone: "Anyone",
     connect_with_friend: "Connect with a friend",
@@ -652,7 +655,6 @@ export const translations = {
     cannot_invite_yourself: "You cannot invite yourself",
     sync_success: "Tasks synchronized",
     sync_error: "Synchronization error",
-    leave_friend: "Leave",
     left_group: "Left Group",
     user_left_group: '{{user_name}} have left the group "{{room_name}}"',
     user_not_found: "User not found",
@@ -903,7 +905,7 @@ export const translations = {
     rooms_locked_desc: "Upgrade to Doenit Plus to unlock rooms and share tasks with your friends.",
     backup_locked: "Automatic backup is a Plus feature",
     backup_locked_desc: "Upgrade to Doenit Plus to unlock automatic backup.",
-    manage_subscriptions: "Manage Google Play Subscriptions",
+    manage_subscriptions: "Manage Subscriptions",
     already_free_plan: "You are already on the free plan.",
     cancellation_failed: "Cancellation failed",
 

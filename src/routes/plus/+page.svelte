@@ -108,7 +108,7 @@
         type="button"
         onclick={handleCancelSubscription}
         disabled={is_cancelling}
-        class="mt-4 w-full bg-transparent border border-default text-t-primary py-3 px-4 rounded-lg transition-all duration-200 hover:bg-surface-hover active:scale-95 disabled:opacity-50 disabled:transform-none"
+        class="mt-4 w-full bg-transparent border border-default py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:transform-none"
       >
         {#if is_cancelling}
           <div class="flex items-center justify-center gap-2">
@@ -116,8 +116,10 @@
             {t("loading")}
           </div>
         {:else}
-          <Google />
-          {t("manage_subscriptions")}
+          <div class="flex items-center justify-center gap-2">
+            <Google />
+            {t("manage_subscriptions")}
+          </div>
         {/if}
       </button>
     </div>

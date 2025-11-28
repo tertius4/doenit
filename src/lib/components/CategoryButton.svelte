@@ -27,7 +27,7 @@
 <button
   class={{
     "relative w-full flex h-12 items-center gap-1": true,
-    "bg-page": !is_selected,
+    "bg-surface": !is_selected,
     "bg-card": is_selected,
   }}
   onclick={onselect}

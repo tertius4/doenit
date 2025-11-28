@@ -47,14 +47,14 @@
   {#if !is_me}
     {#if user.is_pending}
       <Button class="bg-card" onclick={() => handleLeaveUser(user)}>
-        <span>Kanselleer uitnodiging</span>
+        <span>{t('cancel_invite')}</span>
       </Button>
     {:else}
       <Button class="bg-card" onclick={() => handleLeaveUser(user)}>
         <Leave class="h-full" />
-        <span>Verlaat vriend</span>
+        <span>{t('leave_friend')}</span>
       </Button>
-      <span>Nota: U sal steeds bestaande kategorieë deel.</span>
+      <span>{t('note_still_sharing_categories')}</span>
     {/if}
   {/if}
 </Modal>
