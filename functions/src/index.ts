@@ -3,9 +3,10 @@ import * as admin from "firebase-admin";
 import * as cors from "cors";
 import { Message } from "firebase-admin/lib/messaging/messaging-api";
 import { google } from "googleapis";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { type App } from "firebase-admin/app";
 
-// Initialize Firebase Admin
-admin.initializeApp();
+const app = getFirebaseStorage();
 
 // CORS configuration - Allow localhost and Capacitor app origins
 const corsHandler = cors({
@@ -31,7 +32,7 @@ const corsHandler = cors({
 // Helper function to verify Firebase ID token
 async function verifyToken(id_token: string) {
   try {
-    const result = await admin.auth().verifyIdToken(id_token);
+    const result = await admin.auth(app).verifyIdToken(id_token);
     return result;
   } catch (error) {
     functions.logger.error("Token verification error:", error);
@@ -39,42 +40,60 @@ async function verifyToken(id_token: string) {
   }
 }
 
+function getFirebaseStorage(): App {
+  let app: App;
+
+  try {
+    app = admin.app("doenitdb");
+  } catch (error) {
+    functions.logger.info("Initializing secondary Firebase app", error);
+    const init = {
+      projectId: "doenit2",
+      storageBucket: "doenit2.firebasestorage.app",
+    };
+    app = admin.initializeApp(init, "doenitdb");
+  }
+
+  return app;
+}
+
 // Helper function to verify Google Play purchase
 async function verifyGooglePlayPurchase(packageName: string, productId: string, purchaseToken: string) {
   try {
     // Initialize Google Auth with service account
     const auth = new google.auth.GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
       // You'll need to set up service account credentials
-      keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || './service-account-key.json'
+      keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || "./service-account-key.json",
     });
 
     const androidpublisher = google.androidpublisher({
-      version: 'v3',
-      auth: auth
+      version: "v3",
+      auth: auth,
     });
 
     // Verify the subscription purchase
     const response = await androidpublisher.purchases.subscriptions.get({
       packageName: packageName,
       subscriptionId: productId,
-      token: purchaseToken
+      token: purchaseToken,
     });
 
     const purchase = response.data;
-    
+
     // Check if subscription is valid and active
-    const isValid = purchase && 
-                   purchase.startTimeMillis && 
-                   purchase.expiryTimeMillis && 
-                   parseInt(purchase.expiryTimeMillis) > Date.now() &&
-                   (purchase.paymentState === 1); // 1 = Received
+    const isValid =
+      purchase &&
+      purchase.startTimeMillis &&
+      purchase.expiryTimeMillis &&
+      parseInt(purchase.expiryTimeMillis) > Date.now() &&
+      purchase.paymentState === 1; // 1 = Received
 
     return {
       isValid,
       expiryTime: purchase?.expiryTimeMillis ? new Date(parseInt(purchase.expiryTimeMillis)) : null,
       autoRenewing: purchase?.autoRenewing || false,
-      orderId: purchase?.orderId || null
+      orderId: purchase?.orderId || null,
     };
   } catch (error) {
     functions.logger.error("Google Play verification error:", error);
@@ -205,15 +224,24 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
 
       // Use UID directly instead of email query
       const db = admin.firestore();
-      const userDocRef = db.collection("users").doc(decoded_token.uid);
-      
+
+      // Query for the document with matching id property
+      const user_collection = db.collection("users");
+      const snapshot = await user_collection.where("id", "==", decoded_token.uid).limit(1).get();
+
+      if (snapshot.empty) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const userDocRef = snapshot.docs[0].ref;
       await userDocRef.set(
         {
           subscription: {
             productId: product_id,
             purchaseToken: purchase_token,
             platform: "android",
-            cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+            cancelledAt: FieldValue.serverTimestamp(),
             active: false,
           },
           is_plus_user: false,
@@ -249,30 +277,40 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
         return;
       }
 
-      const idToken = authHeader.split("Bearer ")[1];
-      const decodedToken = await verifyToken(idToken);
+      const id_token = authHeader.split("Bearer ")[1];
+      const decoded_token = await verifyToken(id_token);
 
       const { purchase_token, product_id, package_name } = req.body;
 
       if (!purchase_token || !product_id || !package_name) {
-        res.status(400).json({ 
-          error: "Missing required parameters: purchase_token, product_id, package_name" 
+        res.status(400).json({
+          error: "Missing required parameters: purchase_token, product_id, package_name",
         });
         return;
       }
 
-      const db = admin.firestore();
-      const userDocRef = db.collection("users").doc(decodedToken.uid);
+      functions.logger.info(`Verifying subscription for user`);
 
-      // Check if this purchase token has already been processed to prevent duplicates
-      const existingDoc = await userDocRef.get();
-      if (existingDoc.exists) {
-        const userData = existingDoc.data();
-        if (userData?.subscription?.purchaseToken === purchase_token && userData?.subscription?.active) {
+      const db = getFirestore(app, "doenitdb");
+      const users_collection = db.collection("users");
+      const snapshot = await users_collection.where("uid", "==", decoded_token.uid).get();
+
+      if (snapshot.empty) {
+        functions.logger.warn(`User not found with UID: ${decoded_token.uid}`);
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      // const user_ref = snapshot.docs.find((doc) => doc.data().uid === decoded_token.uid);
+      const user = snapshot.docs[0].data();
+      functions.logger.info(`User document found: ${user?.id}`);
+
+      if (user) {
+        if (user.subscription?.purchaseToken === purchase_token && user?.subscription?.active) {
           res.json({
             success: true,
             message: "Subscription already verified",
-            alreadyProcessed: true
+            alreadyProcessed: true,
           });
           return;
         }
@@ -280,29 +318,25 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
       try {
         // Actually verify the purchase with Google Play
-        const verificationResult = await verifyGooglePlayPurchase(
-          package_name, 
-          product_id, 
-          purchase_token
-        );
+        const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token);
 
         if (!verificationResult.isValid) {
-          res.status(400).json({ 
+          res.status(400).json({
             error: "Invalid or expired subscription",
-            details: "Purchase verification failed with Google Play"
+            details: "Purchase verification failed with Google Play",
           });
           return;
         }
 
         // Store verified subscription info
-        await userDocRef.set(
+        await snapshot.docs[0].ref.set(
           {
             subscription: {
               productId: product_id,
               purchaseToken: purchase_token,
               packageName: package_name,
               platform: "android",
-              verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+              verifiedAt: FieldValue.serverTimestamp(),
               expiryTime: verificationResult.expiryTime,
               autoRenewing: verificationResult.autoRenewing,
               orderId: verificationResult.orderId,
@@ -313,32 +347,30 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
           { merge: true }
         );
 
-        functions.logger.info(`Subscription verified successfully for user: ${decodedToken.uid}`);
+        functions.logger.info(`Subscription verified successfully for user: ${decoded_token.uid}`);
 
         res.json({
           success: true,
           message: "Subscription verified and activated",
           subscription: {
             expiryTime: verificationResult.expiryTime,
-            autoRenewing: verificationResult.autoRenewing
-          }
+            autoRenewing: verificationResult.autoRenewing,
+          },
         });
-
       } catch (verificationError) {
         functions.logger.error("Google Play verification failed:", verificationError);
-        
+
         // Don't give users premium access if verification fails
-        res.status(400).json({ 
+        res.status(400).json({
           error: "Intekening verifikasie het misluk",
-          details: "Kon nie aankoop met Google Play Store verifieer nie"
+          details: "Kon nie aankoop met Google Play Store verifieer nie",
         });
         return;
       }
-
-        } catch (error) {
+    } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       functions.logger.error("Intekening verifikasie fout:", error_message);
-      
+
       // Categorize errors for better debugging
       if (error_message.includes("unauthenticated")) {
         res.status(401).json({ error: "Verifikasie het misluk" });
