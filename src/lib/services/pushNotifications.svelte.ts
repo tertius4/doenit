@@ -47,7 +47,12 @@ class PushNotificationService {
     if (!user.is_plus_user) return; // Sinkroniseer slegs vir Plus gebruikers om privaatheid te beskerm
     if (!user.uid) return;
 
-    const me = await OnlineDB.User.read(user.uid);
+    let me = await OnlineDB.User.read(user.uid);
+    if (!me) {
+      me = await OnlineDB.User.getAll({
+        filters: [{ field: "email_address", operator: "==", value: user.email_address }],
+      }).then(([u]) => u);
+    }
 
     if (me) {
       let is_updated = false;
@@ -67,7 +72,7 @@ class PushNotificationService {
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,
-        language_code: Cached.language.value || "af",
+        language_code: user.language_code,
       });
     } else {
       await OnlineDB.User.create({
@@ -76,7 +81,7 @@ class PushNotificationService {
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,
-        language_code: Cached.language.value || "af",
+        language_code: user.language_code,
       });
     }
   }

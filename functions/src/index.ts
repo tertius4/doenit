@@ -329,23 +329,23 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
         
         // Don't give users premium access if verification fails
         res.status(400).json({ 
-          error: "Subscription verification failed",
-          details: "Could not verify purchase with Google Play Store"
+          error: "Intekening verifikasie het misluk",
+          details: "Kon nie aankoop met Google Play Store verifieer nie"
         });
         return;
       }
 
-    } catch (error) {
+        } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      functions.logger.error("Subscription verification error:", error_message);
+      functions.logger.error("Intekening verifikasie fout:", error_message);
       
       // Categorize errors for better debugging
       if (error_message.includes("unauthenticated")) {
-        res.status(401).json({ error: "Authentication failed" });
+        res.status(401).json({ error: "Verifikasie het misluk" });
       } else if (error_message.includes("not found")) {
-        res.status(404).json({ error: "User not found" });
+        res.status(404).json({ error: "Gebruiker nie gevind nie" });
       } else {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Interne bediener fout" });
       }
     }
   });

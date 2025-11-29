@@ -19,7 +19,31 @@ export class Table<T extends Task | Category | User> {
       ...item,
     } as T;
 
-    return this.collection.insert(new_item);
+    try {
+      return await this.collection.insert(new_item);
+    } catch (error: any) {
+      // Handle conflict: if document with this ID already exists
+      if (error?.code === "CONFLICT" || error?.status === 409) {
+        const existing_doc = await this.collection.findOne(new_item.id).exec();
+
+        if (existing_doc) {
+          const existing = existing_doc.toJSON() as T;
+
+          // Compare updated_at timestamps
+          if (new_item.updated_at && existing.updated_at && new_item.updated_at > existing.updated_at) {
+            // New item is more recent, update the existing document
+            const updated = await this.update(new_item.id, new_item);
+            if (updated) return updated;
+          }
+
+          // Existing document is more recent or same, return it
+          return existing;
+        }
+      }
+
+      // Re-throw if it's a different error
+      throw error;
+    }
   }
 
   async createMany(items: Omit<T, "id" | "created_at" | "archived" | "updated_at">[]): Promise<{ success: T[] }> {

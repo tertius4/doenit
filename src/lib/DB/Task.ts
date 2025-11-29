@@ -162,17 +162,14 @@ export class TaskTable extends Table<Task> {
   async sync(online_tasks: OnlineTask[]) {
     try {
       const task_ids: string[] = [];
+
       const promises = online_tasks.map((online_task) => {
+        task_ids.push(online_task.task_id);
         if (online_task.deleted) {
-          task_ids.push(online_task.task_id);
-          return Promise.resolve({ id: online_task.task_id, deleted: true } as Task);
+          return Promise.resolve({ id: online_task.task_id, deleted: true });
         }
 
-        const encrypted_data = online_task.data;
-        if (!encrypted_data) return;
-
-        task_ids.push(online_task.task_id);
-        return Secure.decryptAndDecompress(encrypted_data) as Promise<Task>;
+        return Secure.decryptAndDecompress(online_task.data) as Promise<Task>;
       });
 
       const [existing_tasks, all_tasks] = await Promise.all([
