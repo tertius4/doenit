@@ -34,7 +34,7 @@ export let BACK_BUTTON_FUNCTION = { value: null };
  * @returns {string} The locale string (e.g., "af-ZA" or "en-US")
  */
 function getCurrentLocale() {
-  return user.language_code === "af" ? "af-ZA" : "en-US";
+  return user.language_code === "af" ? "af-ZA" : "en-GB";
 }
 
 /**

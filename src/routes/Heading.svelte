@@ -23,9 +23,10 @@
     "/complete": t("completed_tasks"),
     "/categories": t("categories"),
     "/settings": t("settings"),
+    "/plus": "",
   });
 
-  const title = $derived(TITLES[page.route.id ?? "/"] || t("task_list"));
+  const title = $derived(TITLES[page.route.id ?? "/"] ?? t("task_list"));
   const search_text = getContext("search_text");
   const is_home = $derived(page.route.id === "/");
   const is_done = $derived(page.route.id === "/complete");
@@ -68,7 +69,7 @@
     </div>
 
     <div class="w-fit mx-auto flex items-center justify-center gap-1 py-2">
-      <img alt="logo" src="logo.png" class="w-3xl" />
+      <img alt="logo" src="logo.png" class="w-3xl {title ? '' : 'invisible'}" />
       <div class="relative">
         <span class="text-transparent text-3xl font-bold px-2 line-clamp-1">{title}</span>
         {#key title}

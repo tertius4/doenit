@@ -1,6 +1,5 @@
 <script>
   import { Selected } from "$lib/selected.svelte";
-  import Categories from "$lib/icon/Categories.svelte";
   import { Check, Info, Star } from "$lib/icon";
   import Tag from "./Tag.svelte";
   import Modal from "./modal/Modal.svelte";
@@ -9,6 +8,7 @@
   import Button from "./element/button/Button.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { user } from "$lib/base/user.svelte";
+  import CategoryTag from "./CategoryTag.svelte";
 
   let show_favourite_modal = $state(false);
 
@@ -19,23 +19,6 @@
       user.favourite_category_ids.every((id) => Selected.categories.has(id)) &&
       user.favourite_category_ids.length === Selected.categories.size
   );
-
-  /**
-   * Toggles selection of a hotbar item.
-   * @param {Category} category
-   */
-  function toggle(category) {
-    Selected.do_now = false;
-
-    if (Selected.categories.has(category.id)) {
-      Selected.categories.delete(category.id);
-    } else {
-      for (const category_id of user.favourite_category_ids) {
-        Selected.categories.delete(category_id);
-      }
-      Selected.categories.add(category.id);
-    }
-  }
 
   function selectFavourite() {
     if (!user.favourite_category_ids.length) {
@@ -74,11 +57,7 @@
     </Tag>
 
     {#each categoriesContext.categories as category}
-      {@const is_selected = Selected.categories.has(category.id)}
-      <Tag {is_selected} onclick={() => toggle(category)}>
-        <Categories />
-        <span>{category.name}</span>
-      </Tag>
+      <CategoryTag {category} />
     {/each}
   </nav>
 {/if}

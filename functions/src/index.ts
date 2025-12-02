@@ -5,6 +5,7 @@ import { Message } from "firebase-admin/lib/messaging/messaging-api";
 import { google } from "googleapis";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { type App } from "firebase-admin/app";
+import { type DecodedIdToken } from "firebase-admin/auth";
 
 const app = getFirebaseStorage();
 
@@ -29,14 +30,19 @@ const corsHandler = cors({
   optionsSuccessStatus: 200,
 });
 
-// Helper function to verify Firebase ID token
-async function verifyToken(id_token: string) {
+/**
+ * Helper function to verify Firebase ID token
+ * @returns {{ success: true, data: DecodedIdToken } | { success: false, error_message: string }}
+ */
+async function verifyToken(
+  id_token: string
+): Promise<{ success: true; data: DecodedIdToken } | { success: false; error_message: string }> {
   try {
     const result = await admin.auth(app).verifyIdToken(id_token);
-    return result;
+    return { success: true, data: result };
   } catch (error) {
     functions.logger.error("Token verification error:", error);
-    throw new functions.https.HttpsError("unauthenticated", "Invalid token");
+    return { success: false, error_message: "Unauthorized" };
   }
 }
 
@@ -111,7 +117,6 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
         return;
       }
 
-      // Auth header (optional, but recommended)
       const auth_header = req.headers.authorization;
       if (!auth_header || !auth_header.startsWith("Bearer ")) {
         res.status(401).json({ error: "Unauthorized" });
@@ -119,20 +124,23 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       }
 
       const id_token = auth_header.split("Bearer ")[1];
-      await verifyToken(id_token); // Throws if invalid
+      const token_result = await verifyToken(id_token);
+      if (!token_result.success) {
+        res.status(401).json({ error: token_result.error_message });
+        return;
+      }
 
       // Get notification details from body
       const { users, title, body, type, data } = req.body;
-
       if (!users?.length) {
-        res.status(400).json({ error: "Missing or invalid users array" });
+        res.status(400).json({ error: "Missing parameters" });
         return;
       }
 
       // Send notification using firebase-admin
       if (title && body) {
         // Direct notification (simple case) - send to all users with same content
-        await admin.messaging().sendEach(
+        await admin.app("doenitdb").messaging().sendEach(
           users.map((user: any) => ({
             token: user.fcm_token,
             notification: { title, body },
@@ -182,7 +190,7 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
           return message;
         });
 
-        await admin.messaging().sendEach(messages);
+        await admin.app("doenitdb").messaging().sendEach(messages);
       } else {
         res.status(400).json({ error: "Invalid notification payload" });
         return;
@@ -213,19 +221,20 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
       }
 
       const id_token = authHeader.split("Bearer ")[1];
-      const decoded_token = await verifyToken(id_token);
+      const token_result = await verifyToken(id_token);
+      if (!token_result.success) {
+        res.status(401).json({ error: token_result.error_message });
+        return;
+      }
 
       const { purchase_token, product_id } = req.body;
-
       if (!purchase_token || !product_id) {
         res.status(400).json({ error: "Missing parameters" });
         return;
       }
 
-      // Use UID directly instead of email query
       const db = admin.firestore();
-
-      // Query for the document with matching id property
+      const decoded_token = token_result.data;
       const user_collection = db.collection("users");
       const snapshot = await user_collection.where("id", "==", decoded_token.uid).limit(1).get();
 
@@ -270,7 +279,6 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
         return;
       }
 
-      // Verify user authentication
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith("Bearer ")) {
         res.status(401).json({ error: "Unauthorized" });
@@ -278,48 +286,45 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       }
 
       const id_token = authHeader.split("Bearer ")[1];
-      const decoded_token = await verifyToken(id_token);
+      const token_result = await verifyToken(id_token);
+      if (!token_result.success) {
+        res.status(401).json({ error: token_result.error_message });
+        return;
+      }
 
       const { purchase_token, product_id, package_name } = req.body;
-
       if (!purchase_token || !product_id || !package_name) {
-        res.status(400).json({
-          error: "Missing required parameters: purchase_token, product_id, package_name",
-        });
+        res.status(400).json({ error: "Missing required parameters" });
         return;
       }
 
-      functions.logger.info(`Verifying subscription for user`);
-
+      const decoded_token = token_result.data;
       const db = getFirestore(app, "doenitdb");
-      const users_collection = db.collection("users");
-      const snapshot = await users_collection.where("uid", "==", decoded_token.uid).get();
-
-      if (snapshot.empty) {
-        functions.logger.warn(`User not found with UID: ${decoded_token.uid}`);
-        res.status(404).json({ error: "User not found" });
+      const user_result = await getUser(decoded_token.uid, db);
+      if (!user_result.success) {
+        res.status(404).json({ error: user_result.error_message });
         return;
       }
 
-      // const user_ref = snapshot.docs.find((doc) => doc.data().uid === decoded_token.uid);
-      const user = snapshot.docs[0].data();
-      functions.logger.info(`User document found: ${user?.id}`);
+      const user = user_result.data.user;
+      functions.logger.info(`User document found: ${user.name}`);
 
-      if (user) {
-        if (user.subscription?.purchaseToken === purchase_token && user?.subscription?.active) {
-          res.json({
-            success: true,
-            message: "Subscription already verified",
-            alreadyProcessed: true,
-          });
-          return;
-        }
+      const subscription_result = await getSubscription(decoded_token.uid, db);
+      if (!subscription_result.success) {
+        res.status(404).json({ error: subscription_result.error_message });
+        return;
+      }
+
+      let subscription = subscription_result.data;
+      functions.logger.info(`Subscription document retrieved. Created: ${subscription?.verifiedAt}`);
+      if (subscription?.purchase_token === purchase_token && subscription?.active) {
+        res.json({ success: true, message: "Subscription already verified" });
+        return;
       }
 
       try {
         // Actually verify the purchase with Google Play
         const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token);
-
         if (!verificationResult.isValid) {
           res.status(400).json({
             error: "Invalid or expired subscription",
@@ -328,25 +333,22 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
           return;
         }
 
-        // Store verified subscription info
-        await snapshot.docs[0].ref.set(
-          {
-            subscription: {
-              productId: product_id,
-              purchaseToken: purchase_token,
-              packageName: package_name,
-              platform: "android",
-              verifiedAt: FieldValue.serverTimestamp(),
-              expiryTime: verificationResult.expiryTime,
-              autoRenewing: verificationResult.autoRenewing,
-              orderId: verificationResult.orderId,
-              active: true,
-            },
-            is_plus_user: true,
-          },
-          { merge: true }
-        );
+        subscription ??= {
+          product_id: product_id,
+          user_uid: decoded_token.uid,
+          purchase_token: purchase_token,
+          package_name: package_name,
+          platform: "android",
+          verified_at: FieldValue.serverTimestamp(),
+          active: true,
+        };
 
+        subscription.expiry_time = verificationResult.expiryTime;
+        subscription.auto_renewing = verificationResult.autoRenewing;
+        subscription.order_id = verificationResult.orderId;
+        await saveSubscription(subscription);
+
+        user_result.data.user_ref.set({ is_plus_user: true }, { merge: true });
         functions.logger.info(`Subscription verified successfully for user: ${decoded_token.uid}`);
 
         res.json({
@@ -357,8 +359,8 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
             autoRenewing: verificationResult.autoRenewing,
           },
         });
-      } catch (verificationError) {
-        functions.logger.error("Google Play verification failed:", verificationError);
+      } catch (error) {
+        functions.logger.error("Google Play verification failed:", error);
 
         // Don't give users premium access if verification fails
         res.status(400).json({
@@ -382,6 +384,77 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
     }
   });
 });
+
+async function getUser(
+  uid: string,
+  db: FirebaseFirestore.Firestore
+): Promise<
+  | {
+      success: true;
+      data: { user: FirebaseFirestore.DocumentData; user_ref: FirebaseFirestore.DocumentReference };
+    }
+  | { success: false; error_message: string }
+> {
+  const users_collection = db.collection("users");
+  const users_snapshot = await users_collection.where("uid", "==", uid).get();
+
+  if (users_snapshot.empty) {
+    functions.logger.warn(`User not found with UID: ${uid}`);
+    return { success: false, error_message: "User not found" };
+  }
+
+  const user_doc = users_snapshot.docs[0];
+  if (!user_doc.exists) {
+    functions.logger.warn(`User document is empty for UID: ${uid}`);
+    return { success: false, error_message: "User not found" };
+  }
+
+  return { success: true, data: { user: user_doc.data(), user_ref: user_doc.ref } };
+}
+
+async function getSubscription(
+  uid: string,
+  db: FirebaseFirestore.Firestore
+): Promise<{ success: true; data: FirebaseFirestore.DocumentData | null } | { success: false; error_message: string }> {
+  try {
+    const subscription_collection = db.collection("subscriptions");
+    const subscriptions_snapshot = await subscription_collection.where("user_uid", "==", uid).get();
+
+    if (subscriptions_snapshot.empty) {
+      functions.logger.warn(`subscription not found with UID: ${uid}`);
+      return { success: true, data: null };
+    }
+
+    const subscription = subscriptions_snapshot.docs[0].data();
+    if (!subscription) {
+      functions.logger.warn(`Subscription not found for UID: ${uid}`);
+      return { success: true, data: null };
+    }
+
+    return { success: true, data: subscription };
+  } catch (error) {
+    functions.logger.error(`Error retrieving subscription for UID: ${uid}`, error);
+    return { success: false, error_message: "Error retrieving subscription" };
+  }
+}
+
+async function saveSubscription(subscription: any | null): Promise<void> {
+  const db = getFirestore(app, "doenitdb");
+
+  const subscription_collection = db.collection("subscriptions");
+  // Update if already exsists
+  const subscriptions_snapshot = await subscription_collection.where("user_uid", "==", subscription.user_uid).get();
+
+  if (!subscriptions_snapshot.empty) {
+    const subscription_ref = subscriptions_snapshot.docs[0].ref;
+    await subscription_ref.set(subscription, { merge: true });
+    functions.logger.info(`Subscription updated for user UID: ${subscription.user_uid}`);
+  } else {
+    // Create new
+    await subscription_collection.add(subscription);
+    functions.logger.info(`New subscription created for user UID: ${subscription.user_uid}`);
+  }
+}
 
 function getTemplateTitle(type: string, lang: "af" | "en"): string {
   const is_english = lang === "en";

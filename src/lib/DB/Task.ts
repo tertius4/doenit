@@ -10,7 +10,6 @@ import { t } from "$lib/services/language.svelte";
 import { Table } from "./_Table";
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
-import { deepEqual } from "$lib/utils.svelte";
 
 export class TaskTable extends Table<Task> {
   constructor(collection: RxCollection<Task>) {
@@ -161,10 +160,7 @@ export class TaskTable extends Table<Task> {
    */
   async sync(online_tasks: OnlineTask[]) {
     try {
-      const task_ids: string[] = [];
-
       const promises = online_tasks.map((online_task) => {
-        task_ids.push(online_task.task_id);
         if (online_task.deleted) {
           return Promise.resolve({ id: online_task.task_id, deleted: true });
         }
@@ -172,16 +168,7 @@ export class TaskTable extends Table<Task> {
         return Secure.decryptAndDecompress(online_task.data) as Promise<Task>;
       });
 
-      const [existing_tasks, all_tasks] = await Promise.all([
-        DB.Task.getAll({ selector: { id: { $in: task_ids } } }),
-        Promise.all(promises),
-      ]);
-
-      // Map existing tasks by id for quick lookup.
-      const existing_tasks_map = new Map<string, Task>();
-      for (const task of existing_tasks) {
-        if (task) existing_tasks_map.set(task.id, task);
-      }
+      const all_tasks = await Promise.all(promises);
 
       for (const task of all_tasks) {
         if (!task) continue;
@@ -191,17 +178,16 @@ export class TaskTable extends Table<Task> {
           continue;
         }
 
-        const existing = existing_tasks_map.get(task.id);
-        if (!existing) {
-          await super.create(task);
-        } else {
-          // Check if there are changes
-          // Only update if online version is newer
+        const existing_task = await super.get(task.id).catch(() => null);
+        if (existing_task) {
+          // Check updated_at
           const online_updated = task.updated_at ? new Date(task.updated_at) : null;
-          const local_updated = existing.updated_at ? new Date(existing.updated_at) : null;
+          const local_updated = existing_task.updated_at ? new Date(existing_task.updated_at) : null;
           if (online_updated && local_updated && online_updated > local_updated) {
             await super.update(task.id, task);
           }
+        } else {
+          await super.create(task);
         }
       }
     } catch (error) {
@@ -253,13 +239,7 @@ export class TaskTable extends Table<Task> {
       if (!navigator.onLine) {
         throw new Error("Offline - will sync later");
       }
-
-      const category = await DB.Category.get(db_task.category_id!);
-      if (!category) return;
-
-      const email_addresses = DB.Category.getNotificationEmails(category);
-      if (!email_addresses.length) return;
-
+      
       const [encrypted_data, [online_task]] = await Promise.all([
         Secure.compressAndEncrypt(db_task),
         OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),

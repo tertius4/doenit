@@ -13,9 +13,8 @@
 
   const search_text = getContext("search_text");
 
-  /** @type {Task[]}*/
+  /** @type {Task[]} */
   let tasks = $state([]);
-
   const filtered_tasks = $derived(filterTasks(tasks, search_text.value));
 
   onMount(() => {
@@ -82,8 +81,7 @@
 
       const normalized_search = normalize(search_text);
       const in_name = normalize(task.name).includes(normalized_search);
-      const in_description = normalize(task.description || "").includes(normalized_search);
-      return !in_name && !in_description;
+      return !!in_name;
     });
   }
 </script>

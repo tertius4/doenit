@@ -9,6 +9,8 @@
   import { goto } from "$app/navigation";
   import { Alert } from "$lib/core/alert";
   import { Browser } from "@capacitor/browser";
+  import { page } from "$app/state";
+  import GetDoenitPlus from "$lib/components/GetDoenitPlus.svelte";
 
   let is_loading = $state(false);
   let is_cancelling = $state(false);
@@ -50,6 +52,9 @@
     try {
       is_loading = true;
       if (!user.is_logged_in) {
+        const skip_login = page.url.searchParams.get("show_login") === "false";
+        if (skip_login) return;
+
         const result = await user.signIn();
         if (!result.success) {
           if (result.error_message === "USER_CANCELED") {
@@ -83,125 +88,129 @@
   }
 </script>
 
-<div class="min-h-screen pb-20">
-  <!-- Header Section -->
-  <div class="pb-2 mt-4 bg-page border-b border-default text-center">
-    <div class="flex justify-center mb-4">
-      <div class="bg-primary/20 rounded-full p-4">
-        <Crown class="text-5xl text-primary" />
-      </div>
-    </div>
-    <h1 class="text-3xl font-bold mb-2">{t("doenit_plus")}</h1>
-  </div>
-
-  <!-- Current Plan Status -->
-  {#if billing.is_plus_user}
-    <div class="mt-4 bg-surface rounded-lg p-4 border border-primary">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm">{t("current_plan")}</p>
-          <p class="text-lg font-semibold text-primary">{t("plus_plan")}</p>
+{#if !user.is_plus_user}
+  <GetDoenitPlus />
+{:else}
+  <div class="min-h-screen pb-20">
+    <!-- Header Section -->
+    <div class="pb-2 mt-4 bg-page border-b border-default text-center">
+      <div class="flex justify-center mb-4">
+        <div class="bg-primary/20 rounded-full p-4">
+          <Crown class="text-5xl text-primary" />
         </div>
-        <Crown class="text-3xl text-primary" />
       </div>
-      <button
-        type="button"
-        onclick={handleCancelSubscription}
-        disabled={is_cancelling}
-        class="mt-4 w-full bg-transparent border border-default py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:transform-none"
-      >
-        {#if is_cancelling}
-          <div class="flex items-center justify-center gap-2">
-            <Loading />
-            {t("loading")}
+      <h1 class="text-3xl font-bold mb-2">{t("doenit_plus")}</h1>
+    </div>
+
+    <!-- Current Plan Status -->
+    {#if billing.is_plus_user}
+      <div class="mt-4 bg-surface rounded-lg p-4 border border-primary">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm">{t("current_plan")}</p>
+            <p class="text-lg font-semibold text-primary">{t("plus_plan")}</p>
           </div>
-        {:else}
-          <div class="flex items-center justify-center gap-2">
-            <Google />
-            {t("manage_subscriptions")}
-          </div>
-        {/if}
-      </button>
-    </div>
-  {:else}
-    <div class="mt-4 bg-surface rounded-lg p-4 border border-default">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm">{t("current_plan")}</p>
-          <p class="text-lg font-semibold">{t("free_plan")}</p>
+          <Crown class="text-3xl text-primary" />
         </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Pricing Section -->
-  {#if !billing.is_plus_user && product}
-    <div class="mt-4 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-6 text-white shadow-lg">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-baseline gap-1 mb-2">
-          <span class="text-4xl font-bold">{product.price}</span>
-        </div>
-        <div class="text-base opacity-80">{t("per_month")}</div>
-      </div>
-
-      <button
-        type="button"
-        onclick={handleSubscribe}
-        disabled={is_loading}
-        class="w-full bg-white text-primary font-semibold py-4 px-6 rounded-lg text-lg transition-all duration-200 hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:transform-none shadow-md"
-      >
-        <div class="flex items-center justify-center gap-2">
-          {#if is_loading}
-            <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-            {t("loading")}
+        <button
+          type="button"
+          onclick={handleCancelSubscription}
+          disabled={is_cancelling}
+          class="mt-4 w-full bg-transparent border border-default py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+        >
+          {#if is_cancelling}
+            <div class="flex items-center justify-center gap-2">
+              <Loading />
+              {t("loading")}
+            </div>
           {:else}
-            <Crown class="text-xl" />
-            {t("subscribe_now")}
+            <div class="flex items-center justify-center gap-2">
+              <Google />
+              {t("manage_subscriptions")}
+            </div>
           {/if}
+        </button>
+      </div>
+    {:else}
+      <div class="mt-4 bg-surface rounded-lg p-4 border border-default">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm">{t("current_plan")}</p>
+            <p class="text-lg font-semibold">{t("free_plan")}</p>
+          </div>
         </div>
-      </button>
-    </div>
-  {/if}
+      </div>
+    {/if}
 
-  <!-- Benefits Section -->
-  <div class="mt-4">
-    <h2 class="text-xl font-bold mb-4">{t("plus_benefits")}</h2>
+    <!-- Pricing Section -->
+    {#if !billing.is_plus_user && product}
+      <div class="mt-4 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-6 text-white shadow-lg">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-baseline gap-1 mb-2">
+            <span class="text-4xl font-bold">{product.price}</span>
+          </div>
+          <div class="text-base opacity-80">{t("per_month")}</div>
+        </div>
 
-    <div class="space-y-4">
-      {#each benefits as benefit}
-        {@const Icon = benefit.icon}
-        <div class="bg-surface rounded-lg p-4 border border-default">
-          <div class="flex items-start gap-4">
-            <div class="bg-primary/20 rounded-full p-3 flex-shrink-0">
-              <Icon class="text-2xl text-primary" />
-            </div>
-            <div class="flex-1">
-              <h3 class="font-semibold text-lg mb-1">{benefit.title}</h3>
-              <p class="text-sm">{benefit.description}</p>
-            </div>
-            {#if billing.is_plus_user}
-              <Check class="text-2xl text-success flex-shrink-0" />
+        <button
+          type="button"
+          onclick={handleSubscribe}
+          disabled={is_loading}
+          class="w-full bg-white text-primary font-semibold py-4 px-6 rounded-lg text-lg transition-all duration-200 hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:transform-none shadow-md"
+        >
+          <div class="flex items-center justify-center gap-2">
+            {#if is_loading}
+              <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+              {t("loading")}
+            {:else}
+              <Crown class="text-xl" />
+              {t("subscribe_now")}
             {/if}
           </div>
+        </button>
+      </div>
+    {/if}
+
+    <!-- Benefits Section -->
+    <div class="mt-4">
+      <h2 class="text-xl font-bold mb-4">{t("plus_benefits")}</h2>
+
+      <div class="space-y-4">
+        {#each benefits as benefit}
+          {@const Icon = benefit.icon}
+          <div class="bg-surface rounded-lg p-4 border border-default">
+            <div class="flex items-start gap-4">
+              <div class="bg-primary/20 rounded-full p-3 flex-shrink-0">
+                <Icon class="text-2xl text-primary" />
+              </div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-lg mb-1">{benefit.title}</h3>
+                <p class="text-sm">{benefit.description}</p>
+              </div>
+              {#if billing.is_plus_user}
+                <Check class="text-2xl text-success flex-shrink-0" />
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Why Plus Section -->
+    <div class="mt-4">
+      <h2 class="text-xl font-bold mb-4">{t("why_plus")}</h2>
+
+      <div class="bg-surface rounded-lg p-4 border border-default space-y-4">
+        <div>
+          <h3 class="font-semibold mb-2">{t("plus_feature_collaboration")}</h3>
+          <p class="text-sm">{t("plus_feature_collaboration_desc")}</p>
         </div>
-      {/each}
-    </div>
-  </div>
 
-  <!-- Why Plus Section -->
-  <div class="mt-4">
-    <h2 class="text-xl font-bold mb-4">{t("why_plus")}</h2>
-
-    <div class="bg-surface rounded-lg p-4 border border-default space-y-4">
-      <div>
-        <h3 class="font-semibold mb-2">{t("plus_feature_collaboration")}</h3>
-        <p class="text-sm">{t("plus_feature_collaboration_desc")}</p>
-      </div>
-
-      <div class="border-t border-default pt-4">
-        <h3 class="font-semibold mb-2">{t("plus_feature_peace_of_mind")}</h3>
-        <p class="text-sm">{t("plus_feature_peace_of_mind_desc")}</p>
+        <div class="border-t border-default pt-4">
+          <h3 class="font-semibold mb-2">{t("plus_feature_peace_of_mind")}</h3>
+          <p class="text-sm">{t("plus_feature_peace_of_mind_desc")}</p>
+        </div>
       </div>
     </div>
   </div>
-</div>
+{/if}

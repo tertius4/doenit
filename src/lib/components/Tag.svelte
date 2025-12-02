@@ -1,4 +1,6 @@
 <script>
+  import { LongPress } from "$lib/services/long_press.svelte";
+
   /**
    * @typedef {Object} Props
    * @property {boolean} is_selected
@@ -8,12 +10,14 @@
    */
 
   /** @type {Props & Record<string, any>} */
-  const { is_selected, round, onclick, children, ...rest } = $props();
+  const { is_selected, round, onlongpress, onclick, children, ...rest } = $props();
 </script>
 
 <button
   type="button"
   aria-label="tag"
+  {onlongpress}
+  use:LongPress.create
   {onclick}
   class={[
     {

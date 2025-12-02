@@ -14,72 +14,7 @@ import { OnlineDB } from "$lib/OnlineDB";
 // TODO: Candidate for core or base
 // TODO: Refactor notifications
 
-// Local Notification configuration
-const localConfig = {
-  channelId: "default-channel",
-  channelName: "Default Channel",
-  defaultTitle: "App Notification",
-  defaultBody: "You have a new notification",
-};
-
 export class Notify {
-  static Local = class {
-    static is_initialized = false;
-
-    static async initialize() {
-      try {
-        await LocalNotifications.createChannel({
-          id: localConfig.channelId,
-          name: localConfig.channelName,
-          importance: 3,
-          visibility: 1,
-        });
-        this.is_initialized = true;
-      } catch (error) {
-        const error_message = error instanceof Error ? error.message : String(error);
-        alert(`Kon nie plaaslike kennisgewing inisialiseer nie: ${error_message}`);
-      }
-    }
-
-    static async send({ id = 1, title = localConfig.defaultTitle, body = localConfig.defaultBody }) {
-      if (!this.is_initialized) await this.initialize();
-      try {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              id,
-              title,
-              body,
-              schedule: { at: new Date(Date.now() + 1000) },
-            },
-          ],
-        });
-      } catch (error) {
-        const error_message = error instanceof Error ? error.message : String(error);
-        alert(`Kon nie plaaslike kennisgewing stuur nie: ${error_message}`);
-      }
-    }
-
-    static async schedule({ id = 1, title = localConfig.defaultTitle, body = localConfig.defaultBody, at }) {
-      if (!this.is_initialized) await this.initialize();
-      try {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              id,
-              title,
-              body,
-              schedule: { at: new Date(at) },
-            },
-          ],
-        });
-      } catch (error) {
-        const error_message = error instanceof Error ? error.message : String(error);
-        alert(`Kon nie plaaslike kennisgewing skeduleer nie: ${error_message}`);
-      }
-    }
-  };
-
   static Push = class {
     static is_initialized: boolean = false;
     static messaging: Messaging | null = null;
@@ -164,8 +99,9 @@ export class Notify {
         const token = user.getToken ? await user.getToken() : null;
         if (!token) throw new Error("User not authenticated");
 
+        const unique_email_addresses = Array.from(new Set(email_address));
         const users = await OnlineDB.User.getAll({
-          filters: [{ field: "email_address", operator: "in", value: email_address }],
+          filters: [{ field: "email_address", operator: "in", value: unique_email_addresses }],
         });
         const users_with_tokens = users.filter((user) => user.fcm_token);
         if (!users_with_tokens.length) return;

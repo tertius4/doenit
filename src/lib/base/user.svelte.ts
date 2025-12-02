@@ -3,12 +3,12 @@ import { PUBLIC_ADMIN_EMAILS, PUBLIC_GOOGLE_AUTH } from "$env/static/public";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getApp, initializeApp } from "$lib/chunk/firebase-app";
 import { APP_NAME, FIREBASE_CONFIG, normalize } from "$lib";
-import { t } from "$lib/services/language.svelte";
 import { Preferences } from "@capacitor/preferences";
+import { billing } from "$lib/core/billing.svelte";
+import { t } from "$lib/services/language.svelte";
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
 import { Widget } from "$lib/core/widget";
-import { billing } from "$lib/core/billing.svelte";
 import { Alert } from "$lib/core/alert";
 
 class UserState {
@@ -24,7 +24,7 @@ class UserState {
   #language_code: Language | null = $state(null);
   #text_size: TextSize = $state(16);
   #theme: Theme = $state("dark");
-  #notifications: { enabled: boolean; time: string | null } = $state({ enabled: false, time: null });
+  #notifications: { enabled: boolean; time: string | null; past_tasks: boolean } | null = $state(null);
 
   #is_loading = $state(true);
   readonly is_logged_in = $derived(!!this.#uid);
@@ -103,7 +103,7 @@ class UserState {
   }
 
   get notifications() {
-    return this.#notifications;
+    return this.#notifications ?? { enabled: false, time: null, past_tasks: false };
   }
 
   async init() {
@@ -117,6 +117,11 @@ class UserState {
       if (!Capacitor.isNativePlatform()) {
         // TODO: Figure out web sign-in.
         return { success: false, error_message: "Disabled for web" };
+      }
+
+      // Offline check
+      if (!navigator.onLine) {
+        return { success: false, error_message: "No internet connection" };
       }
 
       this.#is_loading = true;
@@ -186,6 +191,38 @@ class UserState {
     }
   }
 
+  updateNotificationSettings(settings: { enabled?: boolean; time?: string | null; past_tasks?: boolean }) {
+    if (!this.#notifications) {
+      this.requestNotificationsPermission();
+    }
+
+    let is_updated = false;
+    if (settings.enabled !== undefined) {
+      this.#notifications!.enabled = settings.enabled;
+      if (settings.enabled) {
+        this.#notifications!.time ??= "08:00";
+      } else {
+        this.#notifications!.time = null;
+      }
+
+      is_updated = true;
+    }
+
+    if (settings.time !== undefined) {
+      this.#notifications!.time = settings.time;
+      is_updated = true;
+    }
+
+    if (settings.past_tasks !== undefined) {
+      this.#notifications!.past_tasks = settings.past_tasks;
+      is_updated = true;
+    }
+
+    if (is_updated) {
+      this.saveUserData();
+    }
+  }
+
   private async loadUser() {
     try {
       const { value } = await Preferences.get({ key: "user" });
@@ -194,7 +231,7 @@ class UserState {
         this.#language_code = user.language_code || null;
         this.#text_size = user.text_size || "16";
         this.#theme = user.theme || "dark";
-        this.#notifications = user.notifications || { enabled: true, time: "08:00" };
+        this.#notifications = user.notifications;
         this.#favourite_category_ids = user.favourite_category_ids || [];
         this.#id = user.id || null;
         this.#uid = user.uid || null;
@@ -204,6 +241,9 @@ class UserState {
       }
 
       this.updateAppTheme(this.#theme);
+      if (!this.#notifications) {
+        await this.requestNotificationsPermission();
+      }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       alert(`Kon nie gebruikerdata laai nie: ${error_message}`);
@@ -295,6 +335,29 @@ class UserState {
 
     Widget.updateTheme(theme);
     this.updateEdgeToEdgeColour();
+  }
+
+  async requestNotificationsPermission() {
+    if (!Capacitor.isNativePlatform()) {
+      this.#notifications = { enabled: false, time: null, past_tasks: false };
+      await this.saveUserData();
+      return;
+    }
+
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+    let permission = await LocalNotifications.requestPermissions();
+
+    if (permission.display === "prompt-with-rationale" || permission.display === "denied") {
+      await LocalNotifications.changeExactNotificationSetting();
+      return;
+    }
+    if (permission.display === "granted") {
+      this.#notifications = { enabled: true, time: "08:00", past_tasks: false };
+    } else {
+      this.#notifications = { enabled: false, time: null, past_tasks: false };
+    }
+
+    await this.saveUserData();
   }
 
   private isValidTheme(theme_value: string): theme_value is Theme {

@@ -27,7 +27,7 @@
         const result = await user.signIn();
         if (!result.success) {
           if (result.error_message === "USER_CANCELED") {
-            return goto(`/plus`);
+            return goto(`/plus?show_login=false`);
           }
 
           Alert.error(result.error_message || t("something_went_wrong"));
