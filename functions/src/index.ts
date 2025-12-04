@@ -140,12 +140,15 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
       // Send notification using firebase-admin
       if (title && body) {
         // Direct notification (simple case) - send to all users with same content
-        await admin.app("doenitdb").messaging().sendEach(
-          users.map((user: any) => ({
-            token: user.fcm_token,
-            notification: { title, body },
-          }))
-        );
+        await admin
+          .app("doenitdb")
+          .messaging()
+          .sendEach(
+            users.map((user: any) => ({
+              token: user.fcm_token,
+              notification: { title, body },
+            }))
+          );
       } else if (type && data) {
         // Structured notification - format per user's language preference
         const messages = users.map((user: any) => {
@@ -477,6 +480,12 @@ function getTemplateTitle(type: string, lang: "af" | "en"): string {
       } else {
         return "Taak Opgedateer";
       }
+    case "task_completed":
+      if (is_english) {
+        return "A task is done!";
+      } else {
+        return "'n Taak is Klaar!";
+      }
     case "user_left_group":
       if (is_english) {
         return "User Left Group";
@@ -519,6 +528,12 @@ function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, s
         return `Task "${data.task_name}" updated in ${data.category_name}`;
       } else {
         return `Taak "${data.task_name}" opgedateer in ${data.category_name}`;
+      }
+    case "task_completed":
+      if (is_english) {
+        return `"${data.task_name}" is completed in "${data.category_name}"!`;
+      } else {
+        return `"${data.task_name}" is gedoen in "${data.category_name}"!`;
       }
     case "user_left_group":
       if (is_english) {

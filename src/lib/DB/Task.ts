@@ -239,23 +239,37 @@ export class TaskTable extends Table<Task> {
       if (!navigator.onLine) {
         throw new Error("Offline - will sync later");
       }
-      
-      const [encrypted_data, [online_task]] = await Promise.all([
+
+      const [encrypted_data, [online_task_encrypted]] = await Promise.all([
         Secure.compressAndEncrypt(db_task),
         OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
       ]);
 
-      if (online_task) {
-        await OnlineDB.Task.updateWithNotification(
-          online_task.id,
-          {
-            id: online_task.id,
-            task_id: db_task.id,
-            category_id: db_task.category_id || "",
-            data: encrypted_data || "",
-          },
-          db_task
-        );
+      if (online_task_encrypted) {
+        const online_task = (await Secure.decryptAndDecompress(online_task_encrypted.data)) as Task;
+        if (online_task.completed < db_task.completed) {
+          await OnlineDB.Task.completeWithNotification(
+            online_task_encrypted.id,
+            {
+              id: online_task_encrypted.id,
+              task_id: db_task.id,
+              category_id: db_task.category_id || "",
+              data: encrypted_data || "",
+            },
+            db_task
+          );
+        } else {
+          await OnlineDB.Task.updateWithNotification(
+            online_task_encrypted.id,
+            {
+              id: online_task_encrypted.id,
+              task_id: db_task.id,
+              category_id: db_task.category_id || "",
+              data: encrypted_data || "",
+            },
+            db_task
+          );
+        }
       } else {
         await OnlineDB.Task.createWithNotification(
           {
