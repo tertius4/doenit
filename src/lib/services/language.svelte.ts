@@ -2,6 +2,7 @@ import { cached_language } from "$lib/cached";
 import { user } from "$lib/base/user.svelte";
 import { translations } from "./language/translations";
 import { Widget } from "../core/widget";
+import { notifications } from "./notification.svelte";
 
 class LanguageService {
   private _value = $state<Language | null>(null);
@@ -29,6 +30,7 @@ class LanguageService {
       cached_language.set(lang);
       Widget.updateLanguage(lang);
       user.language_code = lang;
+      notifications.scheduleNotifications(); 
     }
   }
 
