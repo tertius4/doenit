@@ -88,7 +88,7 @@ class Notification {
       }
 
       if (!user.notifications.enabled || !user.notifications.time) {
-        console.warn("Notifications are disabled or time is not set.");
+        console.warn("Kennisgewings is gedeaktiveer of tyd nie gestel nie.");
         return;
       }
 

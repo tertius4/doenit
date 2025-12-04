@@ -14,35 +14,38 @@ export class CategoriesContext {
   private onlineSubscription: Unsubscribe | null = null;
 
   init() {
-    if (!this.subscription) {
-      this.subscription = DB.Category.subscribe(
-        (result) => {
-          // Sort categories by users count ascending.
-          result.sort((a, b) => (a.users?.length || 0) - (b.users?.length || 0));
-          let categories = [];
-          for (const cat of result) {
-            if (cat.is_default) {
-              this.default_category = cat;
-              continue;
-            }
+    if (this.subscription) this.subscription.unsubscribe();
 
-            cat.users ??= [];
-            categories.push(cat);
+    this.subscription = DB.Category.subscribe(
+      (result) => {
+        // Sort categories by users count ascending.
+        result.sort((a, b) => (a.users?.length || 0) - (b.users?.length || 0));
+        let categories = [];
+        for (const cat of result) {
+          if (cat.is_default) {
+            this.default_category = cat;
+            continue;
           }
 
-          this.categories = categories;
+          cat.users ??= [];
+          categories.push(cat);
+        }
 
-          this.map.clear();
-          for (const category of categories) {
-            this.map.set(category.id, category);
-          }
-        },
-        { sort: [{ name: "asc" }] }
-      );
-    }
+        this.categories = categories;
 
+        this.map.clear();
+        for (const category of categories) {
+          this.map.set(category.id, category);
+        }
+      },
+      { sort: [{ name: "asc" }] }
+    );
+  }
+
+  onlineInit() {
     if (!user.is_friends_enabled) return;
     if (this.onlineSubscription) return;
+
     this.onlineSubscription = OnlineDB.Category.subscribe(
       async (online_categories) => {
         // Sync online categories with local categories

@@ -21,8 +21,9 @@
     enabled;
     time;
 
-    untrack(() => {
+    untrack(async () => {
       user.updateNotificationSettings({ enabled, time });
+      await notifications.scheduleNotifications();
     });
   });
 
@@ -34,11 +35,13 @@
     if (value === time) return;
 
     user.updateNotificationSettings({ time: value });
+    notifications.scheduleNotifications();
+
     saving = true;
     setTimeout(() => {
       saving = false;
       saved = true;
-      setTimeout(() => (saved = false), 2000);
+      setTimeout(() => (saved = false), 2 * 1000);
     }, 1000);
   }
 
@@ -113,12 +116,7 @@
             {t("reminder_time")}
           </span>
           <div class="h-12 relative">
-            <InputTime
-              value={time}
-              can_clear={false}
-              onchange={handleTimeChange}
-              placeholder={t("choose_time")}
-            />
+            <InputTime value={time} can_clear={false} onchange={handleTimeChange} placeholder={t("choose_time")} />
 
             <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
               {#if saving}

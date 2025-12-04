@@ -26,7 +26,7 @@
   const categoriesContext = getCategoriesContext();
 
   const due_date = DateUtil.parseWithTimeBoundary(task.due_date, "end");
-  const start_date = DateUtil.parseWithTimeBoundary(task.start_date, !!due_date ? "start" : "end");
+  const start_date = getStartDateTime(task.start_date);
 
   let tick_animation = $state(false);
 
@@ -37,6 +37,19 @@
   const category = $derived(task.category_id ? categoriesContext.getCategoryById(task.category_id) : undefined);
   /** @type {User | undefined} */
   const user = $derived(task.assigned_user_email ? usersContext.getUserByEmail(task.assigned_user_email) : undefined);
+
+  /**
+   *
+   * @param {string | null} date_str
+   */
+  function getStartDateTime(date_str) {
+    if (!date_str) return null;
+
+    const has_time = date_str.includes(" ");
+    if (has_time) return new Date(date_str);
+
+    return DateUtil.parseWithTimeBoundary(date_str, !!due_date ? "start" : "end");
+  }
 
   /**
    * Handles the selection of a completed task.

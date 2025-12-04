@@ -85,7 +85,7 @@
 
     untrack(() => Backup.init());
     untrack(() => usersContext.init());
-    untrack(() => categoriesContext.init());
+    untrack(() => categoriesContext.onlineInit());
     untrack(() => pushNotificationService.init());
     untrack(() => {
       if (unsubscribeInvites) unsubscribeInvites();
