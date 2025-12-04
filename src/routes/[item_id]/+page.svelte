@@ -1,5 +1,6 @@
 <script>
   import InputCheckbox from "$lib/components/element/input/InputCheckbox.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte.js";
   import SaveChanges from "$lib/components/SaveChanges.svelte";
   import { Photos } from "$lib/services/photos.svelte.js";
   import Modal from "$lib/components/modal/Modal.svelte";
@@ -11,7 +12,6 @@
   import { setContext } from "svelte";
   import { Trash } from "$lib/icon";
   import { DB } from "$lib/DB.js";
-  import { getCategoriesContext } from "$lib/contexts/categories.svelte.js";
 
   const { data } = $props();
 

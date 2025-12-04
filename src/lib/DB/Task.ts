@@ -162,7 +162,7 @@ export class TaskTable extends Table<Task> {
     try {
       const promises = online_tasks.map((online_task) => {
         if (online_task.deleted) {
-          return Promise.resolve({ id: online_task.task_id, deleted: true });
+          return super.delete(online_task.task_id).then(() => null);
         }
 
         return Secure.decryptAndDecompress(online_task.data) as Promise<Task>;
@@ -172,11 +172,6 @@ export class TaskTable extends Table<Task> {
 
       for (const task of all_tasks) {
         if (!task) continue;
-
-        if (task.deleted) {
-          await super.delete(task.id);
-          continue;
-        }
 
         const existing_task = await super.get(task.id).catch(() => null);
         if (existing_task) {

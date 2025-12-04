@@ -132,7 +132,7 @@
   });
 
   onMount(() => {
-    const sub = DB.Task.subscribe(handleTasksUpdate, { selector: { archived: { $ne: true } } });
+    const sub = DB.Task.subscribe((ts) => handleTasksUpdate(ts));
     return () => sub.unsubscribe();
   });
 
@@ -182,10 +182,9 @@
    * @param {Task[]} tasks
    */
   async function handleTasksUpdate(tasks) {
-    await notifications.scheduleNotifications(tasks);
-
-    tasks = sortTasksByDueDate(tasks);
-    tasksContext.setTasks(tasks);
+    const active_tasks = sortTasksByDueDate(tasks.filter((t) => !t.completed_at));
+    await notifications.scheduleNotifications(active_tasks);
+    tasksContext.setTasks(active_tasks);
 
     const { searchParams, origin, pathname } = page.url;
     const task_id = navigating.from?.params?.item_id || searchParams.get("new_id");
@@ -201,7 +200,7 @@
         if (task) completed_tasks.push(task);
       }
 
-      const promises = completed_tasks.map(async (task) => DB.Task.complete(task));
+      const promises = completed_tasks.map((task) => DB.Task.complete(task));
       const result = await Promise.all(promises);
 
       const has_failed_tasks = result.some((res) => !res);
@@ -215,7 +214,7 @@
     const new_url = `${origin}${pathname}${url_search}`;
     pushState(new_url, {});
 
-    await Widget.updateTasks(tasks.slice(0, 20), categoriesContext.categories);
+    await Widget.updateTasks(active_tasks.slice(0, 20), categoriesContext.categories);
   }
 
   /**
