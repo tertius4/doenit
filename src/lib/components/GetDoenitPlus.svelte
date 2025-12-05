@@ -5,7 +5,7 @@
 
   const { ...rest } = $props();
 
-  const IS_PENDING = true;
+  const IS_PENDING = false;
   function navigateToPlus() {
     goto("/plus");
   }

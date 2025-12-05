@@ -57,7 +57,7 @@
   {#if category}
     <ButtonClear onclick={() => (category_id = "")} class="absolute right-0 top-0 bottom-0" />
   {:else}
-    <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0">
+    <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none">
       <DownChevron class=" text-muted pointer-events-none" />
     </div>
   {/if}

@@ -81,6 +81,7 @@ class Notification {
     try {
       if (all_tasks == null) {
         all_tasks = await DB.Task.getAll({ selector: { archived: { $ne: true } } });
+        all_tasks = sortTasksByDueDate(all_tasks);
       }
 
       if (!this.#initiated) {
@@ -114,8 +115,6 @@ class Notification {
       }
 
       date.setHours(hours, minutes, 0, 0);
-
-      all_tasks = sortTasksByDueDate(all_tasks);
 
       // ID generation constants to avoid collisions
       const DAILY_REMINDER_ID_BASE = 200000;

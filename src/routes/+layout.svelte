@@ -182,7 +182,7 @@
    * @param {Task[]} tasks
    */
   async function handleTasksUpdate(tasks) {
-    const active_tasks = sortTasksByDueDate(tasks.filter((t) => !t.completed_at));
+    const active_tasks = sortTasksByDueDate(tasks.filter((t) => !t.archived));
     await notifications.scheduleNotifications(active_tasks);
     tasksContext.setTasks(active_tasks);
 

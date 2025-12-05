@@ -151,6 +151,7 @@ export class TaskTable extends Table<Task> {
   uncomplete(task: Task) {
     task.completed = 0;
     task.archived = false;
+    task.completed_at = null;
     return this.update(task.id, task);
   }
 
