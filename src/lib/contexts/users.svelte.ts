@@ -37,7 +37,7 @@ export class UsersContext {
   private async ensureOnlineUserExists() {
     const [existing_user] = await OnlineDB.User.getAll({
       filters: [{ field: "email_address", operator: "==", value: user.email_address }],
-    });
+    }).catch(() => []);
 
     if (existing_user) {
       return existing_user;
@@ -59,7 +59,7 @@ export class UsersContext {
 
     const [created_user] = await OnlineDB.User.getAll({
       filters: [{ field: "email_address", operator: "==", value: user.email_address }],
-    });
+    }).catch(() => []);
 
     return created_user || null;
   }

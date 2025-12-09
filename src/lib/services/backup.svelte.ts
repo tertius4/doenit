@@ -89,7 +89,7 @@ class BackupClass {
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
         limit: 1,
-      });
+      }).catch(() => []);
 
       if (!backup) {
         await cached_last_backup.set(null);
@@ -132,8 +132,8 @@ class BackupClass {
           { field: "user_id", operator: "==", value: user_id },
           { field: "sha256", operator: "==", value: sha256 },
         ],
-      });
-      if (existing_backups.length > 0) {
+      }).catch(() => []);
+      if (!existing_backups.length) {
         throw Error(t("no_changes_since_last_backup"));
       }
 
@@ -141,7 +141,7 @@ class BackupClass {
       const user_backups = await OnlineDB.BackupManifest.getAll({
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
-      });
+      }).catch(() => []);
       for (let i = 2; i < user_backups.length; i++) {
         const backup_to_delete = user_backups[i];
         await OnlineDB.BackupManifest.delete(backup_to_delete.id);
@@ -220,7 +220,7 @@ class BackupClass {
       const backup_manifests = await OnlineDB.BackupManifest.getAll({
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
-      });
+      }).catch(() => []);
 
       return { success: true, data: backup_manifests[0] };
     } catch (error) {

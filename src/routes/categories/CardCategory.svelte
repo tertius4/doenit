@@ -36,9 +36,12 @@
     await DB.Category.delete(category.id);
 
     if (!user.is_friends_enabled) return;
+
     const [online_category] = await OnlineDB.Category.getAll({
       filters: [{ field: "category_id", operator: "==", value: category.id }],
-    });
+    }).catch(() => []);
+    if (!online_category) return;
+
     const users = (category.users || []).filter((email) => email !== user.email_address);
     await OnlineDB.Category.updateById(online_category.id, {
       category_id: category.id,

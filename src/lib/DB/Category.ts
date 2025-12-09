@@ -62,7 +62,7 @@ export class CategoryTable extends Table<Category> {
 
     const [online_category] = await OnlineDB.Category.getAll({
       filters: [{ field: "category_id", operator: "==", value: id }],
-    });
+    }).catch(() => []);
 
     const is_shared = !!result.users?.length;
 
@@ -105,7 +105,7 @@ export class CategoryTable extends Table<Category> {
         // Also delete all online tasks assigned to this category
         const online_tasks = await OnlineDB.Task.getAll({
           filters: [{ field: "category_id", operator: "==", value: result.id }],
-        });
+        }).catch(() => []);
 
         await Promise.all(online_tasks.map((task) => OnlineDB.Task.delete(task.id)));
       }

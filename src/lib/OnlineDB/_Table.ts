@@ -84,14 +84,9 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineCategory
   }
 
   async getAll(options?: QueryOptions): Promise<T[]> {
-    try {
-      const q = this.buildQuery(options);
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
-    } catch (e) {
-      alert(`Failed to fetch documents from ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
-      return [];
-    }
+    const q = this.buildQuery(options);
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
   }
 
   async updateById(id: string, data: Partial<T>): Promise<SimpleResult> {

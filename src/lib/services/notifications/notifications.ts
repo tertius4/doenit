@@ -49,7 +49,7 @@ export class Notify {
 
         const users = await OnlineDB.User.getAll({
           filters: [{ field: "email_address", operator: "in", value: email_address }],
-        });
+        }).catch(() => []);
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -102,7 +102,7 @@ export class Notify {
         const unique_email_addresses = Array.from(new Set(email_address));
         const users = await OnlineDB.User.getAll({
           filters: [{ field: "email_address", operator: "in", value: unique_email_addresses }],
-        });
+        }).catch(() => []);
         const users_with_tokens = users.filter((user) => user.fcm_token);
         if (!users_with_tokens.length) return;
 

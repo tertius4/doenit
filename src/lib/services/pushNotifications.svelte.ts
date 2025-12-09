@@ -51,7 +51,7 @@ class PushNotificationService {
     if (!me) {
       me = await OnlineDB.User.getAll({
         filters: [{ field: "email_address", operator: "==", value: user.email_address }],
-      }).then(([u]) => u);
+      }).then(([u]) => u).catch(() => null);
     }
 
     if (me) {
