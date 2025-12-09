@@ -187,7 +187,7 @@ class Notification {
         date.setDate(date.getDate() + 1);
       }
 
-      if (notifications.length > 0) {
+      if (!!notifications.length) {
         await LocalNotifications.schedule({ notifications });
         console.debug(`[😨 Doenit]: ${notifications.length} kennisgewings geskeduleer.`);
       } else {

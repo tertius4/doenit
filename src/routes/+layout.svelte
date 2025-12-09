@@ -23,6 +23,7 @@
   import { navigating, page } from "$app/state";
   import { DB } from "$lib/DB";
   import "../app.css";
+  import { billing } from "$lib/core/billing.svelte";
 
   let { children } = $props();
 
@@ -57,10 +58,16 @@
     if (!category_ids.length) return;
 
     untrack(() => {
-      if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
-      unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
-        filters: [{ field: "category_id", operator: "in", value: category_ids }],
-      });
+      try {
+        if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
+        unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
+          filters: [{ field: "category_id", operator: "in", value: category_ids }],
+        });
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        if (error_message.includes("insufficient permissions")) return;
+        Alert.error(`Fout met aanmelding vir aanlyn take: ${error_message}`);
+      }
     });
   });
 
@@ -71,12 +78,17 @@
     if (!user_email_addresses.length) return;
 
     untrack(() => {
-      unsubscribeOnlineUsers = OnlineDB.User.subscribe(
-        (online_users) => DB.User.sync(online_users, usersContext.users),
-        {
-          filters: [{ field: "email_address", operator: "in", value: user_email_addresses }],
-        }
-      );
+      try {
+        unsubscribeOnlineUsers = OnlineDB.User.subscribe(
+          (online_users) => DB.User.sync(online_users, usersContext.users),
+          {
+            filters: [{ field: "email_address", operator: "in", value: user_email_addresses }],
+          }
+        );
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        Alert.error(`Fout met aanmelding vir aanlyn gebruikers: ${error_message}`);
+      }
     });
   });
 
@@ -88,18 +100,23 @@
     untrack(() => categoriesContext.onlineInit());
     untrack(() => pushNotificationService.init());
     untrack(() => {
-      if (unsubscribeInvites) unsubscribeInvites();
-      unsubscribeInvites = OnlineDB.Invite.subscribe(async (i) => DB.Invite.set(i), {
-        filters: [
-          {
-            or: [
-              { field: "to_email_address", operator: "==", value: user.email_address },
-              { field: "from_email_address", operator: "==", value: user.email_address },
-            ],
-          },
-        ],
-        sort: [{ field: "created_at", direction: "asc" }],
-      });
+      try {
+        if (unsubscribeInvites) unsubscribeInvites();
+        unsubscribeInvites = OnlineDB.Invite.subscribe(async (i) => DB.Invite.set(i), {
+          filters: [
+            {
+              or: [
+                { field: "to_email_address", operator: "==", value: user.email_address },
+                { field: "from_email_address", operator: "==", value: user.email_address },
+              ],
+            },
+          ],
+          sort: [{ field: "created_at", direction: "asc" }],
+        });
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        Alert.error(`Fout met aanmelding vir uitnodigings: ${error_message}`);
+      }
     });
   });
 
@@ -129,6 +146,7 @@
 
   onMount(() => {
     categoriesContext.init();
+    window.addEventListener("online", () => billing.init());
   });
 
   onMount(() => {

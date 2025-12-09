@@ -18,7 +18,7 @@ import {
   type WhereFilterOp,
 } from "$lib/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
-import {DateUtil} from "$lib/core/date_util";
+import { DateUtil } from "$lib/core/date_util";
 import { Alert } from "$lib/core/alert";
 
 interface QueryOptions {
@@ -181,23 +181,12 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineCategory
   }
 
   subscribe(callback: SnapshotCallback<T>, options?: QueryOptions): Unsubscribe | null {
-    try {
-      const q = this.buildQuery(options);
+    const q = this.buildQuery(options);
 
-      return onSnapshot(
-        q,
-        (snapshot) => {
-          const docs = snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
-          callback(docs);
-        },
-        (error) => {
-          Alert.error(`Firestore subscription error for ${this.name}: ${error.message}`);
-        }
-      );
-    } catch (error) {
-      alert("Error setting up subscription for " + this.name + ": " + error);
-      return null;
-    }
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
+      callback(docs);
+    });
   }
 
   private getFirestore() {

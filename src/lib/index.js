@@ -401,10 +401,14 @@ export function sortTasksByDueDate(tasks) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfterTomorrow = new Date(today);
-    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+    const tomorrowEnd = new Date(today);
+    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
+    const dayAfterTomorrowEnd = new Date(today);
+    dayAfterTomorrowEnd.setDate(dayAfterTomorrowEnd.getDate() + 2);
+    dayAfterTomorrowEnd.setHours(23, 59, 59, 999); // For range inclusion
 
     const thisWeekEnd = new Date(today);
     thisWeekEnd.setDate(thisWeekEnd.getDate() + (6 - thisWeekEnd.getDay()));
@@ -419,8 +423,8 @@ export function sortTasksByDueDate(tasks) {
 
     const datesContext = {
       today,
-      tomorrow,
-      dayAfterTomorrow,
+      tomorrowEnd,
+      dayAfterTomorrowEnd,
       thisWeekEnd,
       currentMonth,
       currentYear,
@@ -460,8 +464,8 @@ export function sortTasksByDueDate(tasks) {
  * @param {Task} task
  * @param {Object} dates
  * @param {Date} dates.today
- * @param {Date} dates.tomorrow
- * @param {Date} dates.dayAfterTomorrow
+ * @param {Date} dates.tomorrowEnd
+ * @param {Date} dates.dayAfterTomorrowEnd
  * @param {Date} dates.thisWeekEnd
  * @param {number} dates.currentMonth
  * @param {number} dates.currentYear
@@ -471,58 +475,28 @@ export function sortTasksByDueDate(tasks) {
  */
 function getTaskDateRank(
   task,
-  { today, tomorrow, dayAfterTomorrow, thisWeekEnd, currentMonth, currentYear, nextMonth, nextMonthYear }
+  { today, tomorrowEnd, dayAfterTomorrowEnd, thisWeekEnd, currentMonth, currentYear, nextMonth, nextMonthYear }
 ) {
   if (!task.start_date) return 9; // no_date
 
-  const startDay = new Date(task.start_date);
-  startDay.setHours(0, 0, 0, 0);
+  const start_day = new Date(task.start_date);
+  start_day.setHours(0, 0, 0, 0);
 
   const due_day = new Date(task.due_date || task.start_date);
-  due_day.setHours(0, 0, 0, 0);
-  const due_end = new Date(due_day);
-  due_end.setHours(23, 59, 59, 999); // For range checks
+  due_day.setHours(23, 59, 59, 999);
 
-  const is_started = startDay.getTime() <= today.getTime();
-  const is_ongoing = task.due_date && is_started && due_day.getTime() >= today.getTime();
+  const is_started = start_day.getTime() <= today.getTime();
+  const is_past = due_day.getTime() < today.getTime();
+  const is_ongoing = is_started && !is_past;
+
   if (is_ongoing) return 1; // ongoing
-
-  if (due_day.getTime() < today.getTime()) return 0; // past
-
-  if (due_day.getTime() === today.getTime()) return 1; // today
-
-  if (due_day.getTime() === tomorrow.getTime()) return 3; // tomorrow
-
-  if (due_day.getTime() === dayAfterTomorrow.getTime()) return 4; // day after
-
-  if (due_end <= thisWeekEnd) return 5; // this week (excluding earlier)
-
+  if (is_past) return 0; // past
+  if (due_day.getTime() === tomorrowEnd.getTime()) return 3; // tomorrow
+  if (due_day.getTime() === dayAfterTomorrowEnd.getTime()) return 4; // day after
+  if (due_day.getTime() <= thisWeekEnd.getTime()) return 5; // this week (excluding earlier)
   if (due_day.getMonth() === currentMonth && due_day.getFullYear() === currentYear) return 6; // this month (excluding earlier)
-
   if (due_day.getMonth() === nextMonth && due_day.getFullYear() === nextMonthYear) return 7; // next month
-
   return 8; // later
-}
-
-/**
- *
- * @param {Task[]} data
- * @returns {Task[]}
- */
-function sortTasksByPriority(data) {
-  // Sort by Important first, then not important
-  const important = [];
-  const not_important = [];
-
-  for (const task of data) {
-    if (!!task.important) {
-      important.push(task);
-    } else {
-      not_important.push(task);
-    }
-  }
-
-  return [...important, ...not_important];
 }
 
 /**

@@ -38,6 +38,7 @@ class Billing {
 
   async init() {
     if (!Capacitor.isNativePlatform()) return;
+    if (!navigator.onLine) return;
 
     try {
       await BillingService.initialize();
@@ -159,6 +160,7 @@ class Billing {
       }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      if (error_message === "User not found") return;
       alert(`Kon nie aankoop met backend verifieer nie: ${error_message}`);
     }
   }
