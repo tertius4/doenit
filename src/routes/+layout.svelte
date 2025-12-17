@@ -24,6 +24,7 @@
   import { DB } from "$lib/DB";
   import "../app.css";
   import { billing } from "$lib/core/billing.svelte";
+  import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 
   let { children } = $props();
 
@@ -275,4 +276,5 @@
   </main>
 
   <Footer />
+  <LanguageSelector />
 </div>

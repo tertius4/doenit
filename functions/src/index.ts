@@ -64,7 +64,7 @@ function getFirebaseStorage(): App {
 }
 
 // Helper function to verify Google Play purchase
-async function verifyGooglePlayPurchase(packageName: string, productId: string, purchaseToken: string) {
+async function verifyGooglePlayPurchase(packageName: string, productId: string, purchaseToken: string, userEmail: string) {
   try {
     // Initialize Google Auth with service account
     const auth = new google.auth.GoogleAuth({
@@ -88,18 +88,34 @@ async function verifyGooglePlayPurchase(packageName: string, productId: string, 
     const purchase = response.data;
 
     // Check if subscription is valid and active
+    const now = Date.now();
+    const expiryTime = purchase?.expiryTimeMillis ? parseInt(purchase.expiryTimeMillis) : 0;
+    const isNotExpired = expiryTime > now;
+    const isPaid = purchase.paymentState === 1; // 1 = Received
+    
     const isValid =
       purchase &&
       purchase.startTimeMillis &&
       purchase.expiryTimeMillis &&
-      parseInt(purchase.expiryTimeMillis) > Date.now() &&
-      purchase.paymentState === 1; // 1 = Received
+      isNotExpired &&
+      isPaid;
+
+    // Check if the obfuscatedAccountId matches the user's email
+    const obfuscatedAccountId = purchase?.obfuscatedExternalAccountId;
+    const emailMatches = !obfuscatedAccountId || obfuscatedAccountId === userEmail;
+
+    // Check if subscription is cancelled but still active (not yet expired)
+    const isCancelled = purchase?.cancelReason !== undefined && purchase?.cancelReason !== null;
 
     return {
-      isValid,
+      isValid: isValid && emailMatches,
       expiryTime: purchase?.expiryTimeMillis ? new Date(parseInt(purchase.expiryTimeMillis)) : null,
       autoRenewing: purchase?.autoRenewing || false,
       orderId: purchase?.orderId || null,
+      emailMatches,
+      obfuscatedAccountId,
+      isCancelled,
+      cancelReason: purchase?.cancelReason,
     };
   } catch (error) {
     functions.logger.error("Google Play verification error:", error);
@@ -321,14 +337,22 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       let subscription = subscription_result.data;
       functions.logger.info(`Subscription document retrieved. Created: ${subscription?.verifiedAt}`);
       if (subscription?.purchase_token === purchase_token && subscription?.active) {
-        res.json({ success: true, message: "Subscription already verified" });
+        res.json({ success: true, valid: true, message: "Subscription already verified" });
         return;
       }
 
       try {
         // Actually verify the purchase with Google Play
-        const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token);
+        const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token, user.email_address || decoded_token.email || '');
         if (!verificationResult.isValid) {
+          if (!verificationResult.emailMatches) {
+            functions.logger.warn(`Email mismatch: Purchase made with ${verificationResult.obfuscatedAccountId}, user is ${user.email_address}`);
+            res.json({
+              valid: false,
+              error: "Purchase belongs to a different account",
+            });
+            return;
+          }
           res.status(400).json({
             error: "Invalid or expired subscription",
             details: "Purchase verification failed with Google Play",
@@ -349,6 +373,8 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
         subscription.expiry_time = verificationResult.expiryTime;
         subscription.auto_renewing = verificationResult.autoRenewing;
         subscription.order_id = verificationResult.orderId;
+        subscription.is_cancelled = verificationResult.isCancelled;
+        subscription.cancel_reason = verificationResult.cancelReason;
         await saveSubscription(subscription);
 
         user_result.data.user_ref.set({ is_plus_user: true }, { merge: true });
@@ -356,10 +382,13 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
         res.json({
           success: true,
+          valid: true,
           message: "Subscription verified and activated",
           subscription: {
             expiryTime: verificationResult.expiryTime,
             autoRenewing: verificationResult.autoRenewing,
+            isCancelled: verificationResult.isCancelled,
+            cancelReason: verificationResult.cancelReason,
           },
         });
       } catch (error) {

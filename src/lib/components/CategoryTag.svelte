@@ -5,8 +5,9 @@
   import { Haptics } from "@capacitor/haptics";
   import EditCategory from "./EditCategory.svelte";
   import Tag from "./Tag.svelte";
+  import { t } from "$lib/services/language.svelte";
 
-  let { category } = $props();
+  const { category, items_count, disable_edit = false } = $props();
 
   let is_editing = $state(false);
 
@@ -30,14 +31,21 @@
   }
 
   function handleLongPress() {
+    if (disable_edit) return;
+
     Haptics.vibrate({ duration: 100 });
     is_editing = true;
   }
 </script>
 
-<Tag {is_selected} onclick={() => toggle(category)} onlongpress={handleLongPress}>
+<Tag class={!!items_count ? "pr-1!" : ""} {is_selected} onclick={() => toggle(category)} onlongpress={handleLongPress}>
   <Categories />
-  <span>{category.name}</span>
+  <span>{category.name || t("DEFAULT_NAME")}</span>
+  {#if items_count}
+    <div class="h-fit bg-surface rounded-full py-0.5 px-1.5 aspect-square flex items-center justify-center">
+      <span class="text-muted font-light">{items_count}</span>
+    </div>
+  {/if}
 </Tag>
 
 <EditCategory bind:is_editing {category} />

@@ -17,6 +17,12 @@
 
   let is_open = $state(false);
   let is_adding = $state(false);
+  /** @type {Category[]} */
+  let categories = $state([]);
+
+  $effect(() => {
+    categories = categoriesContext.categories;
+  });
 
   const category = $derived(categoriesContext.getCategoryById(category_id));
 
@@ -57,7 +63,9 @@
   {#if category}
     <ButtonClear onclick={() => (category_id = "")} class="absolute right-0 top-0 bottom-0" />
   {:else}
-    <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none">
+    <div
+      class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
+    >
       <DownChevron class=" text-muted pointer-events-none" />
     </div>
   {/if}
@@ -66,9 +74,9 @@
 <Modal bind:is_open>
   <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
   <div class="mb-4 space-y-0.5">
-    {#each categoriesContext.categories as category, i}
+    {#each categories as category, i}
       {@const is_selected = category.id === category_id}
-      {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
+      {@const prev_cat = i > 0 ? categories[i - 1] : null}
       {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
         <h2 class="font-semibold my-1">{t("shared_categories")}</h2>
       {/if}
@@ -94,7 +102,7 @@
           </div>
 
           <div class={["w-full p-1", !is_selected && "border-default"]}>
-            <span>{category.name}</span>
+            <span>{category.name || t("DEFAULT_NAME")}</span>
           </div>
         </div>
 

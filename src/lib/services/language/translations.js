@@ -426,6 +426,7 @@ export const translations = {
     per_month: "per maand",
     start_free_trial: "Begin Gratis Proeftydperk",
     subscribe_now: "Teken Nou In",
+    no_products_found: "Doenit Plus is tans nie beskikbaar nie.",
     one_week_free: "1 week gratis",
     trial_then_price: "1 week gratis proeftydperk, dan R20/maand",
     auto_renews_monthly: "Hernu elke maand outomaties",
@@ -447,7 +448,10 @@ export const translations = {
     rooms_locked_desc: "Gradeer op na Doenit Plus om kamers te ontsluit en take met jou vriende te deel.",
     backup_locked: "Outomatiese rugsteun is 'n Plus funksie",
     backup_locked_desc: "Gradeer op na Doenit Plus om outomatiese rugsteun te ontsluit.",
-    manage_subscriptions: "Bestuur Subskripsies",
+    manage_subscriptions: "Bestuur Intekening",
+    reactivate_subscription: "Heraktiveer Intekening",
+    subscription_cancelled_until: "Gekanselleer tot",
+    renews_on: "Hernu op",
     already_free_plan: "Jy is reeds op die gratis plan.",
     cancellation_failed: "Kansellasie het misluk",
 
@@ -460,6 +464,7 @@ export const translations = {
     subscription_active: "Jou subscription is aktief",
 
     you: "Jy",
+    offline: "U is tans vanlyn",
   },
 
   en: {
@@ -884,6 +889,7 @@ export const translations = {
     per_month: "per month",
     start_free_trial: "Start Free Trial",
     subscribe_now: "Subscribe Now",
+    no_products_found: "Doenit Plus is currently not available.",
     one_week_free: "1 week free",
     trial_then_price: "1 week free trial, then R20/month",
     auto_renews_monthly: "Auto-renews monthly",
@@ -906,6 +912,9 @@ export const translations = {
     backup_locked: "Automatic backup is a Plus feature",
     backup_locked_desc: "Upgrade to Doenit Plus to unlock automatic backup.",
     manage_subscriptions: "Manage Subscriptions",
+    reactivate_subscription: "Reactivate Subscription",
+    subscription_cancelled_until: "Cancelled until",
+    renews_on: "Renews on",
     already_free_plan: "You are already on the free plan.",
     cancellation_failed: "Cancellation failed",
 
@@ -918,5 +927,6 @@ export const translations = {
     subscription_active: "Your subscription is active",
 
     you: "You",
+    offline: "You are offline",
   },
 };

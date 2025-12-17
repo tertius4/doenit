@@ -7,12 +7,32 @@
   import { t } from "$lib/services/language.svelte";
   import Button from "./element/button/Button.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getTasksContext } from "$lib/contexts/tasks.svelte";
   import { user } from "$lib/base/user.svelte";
   import CategoryTag from "./CategoryTag.svelte";
+  import { untrack } from "svelte";
 
   let show_favourite_modal = $state(false);
 
   const categoriesContext = getCategoriesContext();
+  const tasksContext = getTasksContext();
+
+  const CATEGORY_TASKS_COUNT = $derived.by(() => {
+    return tasksContext.tasks.reduce((acc, task) => {
+      untrack(() => {
+        const category_id = task.category_id || categoriesContext.default_category?.id;
+        if (!category_id) return;
+        if (task.archived) return;
+  
+        if (!acc[category_id]) {
+          acc[category_id] = 0;
+        }
+  
+        acc[category_id]++;
+      });
+      return acc;
+    }, /** @type {Record<string, number>}*/ ({}));
+  });
 
   const is_favourite_selected = $derived(
     !!user.favourite_category_ids.length &&
@@ -56,8 +76,16 @@
       <span>{t("do_now")}</span>
     </Tag>
 
-    {#each categoriesContext.categories as category}
-      <CategoryTag {category} />
+    {#if categoriesContext.default_category}
+      <CategoryTag
+        disable_edit
+        category={categoriesContext.default_category}
+        items_count={CATEGORY_TASKS_COUNT[categoriesContext.default_category.id]}
+      />
+    {/if}
+
+    {#each categoriesContext.categories as category (category.id)}
+      <CategoryTag {category} items_count={CATEGORY_TASKS_COUNT[category.id]} />
     {/each}
   </nav>
 {/if}

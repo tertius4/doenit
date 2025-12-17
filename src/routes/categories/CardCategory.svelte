@@ -13,11 +13,12 @@
   /**
    * @typedef {Object} Props
    * @property {Category} category
+   * @property {number} task_count
    * @property {string} [default_id]
    */
 
   /** @type {Props} */
-  const { category, default_id } = $props();
+  const { category, default_id, task_count } = $props();
 
   const usersContext = getUsersContext();
 
@@ -72,8 +73,11 @@
       </div>
     </button>
 
-    <div class="py-3 w-full text-lg font-semibold truncate">
+    <div class="py-3 w-full text-lg font-semibold truncate flex gap-2">
       <span>{category.name}</span>
+      <div class="h-fit bg-page rounded-full py-0.5 px-1.5 aspect-square flex items-center justify-center">
+        <span class="text-muted font-light">{task_count}</span>
+      </div>
     </div>
 
     <button class="h-full text-error flex items-center justify-center" onclick={() => deleteCategory()}>

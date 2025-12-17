@@ -24,6 +24,9 @@
     untrack(async () => {
       user.updateNotificationSettings({ enabled, time });
       await notifications.scheduleNotifications();
+
+      enabled = user.notifications.enabled;
+      time = user.notifications.time;
     });
   });
 

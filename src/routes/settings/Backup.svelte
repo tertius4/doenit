@@ -74,7 +74,7 @@
       <div
         class={{
           "border rounded-lg px-2 flex flex-col gap-1 justify-center mt-2": true,
-          "text-error py-1.5 border border-error bg-error/20": true,
+          "text-muted py-1.5 border border-default bg-page": true,
         }}
       >
         <div class="flex gap-1 items-center">

@@ -1,47 +1,52 @@
 <script>
   import { Notify } from "$lib/services/notifications/notifications";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
   import { CardInvite } from "$lib/components/element/card";
   import { backHandler } from "$lib/BackHandler.svelte";
-  import { onMount, untrack } from "svelte";
-  import { user } from "$lib/base/user.svelte";
-  import { Check, Loading } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
+  import CardFriend from "./CardFriend.svelte";
+  import { user } from "$lib/base/user.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
+  import { Check, Loading } from "$lib/icon";
+  import { onMount, untrack } from "svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { Alert } from "$lib/core/alert";
   import { goto } from "$app/navigation";
   import { DB } from "$lib/DB";
-  import CardFriend from "./CardFriend.svelte";
-  import { getUsersContext } from "$lib/contexts/users.svelte";
 
   const usersContext = getUsersContext();
 
   const invites = $derived(DB.Invite.invites);
+  const is_loading = $derived(user.is_loading);
+  let has_checked = false;
 
   $effect(() => {
     // Verban toegang as Vriende funksie nie geaktiveer is nie.
+    if (is_loading) return;
 
-    if (user.is_loading) return;
-    if (!user.is_logged_in) {
-      untrack(async () => {
-        const result = await user.signIn();
-        if (!result.success) {
-          if (result.error_message === "USER_CANCELED") {
-            return goto(`/plus?show_login=false`);
-          }
+    untrack(async () => {
+      if (has_checked) return;
+      has_checked = true;
 
-          Alert.error(result.error_message || t("something_went_wrong"));
+      if (user.is_logged_in) {
+        if (!user.is_friends_enabled) goto(`/plus`);
+        return;
+      }
+
+      const result = await user.signIn();
+      if (!result.success) {
+        if (result.error_message === "USER_CANCELED") {
+          return goto(`/plus`);
         }
 
-        if (user.is_friends_enabled) return;
-        goto(`/plus`);
-      });
-
-      return;
-    }
-
-    if (user.is_friends_enabled) return;
-    goto(`/plus`);
+        if (result.error_message !== "U is vanlyn") {
+          Alert.error(result.error_message || t("something_went_wrong"));
+          return goto(`/plus`);
+        }
+      } else {
+        
+      }
+    });
   });
 
   onMount(() => {
@@ -159,5 +164,10 @@
         <p class="text-sm mt-1">{t("accepted_friends_appear_here")}</p>
       </div>
     {/each}
+  </div>
+{:else if typeof navigator !== "undefined" && !navigator.onLine}
+  <div class="text-center py-8">
+    <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+    <p>{t("offline")}</p>
   </div>
 {/if}

@@ -39,6 +39,9 @@ class PushNotificationService {
       this.handleAppLaunchNotification();
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      if (error_message.endsWith("the client is offline.")) return;
+      if (error_message.endsWith("Missing or insufficient permissions.")) return;
+
       Alert.error(`${t("error_initializing_push_notifications")}: ${error_message}`);
     }
   }
@@ -51,7 +54,9 @@ class PushNotificationService {
     if (!me) {
       me = await OnlineDB.User.getAll({
         filters: [{ field: "email_address", operator: "==", value: user.email_address }],
-      }).then(([u]) => u).catch(() => null);
+      })
+        .then(([u]) => u)
+        .catch(() => null);
     }
 
     if (me) {

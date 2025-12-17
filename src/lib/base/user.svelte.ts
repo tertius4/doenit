@@ -116,12 +116,12 @@ class UserState {
     try {
       if (!Capacitor.isNativePlatform()) {
         // TODO: Figure out web sign-in.
-        return { success: false, error_message: "Disabled for web" };
+        return { success: false, error_message: "Afgesit vir die web" };
       }
 
       // Offline check
       if (!navigator.onLine) {
-        return { success: false, error_message: "No internet connection" };
+        return { success: false, error_message: "U is vanlyn" };
       }
 
       this.#is_loading = true;
@@ -184,6 +184,7 @@ class UserState {
       this.#name = null;
       this.#email_address = null;
       this.#avatar = null;
+      await Preferences.remove({ key: "user" });
 
       return { success: true };
     } catch (error) {

@@ -26,6 +26,15 @@
   let is_adding = $state(false);
   /** @type {string | undefined} */
   let category_id = $state(undefined);
+  /** @type {Category[]} */
+  let categories = $state([]);
+
+  $effect(() => {
+    categories = [...categoriesContext.categories];
+    if (categoriesContext.default_category) {
+      categories.unshift(categoriesContext.default_category);
+    }
+  });
 
   /**
    * Select a category
@@ -66,10 +75,10 @@
   <Modal bind:is_open>
     <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
     <div class="mb-4 space-y-0.5">
-      {#each categoriesContext.categories as category, i}
+      {#each categories as category, i}
         {@const is_shared = !!category?.users.length && user.is_friends_enabled}
         {@const is_selected = category.id === category_id}
-        {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
+        {@const prev_cat = i > 0 ? categories[i - 1] : null}
         {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
           <h2 class="font-semibold">{t("shared_categories")}</h2>
         {/if}
@@ -95,7 +104,7 @@
             </div>
 
             <div class={["w-full p-1", !is_selected && "border-default"]}>
-              <span>{category.name}</span>
+              <span>{category.name || t("DEFAULT_NAME")}</span>
             </div>
           </div>
 

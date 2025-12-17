@@ -1,10 +1,18 @@
 import { PUBLIC_APP_ID, PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
+import { user } from "$lib/base/user.svelte";
 import { Capacitor } from "@capacitor/core";
+
+interface SubscriptionDetails {
+  expiryTime: Date | null;
+  autoRenewing: boolean;
+  isCancelled: boolean;
+  cancelReason?: number;
+}
 
 interface BillingPlugin {
   initialize(): Promise<void>;
   queryProductDetails(options: { product_ids: string[] }): Promise<{ products: Product[] }>;
-  startPurchase(options: { product_id: string }): Promise<{ purchase_token: string }>;
+  startPurchase(options: { product_id: string; email_address: string }): Promise<{ purchase_token: string }>;
   queryPurchases(): Promise<{ purchases: Purchase[] }>;
   acknowledgePurchase(options: { purchase_token: string }): Promise<void>;
 }
@@ -17,6 +25,7 @@ class Billing {
   #is_plus_user = $state(false);
   #subscription_product: Product | null = $state(null);
   #current_purchase: Purchase | null = $state(null);
+  #subscription_details: SubscriptionDetails | null = $state(null);
 
   readonly PRODUCT_ID = "doenit.plus";
 
@@ -34,6 +43,10 @@ class Billing {
 
   get current_purchase() {
     return this.#current_purchase;
+  }
+
+  get subscription_details() {
+    return this.#subscription_details;
   }
 
   async init() {
@@ -76,16 +89,24 @@ class Billing {
       const active_purchase = purchases.find((p) => p.product_id === this.PRODUCT_ID && p.purchase_state === 1);
 
       if (active_purchase) {
-        this.#current_purchase = active_purchase;
-        this.#is_plus_user = true;
-
         // Bevestig aankoop as dit nog nie bevestig is nie
         if (!active_purchase.acknowledged) {
           await this.acknowledgePurchase(active_purchase.purchase_token);
         }
 
         // Stuur purchase token na backend vir verifikasie
-        await this.verifyPurchaseWithBackend(active_purchase);
+        // Backend sal kyk of die purchase se obfuscatedAccountId ooreenstem met user.email_address
+        const verificationResult = await this.verifyPurchaseWithBackend(active_purchase);
+
+        if (verificationResult.isValid) {
+          this.#current_purchase = active_purchase;
+          this.#is_plus_user = true;
+          this.#subscription_details = verificationResult.details;
+        } else {
+          this.#is_plus_user = false;
+          this.#current_purchase = null;
+          this.#subscription_details = null;
+        }
       } else {
         this.#is_plus_user = false;
         this.#current_purchase = null;
@@ -104,6 +125,7 @@ class Billing {
 
     try {
       const result = await BillingService.startPurchase({
+        email_address: user.email_address ?? "",
         product_id: this.PRODUCT_ID,
       });
 
@@ -134,7 +156,9 @@ class Billing {
     }
   }
 
-  private async verifyPurchaseWithBackend(purchase: Purchase) {
+  private async verifyPurchaseWithBackend(
+    purchase: Purchase
+  ): Promise<{ isValid: boolean; details: SubscriptionDetails | null }> {
     try {
       const id_token = this.getToken ? await this.getToken() : null;
       if (!id_token) throw new Error("Gebruiker is nie geverifieer nie.");
@@ -154,15 +178,43 @@ class Billing {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error_data = await response.json();
-        throw new Error(error_data.error || "Iets het verkeerd geloop tydens verifikasie.");
+        // If valid is explicitly false, don't throw error - just return false
+        if (data.valid === false) {
+          console.log("Purchase verification failed:", data.error);
+          return { isValid: false, details: null };
+        }
+        throw new Error(data.error || "Iets het verkeerd geloop tydens verifikasie.");
       }
+
+      const isValid = data.valid === true || data.success === true;
+      const details: SubscriptionDetails | null =
+        isValid && data.subscription
+          ? {
+              expiryTime: data.subscription.expiryTime ? new Date(data.subscription.expiryTime) : null,
+              autoRenewing: data.subscription.autoRenewing || false,
+              isCancelled: data.subscription.isCancelled || false,
+              cancelReason: data.subscription.cancelReason,
+            }
+          : null;
+
+      return { isValid, details };
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      if (error_message === "User not found") return;
+      if (error_message === "User not found") return { isValid: false, details: null };
+      if (error_message === "Failed to fetch") return { isValid: false, details: null };
+
       alert(`Kon nie aankoop met backend verifieer nie: ${error_message}`);
+      return { isValid: false, details: null };
     }
+  }
+
+  async reactivate() {
+    // Reactivating is done through Google Play Store
+    // Just refresh the subscription status to check if user has reactivated
+    await this.checkSubscriptionStatus();
   }
 }
 

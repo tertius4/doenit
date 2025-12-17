@@ -78,7 +78,7 @@ export class Alert {
       case "success":
         return "bg-green-600";
       case "error":
-        return "bg-error/80 border border-error";
+        return "bg-error border border-error";
       default:
         return "bg-gray-800";
     }

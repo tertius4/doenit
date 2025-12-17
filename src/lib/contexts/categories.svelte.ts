@@ -23,12 +23,12 @@ export class CategoriesContext {
         result.sort((a, b) => (a.users?.length || 0) - (b.users?.length || 0));
         let categories = [];
         for (const cat of result) {
+          cat.users ??= [];
           if (cat.is_default) {
             this.default_category = cat;
             continue;
           }
 
-          cat.users ??= [];
           categories.push(cat);
         }
 
@@ -41,6 +41,16 @@ export class CategoriesContext {
       },
       { sort: [{ name: "asc" }] }
     );
+
+    if (!this.default_category) {
+      DB.Category.create({
+        name: "",
+        is_default: true,
+        users: [],
+      }).then((default_cat) => {
+        this.default_category = default_cat;
+      });
+    }
   }
 
   onlineInit() {
@@ -145,6 +155,20 @@ export class CategoriesContext {
   getCategoryById(id: string | undefined): Category | undefined {
     if (!id) return undefined;
     return this.map.get(id);
+  }
+
+  async getDefaultCategory(): Promise<Category> {
+    if (!this.default_category) {
+      let default_cat = await DB.Category.create({
+        name: "",
+        is_default: true,
+        users: [],
+      });
+
+      this.default_category = default_cat;
+    }
+
+    return this.default_category;
   }
 }
 

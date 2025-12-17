@@ -23,7 +23,7 @@
     "/complete": t("completed_tasks"),
     "/categories": t("categories"),
     "/settings": t("settings"),
-    "/plus": "",
+    "/plus": t("doenit_plus"),
   });
 
   const title = $derived(TITLES[page.route.id ?? "/"] ?? t("task_list"));

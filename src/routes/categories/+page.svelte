@@ -10,8 +10,24 @@
   import { Plus } from "$lib/icon";
   import { onMount } from "svelte";
   import { DB } from "$lib/DB";
+  import { getTasksContext } from "$lib/contexts/tasks.svelte";
 
   const categoriesContext = getCategoriesContext();
+  const tasksContext = getTasksContext();
+
+  const CATEGORY_TASKS_COUNT = $derived(
+    tasksContext.tasks.reduce((acc, task) => {
+      if (!task.category_id) return acc;
+      if (task.archived) return acc;
+
+      if (!acc[task.category_id]) {
+        acc[task.category_id] = 0;
+      }
+
+      acc[task.category_id]++;
+      return acc;
+    }, /** @type {Record<string, number>}*/ ({}))
+  );
 
   let new_category_name = $state("");
 
@@ -76,7 +92,11 @@
       {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
         <h2 class="font-semibold">{t("shared_categories")}</h2>
       {/if}
-      <CardCategory {category} default_id={categoriesContext.default_category?.id} />
+      <CardCategory
+        {category}
+        default_id={categoriesContext.default_category?.id}
+        task_count={CATEGORY_TASKS_COUNT[category.id] || 0}
+      />
     {/each}
   </div>
 </div>
