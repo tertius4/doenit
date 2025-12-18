@@ -29,12 +29,12 @@ class Cached<T> {
   }
 }
 
-export const selectedCategories = new Cached<string[]>("selected_categories");
-export const cached_theme = new Cached<"light" | "dark" | null>("theme");
-export const cached_notification_time = new Cached<string | null>("time");
-export const cached_notification_past_tasks = new Cached<boolean>("past_tasks");
 export const cached_language = new Cached<"af" | "en" | null>("language");
 export const cached_text_settings = new Cached<{ size: 16 | 20 | 24 }>("text_settings");
+
+export const cached_notification_time = new Cached<string | null>("time");
+export const selectedCategories = new Cached<string[]>("selected_categories");
+export const cached_notification_past_tasks = new Cached<boolean>("past_tasks");
 export const cached_last_backup = new Cached<string | null>("last_backup");
 export const cached_automatic_backup = new Cached<boolean>("automatic_backup");
 export const cached_rate_us_setting = new Cached<RateUsSetting>("rate_us_setting");

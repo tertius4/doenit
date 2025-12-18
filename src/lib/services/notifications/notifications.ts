@@ -2,82 +2,19 @@
  * README: Notifications.
  * This file handles the admin of showing notifications, but no app specific logic should be here.
  */
-import { getMessaging, onMessage, type Messaging } from "firebase/messaging";
+import { getMessaging, type Messaging } from "firebase/messaging";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { initializeApp } from "$lib/chunk/firebase-app";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 import { Alert } from "$lib/core/alert";
 import { PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
 
-// Local Notification configuration
-const localConfig = {
-  channelId: "default-channel",
-  channelName: "Default Channel",
-  defaultTitle: "App Notification",
-  defaultBody: "You have a new notification",
-};
+// TODO: Candidate for core or base
+// TODO: Refactor notifications
 
 export class Notify {
-  static Local = class {
-    static is_initialized = false;
-
-    static async initialize() {
-      try {
-        await LocalNotifications.createChannel({
-          id: localConfig.channelId,
-          name: localConfig.channelName,
-          importance: 3,
-          visibility: 1,
-        });
-        this.is_initialized = true;
-      } catch (error) {
-        alert(`Local Notification initialization failed: ${error.message}`);
-      }
-    }
-
-    static async send({ id = 1, title = localConfig.defaultTitle, body = localConfig.defaultBody }) {
-      if (!this.is_initialized) await this.initialize();
-      try {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              id,
-              title,
-              body,
-              schedule: { at: new Date(Date.now() + 1000) },
-            },
-          ],
-        });
-        return { status: "success" };
-      } catch (error) {
-        alert(`Local Notification send failed: ${error.message}`);
-        return { status: "failed", error: error.message };
-      }
-    }
-
-    static async schedule({ id = 1, title = localConfig.defaultTitle, body = localConfig.defaultBody, at }) {
-      if (!this.is_initialized) await this.initialize();
-      try {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              id,
-              title,
-              body,
-              schedule: { at: new Date(at) },
-            },
-          ],
-        });
-        return { status: "success" };
-      } catch (error) {
-        alert(`Local Notification schedule failed: ${error.message}`);
-        return { status: "failed", error: error.message };
-      }
-    }
-  };
-
   static Push = class {
     static is_initialized: boolean = false;
     static messaging: Messaging | null = null;
@@ -107,13 +44,12 @@ export class Notify {
       }
 
       try {
-        if (!user.value) throw new Error("User not authenticated");
-
-        const token = await user.value.id_token;
+        const token = user.getToken ? await user.getToken() : null;
+        if (!token) throw new Error("User not authenticated");
 
         const users = await OnlineDB.User.getAll({
           filters: [{ field: "email_address", operator: "in", value: email_address }],
-        });
+        }).catch(() => []);
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -121,7 +57,17 @@ export class Notify {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ token: users[0].fcm_token, title, body }),
+          body: JSON.stringify({
+            title,
+            body,
+            users: [
+              {
+                fcm_token: users[0].fcm_token,
+                language_code: users[0].language_code || "af",
+                email_address: users[0].email_address,
+              },
+            ],
+          }),
         });
 
         if (!response.ok) {
@@ -150,13 +96,15 @@ export class Notify {
       }
 
       try {
-        if (!user.value) throw new Error("User not authenticated");
+        const token = user.getToken ? await user.getToken() : null;
+        if (!token) throw new Error("User not authenticated");
 
-        const token = await user.value.id_token;
-
+        const unique_email_addresses = Array.from(new Set(email_address));
         const users = await OnlineDB.User.getAll({
-          filters: [{ field: "email_address", operator: "in", value: email_address }],
-        });
+          filters: [{ field: "email_address", operator: "in", value: unique_email_addresses }],
+        }).catch(() => []);
+        const users_with_tokens = users.filter((user) => user.fcm_token);
+        if (!users_with_tokens.length) return;
 
         const response = await fetch(`${PUBLIC_FIREBASE_FUNCTIONS_URL}/sendPushNotification`, {
           method: "POST",
@@ -164,7 +112,15 @@ export class Notify {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ token: users[0].fcm_token, type, data }),
+          body: JSON.stringify({
+            users: users_with_tokens.map((u) => ({
+              fcm_token: u.fcm_token,
+              language_code: u.language_code || "af",
+              email_address: u.email_address,
+            })),
+            type,
+            data,
+          }),
         });
 
         if (!response.ok) {

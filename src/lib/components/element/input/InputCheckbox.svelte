@@ -30,7 +30,7 @@
   aria-label={t("check")}
   {onlongpress}
   {onclick}
-  class="absolute top-1/2 -translate-y-1/2 left-0 p-4 rounded-full {rest.class}"
+  class="absolute flex items-center justify-center {rest.class}"
 >
   <div
     class={{

@@ -19,7 +19,7 @@
       </div>
       <div>
         <h3 class="font-semibold text-lg">{t("doenit_plus")}</h3>
-        <p class="text-sm text-t-secondary">{t("unlock_plus_features")}</p>
+        <p class="text-sm">{t("unlock_plus_features")}</p>
       </div>
     </div>
 
@@ -40,13 +40,13 @@
       </div>
       <div>
         <h3 class="font-semibold text-lg mb-1">Doenit</h3>
-        <p class="text-sm text-t-secondary">{t("coming_soon")}</p>
+        <p class="text-sm">{t("coming_soon")}</p>
       </div>
       <div class="w-full max-w-xs">
         <div class="h-2 bg-card rounded-full overflow-hidden">
           <div class="h-full bg-primary/30 rounded-full animate-pulse" style="width: 60%"></div>
         </div>
-        <p class="text-xs text-t-secondary mt-2">{t("working_on_it")}</p>
+        <p class="text-xs mt-2">{t("working_on_it")}</p>
       </div>
     </div>
   </div>

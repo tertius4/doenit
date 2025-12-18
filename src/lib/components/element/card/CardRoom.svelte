@@ -1,7 +1,7 @@
 <script>
   import { Edit, Clock, Check, Trash } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
-  import user from "$lib/core/user.svelte";
+  import { user } from "$lib/base/user.svelte";
 
   /**
    * @typedef {Object} Props
@@ -81,7 +81,7 @@
             <Check class="text-lg flex-shrink-0 text-alt" />
           {/if}
           <span class="truncate">
-            {#if room_user.email === user.value?.email}
+            {#if room_user.email === user.email_address}
               {t("you")}
             {:else}
               {room_user.email}

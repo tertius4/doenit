@@ -1,4 +1,4 @@
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { DB } from "$lib/DB";
 import { Notify } from "$lib/services/notifications/notifications";
 import { Table } from "./_Table";
@@ -13,17 +13,44 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "new_task",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_name: category.name,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
+    });
+
+    return { success: true };
+  }
+
+  async completeWithNotification(id: string, task: OnlineTask, db_task: Task): Promise<SimpleResult> {
+    const result = await super.updateById(id, task);
+    if (!result.success) return result;
+
+    // Send notification
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
+
+    await Notify.Push.sendTemplate({
+      type: "task_completed",
+      data: {
+        sender_name: user.name,
+        task_name: db_task.name,
+        category_name: category.name,
+      },
+      email_address: email_addresses,
     });
 
     return { success: true };
@@ -34,17 +61,20 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "task_updated",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_name: category.name,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
     });
 
     return { success: true };
@@ -56,17 +86,20 @@ export class TaskTable extends Table<OnlineTask> {
     if (!result.success) return result;
 
     // Send notification
-    const room = await DB.Room.get(task.room_id);
-    if (!room) return { success: true };
+    const category = await DB.Category.get(task.category_id);
+    if (!category) return { success: true };
+
+    const email_addresses = DB.Category.getNotificationEmails(category);
+    if (!email_addresses.length) return { success: true };
 
     await Notify.Push.sendTemplate({
       type: "task_deleted",
       data: {
-        sender_name: user.value?.name,
+        sender_name: user.name,
         task_name: db_task.name,
-        room_id: room.id,
+        category_name: category.name,
       },
-      email_address: DB.Room.getNotificationEmails(room),
+      email_address: email_addresses,
     });
 
     return { success: true };

@@ -1,13 +1,13 @@
 <script>
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import { onMount } from "svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import ItemName from "./ItemName.svelte";
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import TaskDueDate from "./TaskDueDate.svelte";
   import { Categories, Sync } from "$lib/icon";
   import TaskContainer from "./TaskContainer.svelte";
-  import DateUtil from "$lib/DateUtil";
+  import { DateUtil } from "$lib/core/date_util";
   import { DB } from "$lib/DB";
 
   /**
@@ -92,5 +92,5 @@
     </div>
   {/if}
 
-  <InputCheckbox bind:tick_animation is_selected onselect={handleSelect} {onlongpress} />
+  <InputCheckbox class="top-0 bottom-0" bind:tick_animation is_selected onselect={handleSelect} {onlongpress} />
 </TaskContainer>

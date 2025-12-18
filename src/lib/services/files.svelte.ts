@@ -84,7 +84,7 @@ class Files {
       app = initializeApp(FIREBASE_CONFIG, APP_NAME);
     }
 
-    return getStorage(app);
+    return getStorage(app, "doenitdb");
   }
 }
 

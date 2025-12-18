@@ -1,7 +1,7 @@
 <script>
   import { selectedCategories } from "$lib/cached";
   import InputCheckbox from "./element/input/InputCheckbox.svelte";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
 
   const { id, name } = $props();
 
@@ -26,14 +26,16 @@
 
 <button
   class={{
-    "relative w-full flex h-12 items-center gap-1": true,
+    "w-full flex h-12 items-center gap-1": true,
     "bg-surface": !is_selected,
     "bg-card": is_selected,
   }}
   onclick={onselect}
 >
-  <InputCheckbox {is_selected} tick_animation={is_selected} />
-  <span class="w-full flex pl-12 p-2 text-left">
+  <div class="relative w-12 h-12">
+    <InputCheckbox {is_selected} tick_animation={is_selected} class="w-12 h-12" />
+  </div>
+  <div class="w-full text-left my-auto">
     {name}
-  </span>
+  </div>
 </button>

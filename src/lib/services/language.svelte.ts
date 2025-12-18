@@ -1,11 +1,14 @@
 import { cached_language } from "$lib/cached";
+import { user } from "$lib/base/user.svelte";
 import { translations } from "./language/translations";
-import { Widget } from "./widget";
+import { Widget } from "../core/widget";
+import { notifications } from "./notification.svelte";
 
-type LanguageValue = "af" | "en";
 class LanguageService {
-  private _value = $state<LanguageValue>("af");
-  private readonly translations: Record<string | symbol, string> = $derived(translations[this._value]);
+  private _value = $state<Language | null>(null);
+  private readonly translations: Record<string | symbol, string> = $derived(translations[this._value ?? "af"]);
+
+  readonly is_lang_set = $derived(this._value != null);
 
   constructor() {
     this.init();
@@ -13,11 +16,6 @@ class LanguageService {
 
   async init() {
     let lang = await cached_language.get();
-    if (!this.isValidLanguage(lang)) {
-      cached_language.set("af");
-      lang = "af";
-    }
-
     this._value = lang;
   }
 
@@ -28,15 +26,19 @@ class LanguageService {
     }
 
     this._value = lang;
-    cached_language.set(lang);
-    Widget.updateLanguage(lang);
+    if (lang) {
+      cached_language.set(lang);
+      Widget.updateLanguage(lang);
+      user.language_code = lang;
+      notifications.scheduleNotifications(); 
+    }
   }
 
-  get value() {
-    return this._value;
+  get value(): Language {
+    return this._value ?? "af";
   }
 
-  private isValidLanguage(lang: any): lang is LanguageValue {
+  private isValidLanguage(lang: any): lang is Language {
     return ["af", "en"].includes(lang);
   }
 

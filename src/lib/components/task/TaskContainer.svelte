@@ -1,5 +1,5 @@
 <script>
-  import { fade, slide } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { LongPress } from "$lib/services/long_press.svelte";
 
   const { children, tick_animation, onlongpress, ...rest } = $props();

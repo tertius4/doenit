@@ -14,7 +14,7 @@ class RateAppService {
     this.DISMISS_COOLDOWN_DAYS = 15;
   }
 
-  async init() {
+  init() {
     // Initialize tracking data if not exists
     const settings = Cached.rateUs.value;
 

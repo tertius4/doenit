@@ -1,89 +1,130 @@
 <script>
+  import { CategoriesContext, setCategoriesContext } from "$lib/contexts/categories.svelte";
   import { pushNotificationService } from "$lib/services/pushNotifications.svelte";
+  import { UsersContext, setUsersContext } from "$lib/contexts/users.svelte";
+  import { setTasksContext, TasksContext } from "$lib/contexts/tasks.svelte";
   import { notifications } from "$lib/services/notification.svelte";
-  import { onDestroy, onMount, setContext, untrack } from "svelte";
+  import { onDestroy, onMount, setContext, tick, untrack } from "svelte";
   import { SyncService } from "$lib/services/syncService";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { Photos } from "$lib/services/photos.svelte";
   import Backup from "$lib/services/backup.svelte";
-  import { Widget } from "$lib/services/widget";
+  import { user } from "$lib/base/user.svelte";
+  import { sortTasksByDueDate, wait } from "$lib";
+  import { Widget } from "$lib/core/widget";
   import { Value } from "$lib/utils.svelte";
-  import user from "$lib/core/user.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { Alert } from "$lib/core/alert";
   import Heading from "./Heading.svelte";
-  import { goto } from "$app/navigation";
+  import { goto, pushState } from "$app/navigation";
   import Footer from "./Footer.svelte";
   import { App } from "@capacitor/app";
-  import { page } from "$app/state";
+  import { navigating, page } from "$app/state";
   import { DB } from "$lib/DB";
   import "../app.css";
+  import { billing } from "$lib/core/billing.svelte";
+  import LanguageSelector from "$lib/components/LanguageSelector.svelte";
 
   let { children } = $props();
 
-  /** @type {string[]} */
-  let room_ids = $state([]);
-
   const search_text = new Value("");
   setContext("search_text", search_text);
+
+  const usersContext = setUsersContext(new UsersContext());
+  const categoriesContext = setCategoriesContext(new CategoriesContext());
+  const tasksContext = setTasksContext(new TasksContext());
 
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeOnlineTasks = null;
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeInvites = null;
-  /** @type {Subscription?} */
-  let unsubscribeRoom = null;
+  /** @type {FirebaseUnsubscribe?} */
+  let unsubscribeOnlineUsers = null;
 
-  /** @type {symbol | null} */
+  /** @type {symbol?} */
   let selection_token = null;
 
   const has_selection = $derived(!!Selected.tasks.size);
+  const category_ids = $derived(categoriesContext.categories.map((c) => c.id));
 
   $effect(() => {
-    if (!user.value?.is_backup_enabled) return;
-
-    untrack(() => Backup.init());
-  });
-
-  $effect(() => {
-    user.value;
+    user.is_logged_in;
 
     untrack(() => Backup.populateLastBackupTime());
-  });
+    untrack(async () => {
+      if (!user.is_logged_in) return;
 
-  $effect(() => {
-    if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
-    if (!user.value?.is_friends_enabled) return;
-    if (!room_ids.length) return;
-
-    // Clean up existing subscription before creating a new one
-    unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
-      filters: [{ field: "room_id", operator: "in", value: room_ids }],
+      const online_user = await usersContext.ensureOnlineUserExists();
+      if (online_user) await usersContext.ensureLocalUserExists(online_user.id);
     });
   });
 
   $effect(() => {
-    if (unsubscribeInvites) unsubscribeInvites();
-    if (!user.value?.is_friends_enabled) return;
+    if (!user.is_friends_enabled) return;
+    if (!category_ids.length) return;
 
-    // Clean up existing subscription before creating a new one
-    unsubscribeInvites = OnlineDB.Invite.subscribe((i) => DB.Invite.set(i), {
-      filters: [
-        {
-          or: [
-            { field: "to_email_address", operator: "==", value: user.value?.email },
-            { field: "from_email_address", operator: "==", value: user.value?.email },
-          ],
-        },
-      ],
+    untrack(() => {
+      try {
+        if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
+        unsubscribeOnlineTasks = OnlineDB.Task.subscribe((t) => DB.Task.sync(t), {
+          filters: [{ field: "category_id", operator: "in", value: category_ids }],
+        });
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        if (error_message.includes("insufficient permissions")) return;
+        Alert.error(`Fout met aanmelding vir aanlyn take: ${error_message}`);
+      }
     });
   });
 
   $effect(() => {
-    if (!user.value?.is_friends_enabled) return;
+    if (!user.is_friends_enabled) return;
 
+    const user_email_addresses = usersContext.users.map((u) => u.email_address);
+    if (!user_email_addresses.length) return;
+
+    untrack(() => {
+      try {
+        unsubscribeOnlineUsers = OnlineDB.User.subscribe(
+          (online_users) => DB.User.sync(online_users, usersContext.users),
+          {
+            filters: [{ field: "email_address", operator: "in", value: user_email_addresses }],
+          }
+        );
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        Alert.error(`Fout met aanmelding vir aanlyn gebruikers: ${error_message}`);
+      }
+    });
+  });
+
+  $effect(() => {
+    if (!user.is_friends_enabled) return;
+
+    untrack(() => Backup.init());
+    untrack(() => usersContext.init());
+    untrack(() => categoriesContext.onlineInit());
     untrack(() => pushNotificationService.init());
+    untrack(() => {
+      try {
+        if (unsubscribeInvites) unsubscribeInvites();
+        unsubscribeInvites = OnlineDB.Invite.subscribe(async (i) => DB.Invite.set(i), {
+          filters: [
+            {
+              or: [
+                { field: "to_email_address", operator: "==", value: user.email_address },
+                { field: "from_email_address", operator: "==", value: user.email_address },
+              ],
+            },
+          ],
+          sort: [{ field: "created_at", direction: "asc" }],
+        });
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : String(error);
+        Alert.error(`Fout met aanmelding vir uitnodigings: ${error_message}`);
+      }
+    });
   });
 
   $effect(() => {
@@ -93,40 +134,50 @@
   });
 
   $effect(() => {
-    has_selection;
+    if (!has_selection) return;
 
     untrack(() => {
-      if (has_selection && !selection_token) {
-        selection_token = backHandler.register(() => {
-          Selected.tasks.clear();
-          if (selection_token) {
-            backHandler.unregister(selection_token);
-            selection_token = null;
-          }
+      if (selection_token) return;
 
-          return true;
-        }, 10);
-      }
-    });
-  });
+      selection_token = backHandler.register(() => {
+        Selected.tasks.clear();
+        if (selection_token) {
+          backHandler.unregister(selection_token);
+          selection_token = null;
+        }
 
-  $effect(() => {
-    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
-    if (!user.value?.is_friends_enabled) return;
-
-    unsubscribeRoom = DB.Room.subscribe((rooms) => {
-      room_ids = rooms.map((r) => r.id);
+        return true;
+      }, 10);
     });
   });
 
   onMount(() => {
-    const sub = DB.Task.subscribe(handleTasksUpdate, { selector: { archived: { $ne: true } } });
-    return () => sub.unsubscribe();
+    untrack(async () => {
+      await notifications.init();
+      await wait(3 * 1000);
+      await notifications.requestPermission();
+    });
   });
 
   onMount(() => {
+    categoriesContext.init();
+    window.addEventListener("online", () => billing.init());
+  });
+
+  onMount(() => {
+    try {
+      const sub = DB.Task.subscribe((ts) => handleTasksUpdate(ts));
+      return () => sub.unsubscribe();
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      Alert.error(`Kon nie aan plaaslike databasis koppel nie: ${error_message}`);
+      return () => {};
+    }
+  });
+
+  onMount(() => {
+    // Hanteering van sinkronisasie indien vanlyn
     const sync = SyncService.getInstance();
-    // Start background sync service
     sync.startBackgroundSync();
 
     return () => sync.stopBackgroundSync();
@@ -148,9 +199,7 @@
       return true;
     }, -1000);
 
-    App.addListener("backButton", () => {
-      backHandler.handle();
-    });
+    App.addListener("backButton", () => backHandler.handle());
 
     return () => {
       if (selection_token) backHandler.unregister(selection_token);
@@ -162,15 +211,49 @@
   onDestroy(() => {
     if (unsubscribeOnlineTasks) unsubscribeOnlineTasks();
     if (unsubscribeInvites) unsubscribeInvites();
-    if (unsubscribeRoom) unsubscribeRoom.unsubscribe();
+    if (unsubscribeOnlineUsers) unsubscribeOnlineUsers();
+
+    usersContext.destroy();
+    categoriesContext.destroy();
   });
 
   /**
    * @param {Task[]} tasks
    */
   async function handleTasksUpdate(tasks) {
-    await notifications.scheduleNotifications(tasks);
-    await Widget.updateTasks(tasks);
+    const active_tasks = sortTasksByDueDate(tasks.filter((t) => !t.archived));
+    await notifications.scheduleNotifications(active_tasks);
+    tasksContext.setTasks(active_tasks);
+
+    const { searchParams, origin, pathname } = page.url;
+    const task_id = navigating.from?.params?.item_id || searchParams.get("new_id");
+    if (!!task_id) scrollToTask(task_id);
+
+    const completed_task_ids = searchParams.get("completed_task_ids");
+    if (!!completed_task_ids) {
+      const task_ids = [...new Set(completed_task_ids.split(","))];
+
+      const completed_tasks = [];
+      for (const id of task_ids) {
+        const task = tasksContext.getTaskById(id);
+        if (task) completed_tasks.push(task);
+      }
+
+      const promises = completed_tasks.map((task) => DB.Task.complete(task));
+      const result = await Promise.all(promises);
+
+      const has_failed_tasks = result.some((res) => !res);
+      if (has_failed_tasks) Alert.error("Fout met take voltooi.");
+    }
+
+    // Update the URL without reloading the page
+    searchParams.delete("new_id");
+    searchParams.delete("completed_task_ids");
+    const url_search = !!searchParams.size ? `${page.url.search}` : "";
+    const new_url = `${origin}${pathname}${url_search}`;
+    pushState(new_url, {});
+
+    await Widget.updateTasks(active_tasks.slice(0, 20), categoriesContext.categories);
   }
 
   /**
@@ -180,7 +263,7 @@
     if (!Photos.PHOTOS_ENABLED) return;
 
     try {
-      const tasks = await DB.Task.getAll();
+      const tasks = tasksContext.tasks;
       const photo_ids = tasks.flatMap((task) => task.photo_ids || []).filter(Boolean);
 
       await Photos.cleanupOrphanedPhotos(photo_ids);
@@ -188,6 +271,20 @@
       const error_message = error instanceof Error ? error.message : String(error);
       Alert.error(`Fout tydens wees-foto skoonmaak: ${error_message}`);
     }
+  }
+
+  /**
+   * @param {string} task_id
+   */
+  function scrollToTask(task_id) {
+    const element = document.getElementById(task_id);
+    if (!element) return;
+
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "start",
+    });
   }
 </script>
 
@@ -199,4 +296,5 @@
   </main>
 
   <Footer />
+  <LanguageSelector />
 </div>

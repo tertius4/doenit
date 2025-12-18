@@ -1,8 +1,9 @@
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
 import { Secure } from "$lib/core/secure";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { Cached } from "$lib/core/cache.svelte";
+import { Logger } from "$lib/core/logger";
 
 export class SyncService {
   private static instance: SyncService;
@@ -16,11 +17,11 @@ export class SyncService {
   }
 
   startBackgroundSync(): void {
-    if (this.syncInterval) return; // Already running
+    if (this.syncInterval) return;
 
     // Sync every 30 seconds when online
     this.syncInterval = setInterval(() => {
-      if (navigator.onLine && user.value?.is_friends_enabled) {
+      if (navigator.onLine && user.is_friends_enabled) {
         this.syncPendingTasks().catch(console.warn);
       }
     }, 30000);
@@ -40,7 +41,7 @@ export class SyncService {
   }
 
   private handleOnline = (): void => {
-    if (user.value?.is_friends_enabled) {
+    if (user.is_friends_enabled) {
       this.syncPendingTasks().catch(console.warn);
     }
   };
@@ -52,7 +53,7 @@ export class SyncService {
 
       // Get tasks that need syncing
       const tasks = await DB.Task.getAll({
-        selector: { id: { $in: pending_task_ids }, room_id: { $exists: true } },
+        selector: { id: { $in: pending_task_ids }, category_id: { $exists: true } },
       });
       // Create hash with task IDs as keys and tasks as values (or null if not found)
       const TASK_HASH = pending_task_ids.reduce(
@@ -86,18 +87,20 @@ export class SyncService {
         if (!task && !!online_task) {
           try {
             online_task.deleted = true;
-            const db_task = await Secure.decryptAndDecompress(online_task.data);
-            await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task);
+            const db_task = await Secure.decryptAndDecompress(online_task.data, online_task.category_id);
+            if (db_task) {
+              await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task as Task);
+            }
             this.removePendingTaskId(id);
             continue;
           } catch (error) {}
           continue;
         }
 
-        if (!task?.room_id) continue;
+        if (!task?.category_id) continue;
 
         try {
-          const encrypted_data = await Secure.compressAndEncrypt(task);
+          const encrypted_data = await Secure.compressAndEncrypt(task, task.category_id);
 
           if (online_task) {
             await OnlineDB.Task.updateWithNotification(
@@ -105,7 +108,7 @@ export class SyncService {
               {
                 id: online_task.id,
                 task_id: task.id,
-                room_id: task.room_id || "",
+                category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
               task
@@ -114,7 +117,7 @@ export class SyncService {
             await OnlineDB.Task.createWithNotification(
               {
                 task_id: task.id,
-                room_id: task.room_id || "",
+                category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
               task
@@ -123,9 +126,9 @@ export class SyncService {
 
           // Remove from pending sync queue
           this.removePendingTaskId(task.id);
-          console.log(`Successfully synced task ${task.id}`);
+          Logger.sync(`Successfully synced task ${task.id}`);
         } catch (error) {
-          console.warn(`Failed to sync task ${task.id}:`, error);
+          Logger.warn(`Failed to sync task ${task.id}`, error);
           // Keep in queue for next attempt
         }
       }

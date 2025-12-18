@@ -1,14 +1,12 @@
 <script>
   import InputCheckbox from "$lib/components/element/input/InputCheckbox.svelte";
-  import { Notify } from "$lib/services/notifications/notifications.js";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte.js";
   import SaveChanges from "$lib/components/SaveChanges.svelte";
   import { Photos } from "$lib/services/photos.svelte.js";
   import Modal from "$lib/components/modal/Modal.svelte";
   import EditTask from "$lib/components/EditTask.svelte";
   import { t } from "$lib/services/language.svelte";
   import { SvelteSet } from "svelte/reactivity";
-  import { OnlineDB } from "$lib/OnlineDB.js";
-  import user from "$lib/core/user.svelte.js";
   import { Alert } from "$lib/core/alert.js";
   import { goto } from "$app/navigation";
   import { setContext } from "svelte";
@@ -16,6 +14,8 @@
   import { DB } from "$lib/DB.js";
 
   const { data } = $props();
+
+  const categories_context = getCategoriesContext();
 
   let task = $state(data.task);
   let is_deleting = $state(false);
@@ -59,6 +59,20 @@
     try {
       if (task.repeat_interval_number > 1) {
         task.repeat_interval = other_interval;
+      }
+
+      // Validate category and assigned user
+      if (task.category_id) {
+        const category = categories_context.getCategoryById(task.category_id);
+        if (!category) {
+          task.category_id = undefined;
+          task.assigned_user_email = undefined;
+        } else {
+          const selected_user = category.users.find((u) => u === task.assigned_user_email);
+          if (!selected_user) {
+            task.assigned_user_email = undefined;
+          }
+        }
       }
 
       const updated_task = await DB.Task.update(task.id, task);
@@ -120,6 +134,7 @@
 </button>
 
 <SaveChanges original={data.task} changed={task} onsave={updateTask} />
+
 <div class="mb-20">
   <EditTask bind:error bind:task bind:other_interval {onsubmit} expanded />
 

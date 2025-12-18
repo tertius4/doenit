@@ -1,7 +1,7 @@
 <script>
   import TaskCompleted from "$lib/components/task/TaskCompleted.svelte";
   import { Haptics } from "@capacitor/haptics";
-  import { Selected } from "$lib/selected";
+  import { Selected } from "$lib/selected.svelte";
   import { goto } from "$app/navigation";
   import { getContext, onMount } from "svelte";
   import { DB } from "$lib/DB";
@@ -13,9 +13,8 @@
 
   const search_text = getContext("search_text");
 
-  /** @type {Task[]}*/
+  /** @type {Task[]} */
   let tasks = $state([]);
-
   const filtered_tasks = $derived(filterTasks(tasks, search_text.value));
 
   onMount(() => {
@@ -78,14 +77,11 @@
    */
   function filterTasks(tasks, search_text) {
     return tasks.filter((task) => {
-      if (!!search_text?.trim().length) {
-        const normalized_search = normalize(search_text);
-        const in_name = normalize(task.name).includes(normalized_search);
-        const in_description = normalize(task.description || "").includes(normalized_search);
-        if (!in_name && !in_description) return false;
-      }
+      if (!search_text?.trim().length) return true;
 
-      return true;
+      const normalized_search = normalize(search_text);
+      const in_name = normalize(task.name).includes(normalized_search);
+      return !!in_name;
     });
   }
 </script>
@@ -101,11 +97,11 @@
   {:else}
     {#if search_text.value?.trim().length}
       <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg text-t-secondary">{t("no_tasks_found_for_search")}</div>
+        <div class="text-lg">{t("no_tasks_found_for_search")}</div>
       </div>
     {:else}
       <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg text-t-secondary">{t("no_completed_tasks")}</div>
+        <div class="text-lg">{t("no_completed_tasks")}</div>
       </div>
     {/if}
   {/each}

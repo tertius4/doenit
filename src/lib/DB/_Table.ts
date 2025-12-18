@@ -1,7 +1,7 @@
-import DateUtil from "$lib/DateUtil";
+import { DateUtil } from "$lib/core/date_util";
 import type { MangoQuery, RxCollection } from "$lib/chunk/rxdb";
 
-export class Table<T extends Task | Category | Room> {
+export class Table<T extends Task | Category | User> {
   collection: RxCollection<T>;
 
   constructor(collection: RxCollection<T>) {
@@ -19,7 +19,31 @@ export class Table<T extends Task | Category | Room> {
       ...item,
     } as T;
 
-    return this.collection.insert(new_item);
+    try {
+      return await this.collection.insert(new_item);
+    } catch (error: any) {
+      // Handle conflict: if document with this ID already exists
+      if (error?.code === "CONFLICT" || error?.status === 409) {
+        const existing_doc = await this.collection.findOne(new_item.id).exec();
+
+        if (existing_doc) {
+          const existing = existing_doc.toJSON() as T;
+
+          // Compare updated_at timestamps
+          if (new_item.updated_at && existing.updated_at && new_item.updated_at > existing.updated_at) {
+            // New item is more recent, update the existing document
+            const updated = await this.update(new_item.id, new_item);
+            if (updated) return updated;
+          }
+
+          // Existing document is more recent or same, return it
+          return existing;
+        }
+      }
+
+      // Re-throw if it's a different error
+      throw error;
+    }
   }
 
   async createMany(items: Omit<T, "id" | "created_at" | "archived" | "updated_at">[]): Promise<{ success: T[] }> {
@@ -49,7 +73,7 @@ export class Table<T extends Task | Category | Room> {
 
   async getOne(filter: MangoQuery<T> = {}): Promise<T> {
     const doc = await this.collection.findOne(filter).exec();
-    if (!doc) throw new Error(`${this.collection.name} not found`);
+    if (!doc) throw new Error(`[DB]: ${this.collection.name} nie gevind`);
 
     return doc.toJSON() as T;
   }
@@ -75,10 +99,13 @@ export class Table<T extends Task | Category | Room> {
     return { success: true };
   }
 
-  async delete(ids: string | string[]): Promise<void> {
+  async delete(ids: (string | T) | (string | T)[]): Promise<void> {
     try {
       if (!Array.isArray(ids)) ids = [ids];
       if (!ids.length) return;
+      if (typeof ids[0] !== "string") {
+        ids = (ids as T[]).map((i) => i.id);
+      }
 
       await this.collection.find({ selector: { id: { $in: ids } } }).remove();
     } catch (e) {

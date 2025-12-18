@@ -1,12 +1,15 @@
 <script>
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
   import { t } from "$lib/services/language.svelte";
   import { Categories, Plus } from "$lib/icon";
-  import { onMount } from "svelte";
-  import { DB } from "$lib/DB";
   import Modal from "./modal/Modal.svelte";
+  import { Selected } from "$lib/selected.svelte";
+  import { user } from "$lib/base/user.svelte";
   import { waitAtLeast } from "$lib";
-  import { Selected } from "$lib/selected";
+  import { DB } from "$lib/DB";
+  import UserTag from "./element/UserTag.svelte";
 
   /**
    * @typedef {Object} Props
@@ -16,33 +19,22 @@
   /** @type {Props} */
   const { onclose } = $props();
 
-  /** @type {Category[]} */
-  let categories = $state([]);
+  const categoriesContext = getCategoriesContext();
+  const usersContext = getUsersContext();
+
   let is_open = $state(false);
   let is_adding = $state(false);
-  /** @type {string?} */
-  let category_id = $state(null);
+  /** @type {string | undefined} */
+  let category_id = $state(undefined);
+  /** @type {Category[]} */
+  let categories = $state([]);
 
-  onMount(() => {
-    const sub = DB.Category.subscribe(assignCategories, {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
+  $effect(() => {
+    categories = [...categoriesContext.categories];
+    if (categoriesContext.default_category) {
+      categories.unshift(categoriesContext.default_category);
+    }
   });
-
-  /**
-   * @param {Category[]} new_categories
-   */
-  function assignCategories(new_categories) {
-    const is_mounted = !categories.length;
-    categories = new_categories;
-
-    if (is_mounted) return;
-    const category_exists = categories.some((c) => c.id === category_id);
-    if (!category_exists) category_id = "";
-  }
 
   /**
    * Select a category
@@ -76,38 +68,62 @@
     onclick={() => (is_open = true)}
     class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
   >
-    <span>{t('bulk_assign_category')}</span>
+    <span>{t("bulk_assign_category")}</span>
     <Categories />
   </button>
 
   <Modal bind:is_open>
     <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
-    <div class="mb-4">
-      {#each categories as category}
+    <div class="mb-4 space-y-0.5">
+      {#each categories as category, i}
+        {@const is_shared = !!category?.users.length && user.is_friends_enabled}
         {@const is_selected = category.id === category_id}
+        {@const prev_cat = i > 0 ? categories[i - 1] : null}
+        {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
+          <h2 class="font-semibold">{t("shared_categories")}</h2>
+        {/if}
         <button
           type="button"
           onclick={() => selectCategory(category.id)}
           class={[
-            "text-left flex border rounded-lg border-primary w-full py-2 outline-none",
-            is_selected && "bg-primary/20",
-            !is_selected && "border-transparent",
+            "text-left border rounded-lg border-primary w-full p-2 outline-none",
+            is_selected && "bg-primary/20 text-alt",
+            !is_selected && "border-default bg-card",
           ]}
         >
-          <div
-            class={[
-              "my-auto mx-2 flex items-center justify-center w-4 h-4 aspect-square rounded-full border",
-              is_selected ? "border-primary" : "",
-            ]}
-          >
-            {#if is_selected}
-              <div class="w-2 h-2 bg-primary rounded-full m-auto"></div>
-            {/if}
+          <div class="flex">
+            <div
+              class={[
+                "my-auto flex items-center justify-center w-4 h-4 aspect-square rounded-full border",
+                is_selected ? "border-primary" : "",
+              ]}
+            >
+              {#if is_selected}
+                <div class="w-2 h-2 bg-primary rounded-full m-auto"></div>
+              {/if}
+            </div>
+
+            <div class={["w-full p-1", !is_selected && "border-default"]}>
+              <span>{category.name || t("DEFAULT_NAME")}</span>
+            </div>
           </div>
 
-          <div class={["w-full p-1", !is_selected && "border-default"]}>
-            <span>{category.name}</span>
-          </div>
+          {#if is_shared}
+            {@const users = category.users.map((email) => usersContext.getUserByEmail(email)).filter((u) => u)}
+            {@const me = usersContext.getUserByEmail(user.email_address || "")}
+            <div class="flex flex-nowrap gap-1 pb-2 overflow-x-auto">
+              {#if me}
+                <UserTag user={me} />
+              {/if}
+
+              {#each users as user (user?.email_address)}
+                {@const is_me = !!me && user?.email_address === me?.email_address}
+                {#if user && !is_me}
+                  <UserTag {user} />
+                {/if}
+              {/each}
+            </div>
+          {/if}
         </button>
       {:else}
         <p class="text-muted italic">{t("no_categories_yet")}</p>
@@ -124,7 +140,7 @@
         }}
       >
         <Plus />
-        <span>{t("add_category")}</span>
+        <span class="block font-medium my-2">{t("add_category")}</span>
       </button>
     </div>
   </Modal>

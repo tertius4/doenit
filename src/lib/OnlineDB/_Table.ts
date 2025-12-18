@@ -18,7 +18,8 @@ import {
   type WhereFilterOp,
 } from "$lib/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
-import DateUtil from "$lib/DateUtil";
+import { DateUtil } from "$lib/core/date_util";
+import { Alert } from "$lib/core/alert";
 
 interface QueryOptions {
   filters?: (
@@ -31,7 +32,7 @@ interface QueryOptions {
 
 type SnapshotCallback<T> = (docs: T[]) => void;
 
-export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | Invite> {
+export class Table<T extends BackupManifest | User | OnlineTask | OnlineCategory | OnlineUser | Invite> {
   private readonly name: string;
 
   constructor(name: string) {
@@ -71,21 +72,21 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | I
   }
 
   async readMany(options?: QueryOptions): Promise<T[]> {
-    const q = this.buildQuery(options);
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
-  }
-
-  async getAll(options?: QueryOptions): Promise<T[]> {
     try {
       const q = this.buildQuery(options);
       const snapshot = await getDocs(q);
+
       return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
     } catch (e) {
-      alert(`Failed to fetch documents from ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
+      alert(`Het gefaal om dokuments te kry van ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
       return [];
     }
+  }
+
+  async getAll(options?: QueryOptions): Promise<T[]> {
+    const q = this.buildQuery(options);
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
   }
 
   async updateById(id: string, data: Partial<T>): Promise<SimpleResult> {
@@ -175,33 +176,12 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineRoom | I
   }
 
   subscribe(callback: SnapshotCallback<T>, options?: QueryOptions): Unsubscribe | null {
-    try {
-      const q = this.buildQuery(options);
+    const q = this.buildQuery(options);
 
-      return onSnapshot(
-        q,
-        (snapshot) => {
-          const docs = snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
-          callback(docs);
-        },
-        (error) => {
-          console.error("Firestore subscription error for", this.name, ":");
-          console.error("Error code:", error.code);
-          console.error("Error message:", error.message);
-          console.error("Full error:", error);
-
-          // Handle specific error cases
-          if (error.code === "permission-denied") {
-            console.error("Permission denied - check Firestore security rules and authentication");
-          } else if (error.code === "unauthenticated") {
-            console.error("User not authenticated - make sure to sign in before accessing Firestore");
-          }
-        }
-      );
-    } catch (error) {
-      alert("Error setting up subscription for " + this.name + ": " + error);
-      return null;
-    }
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
+      callback(docs);
+    });
   }
 
   private getFirestore() {

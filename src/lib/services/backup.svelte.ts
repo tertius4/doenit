@@ -1,11 +1,10 @@
 import { cached_automatic_backup, cached_last_backup } from "$lib/cached";
 import { t } from "$lib/services/language.svelte";
 import Files from "$lib/services/files.svelte";
-import * as env from "$env/static/public";
 import { OnlineDB } from "$lib/OnlineDB";
-import User from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { Alert } from "$lib/core/alert";
-import DateUtil from "$lib/DateUtil";
+import { DateUtil } from "$lib/core/date_util";
 import { DB } from "$lib/DB";
 
 class BackupClass {
@@ -82,14 +81,14 @@ class BackupClass {
 
   private async getLastBackupTime(): Promise<string | null> {
     try {
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) return null;
 
       const [backup] = await OnlineDB.BackupManifest.getAll({
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
         limit: 1,
-      });
+      }).catch(() => []);
 
       if (!backup) {
         await cached_last_backup.set(null);
@@ -108,7 +107,7 @@ class BackupClass {
     try {
       this.is_loading = true;
 
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) throw Error(t("user_not_logged_in"));
 
       const tasks = await DB.Task.getAll({
@@ -119,21 +118,21 @@ class BackupClass {
         selector: { archived: { $ne: true } },
         sort: [{ created_at: "desc" }],
       });
-      const rooms = await DB.Room.getAll({
+      const users = await DB.User.getAll({
         sort: [{ created_at: "desc" }],
       });
 
-      const encrypted_data = await this.compressAndEncrypt({ tasks, categories, rooms });
+      const encrypted_data = await this.compressAndEncrypt({ tasks, categories, users });
       const encrypted_blob = new Blob([encrypted_data], { type: "application/octet-stream" });
-      const sha256 = await this.sha256FromJson({ tasks, categories, rooms });
+      const sha256 = await this.sha256FromJson({ tasks, categories, users });
 
       const existing_backups = await OnlineDB.BackupManifest.getAll({
         filters: [
           { field: "user_id", operator: "==", value: user_id },
           { field: "sha256", operator: "==", value: sha256 },
         ],
-      });
-      if (existing_backups.length > 0) {
+      }).catch(() => []);
+      if (!existing_backups.length) {
         throw Error(t("no_changes_since_last_backup"));
       }
 
@@ -141,7 +140,7 @@ class BackupClass {
       const user_backups = await OnlineDB.BackupManifest.getAll({
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
-      });
+      }).catch(() => []);
       for (let i = 2; i < user_backups.length; i++) {
         const backup_to_delete = user_backups[i];
         await OnlineDB.BackupManifest.delete(backup_to_delete.id);
@@ -195,12 +194,12 @@ class BackupClass {
       // Clear data.
       await DB.Task.clear();
       await DB.Category.clear();
-      await DB.Room.clear();
+      await DB.User.clear();
 
       // Restore data.
       await DB.Task.createMany(data.tasks);
       await DB.Category.createMany(data.categories);
-      await DB.Room.createMany(data.rooms);
+      await DB.User.createMany(data.users);
 
       this.is_loading = false;
 
@@ -214,13 +213,13 @@ class BackupClass {
 
   async getBackup(): Promise<Result<BackupManifest>> {
     try {
-      const user_id = User.value?.uid;
+      const user_id = user.uid;
       if (!user_id) return { success: false, error_message: t("user_not_logged_in") };
 
       const backup_manifests = await OnlineDB.BackupManifest.getAll({
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
-      });
+      }).catch(() => []);
 
       return { success: true, data: backup_manifests[0] };
     } catch (error) {
@@ -300,10 +299,23 @@ class BackupClass {
   }
 
   /**
-   * Helper function to derive a crypto key from string
+   * Helper function to derive a crypto key from user ID
+   * Uses Firebase UID to ensure consistency across all user's devices
+   * and enable sharing with collaborators
    */
   private async deriveKey(): Promise<CryptoKey> {
-    const keyString = `${env.PUBLIC_ENCRYPTION_KEY || ""}`.padEnd(32, "0").substring(0, 32);
+    const uid = user.uid;
+    if (!uid) {
+      throw new Error(t("user_not_logged_in"));
+    }
+
+    // Derive a consistent key from user's Firebase UID
+    const encoder = new TextEncoder();
+    const data = encoder.encode(uid);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const keyString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+    
     const keyData = new TextEncoder().encode(keyString);
     return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   }

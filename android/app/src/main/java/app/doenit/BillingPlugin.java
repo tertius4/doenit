@@ -128,7 +128,8 @@ public class BillingPlugin extends Plugin {
                 product.put("title", productDetails.getTitle());
                 product.put("description", productDetails.getDescription());
 
-                if (productDetails.getSubscriptionOfferDetails() == null || productDetails.getSubscriptionOfferDetails().isEmpty()) {
+                if (productDetails.getSubscriptionOfferDetails() == null
+                        || productDetails.getSubscriptionOfferDetails().isEmpty()) {
                     Log.w(TAG, "queryProductDetails: No subscription offers for " + productDetails.getProductId());
                     products.put(product);
                     continue;
@@ -163,7 +164,8 @@ public class BillingPlugin extends Plugin {
         }
 
         String productId = call.getString("product_id");
-        
+        String emailAddress = call.getString("email_address");
+
         // Save the call to resolve later
         pendingPurchaseCall = call;
 
@@ -197,9 +199,14 @@ public class BillingPlugin extends Plugin {
                                     .setOfferToken(offerDetails.getOfferToken())
                                     .build());
 
-                    BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                            .setProductDetailsParamsList(productDetailsParamsList)
-                            .build();
+                    BillingFlowParams.Builder flowParamsBuilder = BillingFlowParams.newBuilder()
+                            .setProductDetailsParamsList(productDetailsParamsList);
+
+                    if (emailAddress != null) {
+                        flowParamsBuilder.setObfuscatedAccountId(emailAddress);
+                    }
+
+                    BillingFlowParams flowParams = flowParamsBuilder.build();
 
                     BillingResult launchResult = billingClient.launchBillingFlow(getActivity(), flowParams);
 

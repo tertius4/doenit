@@ -7,35 +7,54 @@
   import { t } from "$lib/services/language.svelte";
   import Accordion from "$lib/components/element/Accordion.svelte";
   import Check from "$lib/icon/Check.svelte";
+  import { user } from "$lib/base/user.svelte";
+  import { untrack } from "svelte";
 
   let is_loading = $state(false);
 
   let saving = $state(false);
   let saved = $state(false);
+  let enabled = $state(user.notifications.enabled);
+  let time = $state(user.notifications.time);
 
+  $effect(() => {
+    enabled;
+    time;
+
+    untrack(async () => {
+      user.updateNotificationSettings({ enabled, time });
+      await notifications.scheduleNotifications();
+
+      enabled = user.notifications.enabled;
+      time = user.notifications.time;
+    });
+  });
+
+  /**
+   *
+   * @param {{ value: string }}param0
+   */
   function handleTimeChange({ value }) {
-    if (value === notifications.time) return;
+    if (value === time) return;
+
+    user.updateNotificationSettings({ time: value });
+    notifications.scheduleNotifications();
 
     saving = true;
     setTimeout(() => {
       saving = false;
       saved = true;
-      setTimeout(() => (saved = false), 2000);
+      setTimeout(() => (saved = false), 2 * 1000);
     }, 1000);
-
-    notifications.time = value;
   }
 
-  async function requestPermission() {
-    is_loading = true;
-
+  async function handleRequestPermission() {
     try {
-      const status = await notifications.requestPermission();
-      notifications.status = status;
+      is_loading = true;
+      await user.requestNotificationsPermission();
+      is_loading = false;
     } catch (error) {
       console.error("Permission request failed:", error);
-    } finally {
-      is_loading = false;
     }
   }
 </script>
@@ -45,18 +64,19 @@
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <span class="text-sm font-medium">{t("reminders")}</span>
-      <InputSwitch bind:value={notifications.enabled} />
+      <InputSwitch bind:value={enabled} />
     </div>
+
     <!-- Toggle for past due date notifications -->
-    {#if notifications.enabled}
+    {#if enabled}
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
-        <InputSwitch bind:value={notifications.past_tasks_enabled} />
+        <InputSwitch bind:value={user.notifications.past_tasks} />
       </div>
     {/if}
 
     <!-- Permission status with visual indicator -->
-    {#if notifications.enabled}
+    {#if enabled}
       {#if notifications.status !== "granted"}
         <div class="flex items-center gap-3 p-3 rounded-lg bg-t-secondary/5 border border-t-secondary/10">
           {#if notifications.status === "denied"}
@@ -66,7 +86,7 @@
                 <span class="text-sm text-red-600 dark:text-red-400">{t("notification_denied")}</span>
                 <button
                   class="text-sm px-3 py-1 rounded-full bg-t-primary-600 text-secondary hover:bg-t-primary-700 transition-colors"
-                  onclick={requestPermission}
+                  onclick={handleRequestPermission}
                   disabled={is_loading}
                 >
                   {is_loading ? t("loading") : t("request_permission")}
@@ -80,7 +100,7 @@
                 <span class="text-sm text-yellow-600 dark:text-yellow-400">{t("notification_pending")}</span>
                 <button
                   class="text-sm px-3 py-1 rounded-full bg-t-primary-600 text-secondary hover:bg-t-primary-700 transition-colors"
-                  onclick={requestPermission}
+                  onclick={handleRequestPermission}
                   disabled={is_loading}
                 >
                   {is_loading ? t("loading") : t("request_permission")}
@@ -95,16 +115,11 @@
         <!-- Time picker with better layout -->
         <div>
           <span class="flex items-center gap-2 text-sm font-medium mb-2">
-            <Clock size={16} class="text-t-secondary/60" />
+            <Clock size={16} />
             {t("reminder_time")}
           </span>
           <div class="h-12 relative">
-            <InputTime
-              value={notifications.time}
-              can_clear={false}
-              onchange={handleTimeChange}
-              placeholder={t("choose_time")}
-            />
+            <InputTime value={time} can_clear={false} onchange={handleTimeChange} placeholder={t("choose_time")} />
 
             <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
               {#if saving}

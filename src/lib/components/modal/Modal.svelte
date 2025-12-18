@@ -5,11 +5,9 @@
   import { quadInOut } from "svelte/easing";
   import { onMount, untrack } from "svelte";
   import { fade } from "svelte/transition";
+  import { user } from "$lib/base/user.svelte";
   import { Times } from "$lib/icon";
-
-  // import { EdgeToEdge } from "@capawesome/capacitor-android-edge-to-edge-support";
-  // import { theme } from "$lib/services/theme.svelte";
-  // import { DEFAULT_HEX_COLOR } from "$lib";
+  import { Capacitor } from "@capacitor/core";
 
   /**
    * @typedef {Object} Props
@@ -25,13 +23,16 @@
     is_open;
 
     untrack(async () => {
+      if (!Capacitor.isNativePlatform()) return;
+
       const info = await Device.getInfo();
       if (+info.osVersion <= 14) return;
 
       // TODO Get the colour of the white over black/50 and (dark theme).
-      // EdgeToEdge.setBackgroundColor({
-      //   color: theme.value === "dark" ? (DEFAULT_HEX_COLOR + is_open ? "44" : "") : "#F5F5F5",
-      // });
+      const { EdgeToEdge } = await import("@capawesome/capacitor-android-edge-to-edge-support");
+      EdgeToEdge.setBackgroundColor({
+        color: user.theme === "dark" ? "#2b2f31" : "#F5F5F5",
+      });
     });
   });
 

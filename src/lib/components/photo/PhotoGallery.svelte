@@ -122,10 +122,9 @@
       type="button"
       onclick={openPhotosPrompt}
       disabled={is_loading}
-      class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
+      class="absolute z-2 bottom-4 left-4 flex justify-center bg-card items-center aspect-square rounded-full h-13 w-13 p-3 disabled:opacity-50"
     >
       <Camera />
-      <span>{is_loading ? t("loading") : t("add_photo")}</span>
     </button>
   {/if}
 

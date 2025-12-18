@@ -2,9 +2,10 @@ import { addRxPlugin, createRxDatabase } from "$lib/chunk/rxdb";
 import { getRxStorageDexie, RxDBMigrationSchemaPlugin } from "$lib/chunk/rxdb_helper";
 import { CategoryTable } from "./DB/Category";
 import { TaskTable } from "./DB/Task";
-import { RoomTable } from "./DB/Room";
 import { InviteTable } from "./DB/Invite.svelte";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
+import { UserTable } from "./DB/User";
+import { Logger } from "$lib/core/logger";
 
 async function initDB() {
   addRxPlugin(RxDBMigrationSchemaPlugin);
@@ -55,10 +56,21 @@ async function initDB() {
 
           return oldDoc;
         },
+        7: function (oldDoc) {
+          oldDoc.room_id = undefined;
+          return oldDoc;
+        },
+        8: (oldDoc) => oldDoc,
+        9: (oldDoc) => {
+          oldDoc.assigned_user_email = null;
+          oldDoc.assigned_user_id = undefined;
+
+          return oldDoc;
+        },
       },
       schema: {
         title: "task",
-        version: 6,
+        version: 9,
         description: "describes a task",
         type: "object",
         properties: {
@@ -77,8 +89,8 @@ async function initDB() {
           repeat_interval_number: { type: "number" },
           important: { type: "boolean" },
           urgent: { type: "boolean" },
-          category_id: { type: "string" },
-          room_id: { type: ["string", "null"] },
+          category_id: { type: ["string", "null"] },
+          assigned_user_email: { type: ["string", "null"] },
           archived: { type: "boolean" },
           created_at: { type: "string" },
           updated_at: { type: "string" },
@@ -105,10 +117,7 @@ async function initDB() {
         description: "describes a category",
         type: "object",
         properties: {
-          id: {
-            type: "string",
-            maxLength: 50,
-          },
+          id: { type: "string", maxLength: 50 },
           name: { type: "string" },
           is_default: { type: "boolean" },
           archived: { type: "boolean" },
@@ -119,34 +128,25 @@ async function initDB() {
         primaryKey: "id",
       },
     },
-    Room: {
+    User: {
       autoMigrate: false,
       migrationStrategies: {
         1: function (oldDoc) {
-          // migration from v0 to v1: add updated_at field
-          return {
-            ...oldDoc,
-            updated_at: oldDoc.created_at,
-          };
+          return oldDoc;
         },
       },
       schema: {
-        title: "room",
+        title: "user",
         version: 1,
-        description: "describes a room for shared tasks",
+        description: "describes a user",
         type: "object",
         properties: {
-          id: {
-            type: "string",
-            maxLength: 50,
-          },
+          id: { type: "string", maxLength: 50 },
+          is_pending: { type: "boolean" },
           name: { type: "string" },
-          users: { type: "array", items: { type: "string" } },
-          archived: { type: "boolean" },
-          created_at: { type: "string" },
-          updated_at: { type: "string" },
+          email: { type: "string" },
         },
-        required: ["id", "name", "users", "archived", "created_at"],
+        required: ["id", "name", "email"],
         primaryKey: "id",
       },
     },
@@ -154,19 +154,15 @@ async function initDB() {
 
   const task_needed = await collections.Task.migrationNeeded();
   if (task_needed) {
-    console.log("Task migration needed");
+    Logger.db("Task migration needed - starting migration");
     await collections.Task.migratePromise(1000);
+    Logger.db("Task migration completed");
   }
   const cate_needed = await collections.Category.migrationNeeded();
   if (cate_needed) {
-    console.log("Category migration needed");
+    Logger.db("Category migration needed - starting migration");
     await collections.Category.migratePromise(1000);
-  }
-
-  const room_needed = await collections.Room.migrationNeeded();
-  if (room_needed) {
-    console.log("Room migration needed");
-    await collections.Room.migratePromise(1000);
+    Logger.db("Category migration completed");
   }
 
   return DB;
@@ -175,16 +171,16 @@ async function initDB() {
 class DBClass {
   #Task: TaskTable | undefined;
   #Category: CategoryTable | undefined;
-  #Room: RoomTable | undefined;
+  #User: UserTable | undefined;
   #Invite = new InviteTable();
 
   async init() {
-    if (!!this.#Task && !!this.#Category && !!this.#Room && !!this.#Invite) return;
+    if (!!this.#Task && !!this.#Category && !!this.#User && !!this.#Invite) return;
 
     const db = await initDB();
     this.#Task = new TaskTable(db.collections.Task);
     this.#Category = new CategoryTable(db.collections.Category);
-    this.#Room = new RoomTable(db.collections.Room);
+    this.#User = new UserTable(db.collections.User);
   }
 
   get Task(): TaskTable {
@@ -199,10 +195,10 @@ class DBClass {
     return this.#Category;
   }
 
-  get Room(): RoomTable {
-    if (!this.#Room) throw new Error("Room table not initialized");
+  get User(): UserTable {
+    if (!this.#User) throw new Error("User table not initialized");
 
-    return this.#Room;
+    return this.#User;
   }
 
   get Invite(): InviteTable {

@@ -1,155 +1,91 @@
 <script>
-  import { onMount, untrack } from "svelte";
-  import { DB } from "$lib/DB";
-  import { Selected } from "$lib/selected";
-  import Categories from "$lib/icon/Categories.svelte";
-  import { sortByField } from "$lib";
-  import { Check, Info, Star, Users } from "$lib/icon";
+  import { Selected } from "$lib/selected.svelte";
+  import { Check, Info, Star } from "$lib/icon";
   import Tag from "./Tag.svelte";
-  import { Cached } from "$lib/core/cache.svelte";
   import Modal from "./modal/Modal.svelte";
   import FavouriteCategorySetup from "./FavouriteCategorySetup.svelte";
   import { t } from "$lib/services/language.svelte";
   import Button from "./element/button/Button.svelte";
-  import user from "$lib/core/user.svelte";
-
-  /** @type {Category[]} */
-  let categories = $state([]);
-  /** @type {Room[]} */
-  let rooms = $state([]);
-  /** @type {string[]} */
-  let favourite_cat_ids = $state([]);
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getTasksContext } from "$lib/contexts/tasks.svelte";
+  import { user } from "$lib/base/user.svelte";
+  import CategoryTag from "./CategoryTag.svelte";
+  import { untrack } from "svelte";
 
   let show_favourite_modal = $state(false);
-  /** @type {import('dexie').Subscription?} */
-  let rooms_sub = null;
+
+  const categoriesContext = getCategoriesContext();
+  const tasksContext = getTasksContext();
+
+  const CATEGORY_TASKS_COUNT = $derived.by(() => {
+    return tasksContext.tasks.reduce((acc, task) => {
+      untrack(() => {
+        const category_id = task.category_id || categoriesContext.default_category?.id;
+        if (!category_id) return;
+        if (task.archived) return;
+  
+        if (!acc[category_id]) {
+          acc[category_id] = 0;
+        }
+  
+        acc[category_id]++;
+      });
+      return acc;
+    }, /** @type {Record<string, number>}*/ ({}));
+  });
 
   const is_favourite_selected = $derived(
-    favourite_cat_ids.length !== 0 &&
-      favourite_cat_ids.every((id) => Selected.categories.has(id)) &&
-      favourite_cat_ids.length === Selected.categories.size
+    !!user.favourite_category_ids.length &&
+      user.favourite_category_ids.every((id) => Selected.categories.has(id)) &&
+      user.favourite_category_ids.length === Selected.categories.size
   );
-  const items = $derived.by(() => {
-    /** @type {{ id: string, name: string, type: "category" | "room" }[]} */
-    let items = [];
-
-    for (const category of categories) {
-      if (favourite_cat_ids.includes(category.id)) continue;
-
-      items.push({
-        id: category.id,
-        name: category.name,
-        type: "category",
-      });
-    }
-    for (const room of rooms) {
-      items.push({
-        id: room.id,
-        name: room.name,
-        type: "room",
-      });
-    }
-
-    return sortByField(items, "name");
-  });
-
-  $effect(() => {
-    const ids = Cached.favouriteCategories.value?.split(",") ?? [];
-
-    untrack(() => {
-      for (const id of ids) {
-        if (!id) continue;
-
-        favourite_cat_ids.push(id);
-        Selected.categories.add(id);
-      }
-    });
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  $effect(() => {
-    if (!user.value?.is_friends_enabled || !!rooms_sub) return;
-
-    rooms_sub = DB.Room.subscribe((result) => (rooms = result), {
-      selector: { archived: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => rooms_sub?.unsubscribe();
-  });
-
-  /**
-   * Toggles selection of a hotbar item.
-   * @param {{ id: string, name: string, type: "category" | "room" }} item
-   */
-  function toggle(item) {
-    const is_room = item.type === "room";
-    if (is_room) {
-      if (Selected.rooms.has(item.id)) {
-        Selected.rooms.delete(item.id);
-      } else {
-        Selected.rooms.add(item.id);
-        Selected.categories.clear();
-      }
-    } else {
-      if (Selected.categories.has(item.id)) {
-        Selected.categories.delete(item.id);
-      } else {
-        for (const cat_id of favourite_cat_ids) {
-          Selected.categories.delete(cat_id);
-        }
-        Selected.categories.add(item.id);
-      }
-    }
-  }
 
   function selectFavourite() {
-    if (favourite_cat_ids.length === 0) {
+    if (!user.favourite_category_ids.length) {
       show_favourite_modal = true;
       return;
     }
 
     if (is_favourite_selected) {
-      for (const cat_id of favourite_cat_ids) {
-        Selected.categories.delete(cat_id);
-      }
+      Selected.categories.clear();
     } else {
       Selected.categories.clear();
-      Selected.rooms.clear();
+      Selected.do_now = false;
 
-      for (const cat_id of favourite_cat_ids) {
+      for (const cat_id of user.favourite_category_ids) {
         Selected.categories.add(cat_id);
       }
     }
   }
+
+  function selectDoNow() {
+    Selected.do_now = !Selected.do_now;
+    Selected.categories.clear();
+  }
 </script>
 
-{#if !!items.length}
+{#if !!categoriesContext.categories.length}
   <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
-    {#if !!categories.length}
+    {#if !!categoriesContext.categories.length}
       <Tag round is_selected={is_favourite_selected} onclick={selectFavourite}>
         <Star />
       </Tag>
     {/if}
 
-    {#each items as item}
-      {@const is_selected = Selected.categories.has(item.id) || Selected.rooms.has(item.id)}
-      <Tag {is_selected} onclick={() => toggle(item)}>
-        {#if item.type === "room"}
-          <Users />
-        {:else}
-          <Categories />
-        {/if}
-        <span>{item.name}</span>
-      </Tag>
+    <Tag onclick={selectDoNow} is_selected={Selected.do_now}>
+      <span>{t("do_now")}</span>
+    </Tag>
+
+    {#if categoriesContext.default_category}
+      <CategoryTag
+        disable_edit
+        category={categoriesContext.default_category}
+        items_count={CATEGORY_TASKS_COUNT[categoriesContext.default_category.id]}
+      />
+    {/if}
+
+    {#each categoriesContext.categories as category (category.id)}
+      <CategoryTag {category} items_count={CATEGORY_TASKS_COUNT[category.id]} />
     {/each}
   </nav>
 {/if}

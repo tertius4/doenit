@@ -1,78 +1,14 @@
-import { cached_notification_past_tasks, cached_notification_time } from "$lib/cached";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { t } from "$lib/services/language.svelte";
 import { Capacitor } from "@capacitor/core";
 import { DB } from "$lib/DB";
-import { sortTasksByDueDate } from "$lib";
+import { sortTasksByDueDate, wait } from "$lib";
 import { App } from "@capacitor/app";
+import { user } from "$lib/base/user.svelte";
 
 class Notification {
   #initiated: boolean = false;
-  #time: string | null = $state(null);
-  #enabled: boolean = $state(false);
-  #past_tasks_enabled: boolean = $state(false);
-
   #status: string | null = $state(null);
-  #timeout: number | NodeJS.Timeout = $state(0);
-
-  get time() {
-    return this.#time;
-  }
-
-  set time(time_value: string | null) {
-    clearTimeout(this.#timeout);
-
-    this.#timeout = setTimeout(async () => {
-      cached_notification_time.set(time_value);
-      this.#time = time_value;
-
-      await this.scheduleNotifications();
-    }, 1000);
-  }
-
-  get enabled() {
-    return this.#enabled;
-  }
-
-  set enabled(enabled: boolean) {
-    if (typeof enabled !== "boolean") {
-      console.warn(`Invalid enabled value: ${enabled}. It should be a boolean.`);
-      return;
-    }
-
-    this.#enabled = enabled;
-
-    if (enabled) {
-      // Set default time if not already set
-      if (!this.#time) {
-        this.#time = "08:00";
-        this.scheduleNotifications();
-      }
-      cached_notification_time.set(this.#time);
-      this.requestPermission().then((status) => {
-        this.#status = status;
-      });
-    } else {
-      this.past_tasks_enabled = false;
-      cached_notification_time.set(null);
-      this.cancelAll();
-    }
-  }
-
-  get past_tasks_enabled() {
-    return this.#past_tasks_enabled;
-  }
-
-  set past_tasks_enabled(value: boolean) {
-    if (typeof value !== "boolean") {
-      console.warn(`Invalid enabled value: ${value}. It should be a boolean.`);
-      return;
-    }
-
-    this.#past_tasks_enabled = value;
-    cached_notification_past_tasks.set(value);
-    this.scheduleNotifications();
-  }
 
   get status() {
     return this.#status;
@@ -90,34 +26,16 @@ class Notification {
   }
 
   async init() {
-    await this.#init();
+    const existing_permission = await LocalNotifications.checkPermissions();
+    this.#status = existing_permission.display;
     App.addListener("appStateChange", async (state) => {
       if (!state.isActive) return;
 
       const status = await LocalNotifications.checkPermissions();
       this.#status = status.display;
     });
-  }
 
-  async #init() {
-    let time = await cached_notification_time.get();
-    if (time === undefined) {
-      cached_notification_time.set(null);
-      time = null;
-    }
-
-    let past_tasks = await cached_notification_past_tasks.get();
-    if (past_tasks == null) {
-      cached_notification_past_tasks.set(false);
-      past_tasks = false;
-    }
-
-    this.#time = time;
-    this.#enabled = time !== null;
-    this.#past_tasks_enabled = past_tasks;
-
-    const existing_permission = await LocalNotifications.checkPermissions();
-    this.#status = existing_permission.display;
+    this.#initiated = true;
   }
 
   /**
@@ -163,21 +81,21 @@ class Notification {
     try {
       if (all_tasks == null) {
         all_tasks = await DB.Task.getAll({ selector: { archived: { $ne: true } } });
+        all_tasks = sortTasksByDueDate(all_tasks);
       }
 
       if (!this.#initiated) {
         await this.init();
-        this.#initiated = true;
       }
 
-      if (!this.#enabled || !this.#time) {
-        console.warn("Notifications are disabled or time is not set.");
+      if (!user.notifications.enabled || !user.notifications.time) {
+        console.warn("Kennisgewings is gedeaktiveer of tyd nie gestel nie.");
         return;
       }
 
       // Validate time format
-      if (!/^\d{2}:\d{2}$/.test(this.#time)) {
-        console.error(`Invalid time format: ${this.#time}. Expected HH:mm format.`);
+      if (!/^\d{2}:\d{2}$/.test(user.notifications.time)) {
+        console.error(`Invalid time format: ${user.notifications.time}. Expected HH:mm format.`);
         return;
       }
 
@@ -188,7 +106,7 @@ class Notification {
 
       // Today at the specified time or default to 8:00 AM.
       const date = new Date();
-      const [hours = 8, minutes = 0] = this.#time?.split(":").map(Number) ?? [];
+      const [hours = 8, minutes = 0] = user.notifications.time.split(":").map(Number) ?? [];
 
       // Validate parsed time values
       if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
@@ -197,8 +115,6 @@ class Notification {
       }
 
       date.setHours(hours, minutes, 0, 0);
-
-      all_tasks = sortTasksByDueDate(all_tasks);
 
       // ID generation constants to avoid collisions
       const DAILY_REMINDER_ID_BASE = 200000;
@@ -218,7 +134,8 @@ class Notification {
                 `${idx + 1}. ${task.name}${task.start_date?.includes(" ") ? ` (${task.start_date.split(" ")[1]})` : ""}`
             )
             .join("\n");
-          if (date > new Date()) {
+
+          if (date >= new Date()) {
             notifications.push({
               title:
                 tasks.length === 1
@@ -270,7 +187,7 @@ class Notification {
         date.setDate(date.getDate() + 1);
       }
 
-      if (notifications.length > 0) {
+      if (!!notifications.length) {
         await LocalNotifications.schedule({ notifications });
         console.debug(`[😨 Doenit]: ${notifications.length} kennisgewings geskeduleer.`);
       } else {
@@ -283,7 +200,7 @@ class Notification {
   }
 
   private getPastTaskNotification(all_tasks: Task[], start_date: Date) {
-    if (!this.#past_tasks_enabled) return [];
+    if (!user.notifications.past_tasks) return [];
 
     const PAST_TASKS_ID_BASE = 100000;
     const notifications = [];

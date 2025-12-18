@@ -1,14 +1,14 @@
 <script>
-  import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
-  import { onMount } from "svelte";
-  import { Selected } from "$lib/selected";
-  import ItemName from "./ItemName.svelte";
-  import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import { Camera, Categories, Clock, Important, Sync, Users } from "$lib/icon";
+  import InputCheckbox from "../element/input/InputCheckbox.svelte";
+  import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import TaskContainer from "./TaskContainer.svelte";
-  import DateUtil from "$lib/DateUtil";
-  import { DB } from "$lib/DB";
+  import { Selected } from "$lib/selected.svelte";
+  import ItemName from "./ItemName.svelte";
+  import { DateUtil } from "$lib/core/date_util";
   import Pill from "./Pill.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
 
   /**
    * @typedef {Object} Props
@@ -22,23 +22,34 @@
   /** @type {Props & Record<string, any>} */
   const { current_time, task, onselect = () => {}, onclick = () => {}, onlongpress = () => {}, ...rest } = $props();
 
-  const due_date = DateUtil.parseWithTimeBoundary(task.due_date, "end");
-  const start_date = DateUtil.parseWithTimeBoundary(task.start_date, !!due_date ? "start" : "end");
+  const usersContext = getUsersContext();
+  const categoriesContext = getCategoriesContext();
 
-  /** @type {Category?} */
-  let category = $state(null);
-  /** @type {Room?} */
-  let room = $state(null);
+  const due_date = DateUtil.parseWithTimeBoundary(task.due_date, "end");
+  const start_date = getStartDateTime(task.start_date);
+
   let tick_animation = $state(false);
 
   const is_past = $derived(!!start_date && start_date < current_time);
   const is_selected = $derived(Selected.tasks.has(task.id));
   const is_ongoing = $derived(isOngoing(due_date, start_date, current_time));
+  /** @type {Category | undefined} */
+  const category = $derived(task.category_id ? categoriesContext.getCategoryById(task.category_id) : undefined);
+  /** @type {User | undefined} */
+  const user = $derived(task.assigned_user_email ? usersContext.getUserByEmail(task.assigned_user_email) : undefined);
 
-  onMount(async () => {
-    category = await getCategory(task);
-    room = await getRoom(task);
-  });
+  /**
+   *
+   * @param {string | null} date_str
+   */
+  function getStartDateTime(date_str) {
+    if (!date_str) return null;
+
+    const has_time = date_str.includes(" ");
+    if (has_time) return new Date(date_str);
+
+    return DateUtil.parseWithTimeBoundary(date_str, !!due_date ? "start" : "end");
+  }
 
   /**
    * Handles the selection of a completed task.
@@ -46,6 +57,12 @@
    */
   function handleSelect(event) {
     event.stopPropagation();
+    if (Selected.tasks.has(task.id)) {
+      Selected.tasks.delete(task.id);
+      tick_animation = false;
+      return;
+    }
+
     setTimeout(() => onselect(task), COMPLETE_TASK_DELAY_MS);
   }
 
@@ -63,30 +80,6 @@
       return DateUtil.isSameDay(today, start_date) && today <= start_date;
     }
   }
-
-  /**
-   * Initializes the default category for the task.
-   * @param {Task} task
-   * @returns {Promise<Category?>}
-   */
-  async function getCategory(task) {
-    if (!task?.category_id) return null;
-
-    const selector = { selector: { id: task.category_id, archived: { $ne: true } } };
-    return DB.Category.getOne(selector).catch(() => null);
-  }
-
-  /**
-   * Query the room for the task.
-   * @param {Task} task
-   * @returns {Promise<Room?>}
-   */
-  async function getRoom(task) {
-    if (!task?.room_id) return null;
-
-    const selector = { selector: { id: task.room_id, archived: { $ne: true } } };
-    return DB.Room.getOne(selector).catch(() => null);
-  }
 </script>
 
 <TaskContainer
@@ -102,7 +95,7 @@
   {onclick}
   {onlongpress}
 >
-  <ItemName name={task.name} {tick_animation} description={task.description} />
+  <ItemName name={task.name} {tick_animation} description={""} />
 
   <div class="flex flex-wrap gap-2 pl-10 font-normal w-full">
     {#if task.start_date}
@@ -128,10 +121,15 @@
       </Pill>
     {/if}
 
-    {#if room}
-      <Pill {is_ongoing} {is_past} {is_selected} class="rounded">
-        <Users class="w-sm h-sm flex-shrink-0" />
-        <span class="truncate">{room.name}</span>
+    {#if user}
+      <Pill {is_ongoing} {is_past} {is_selected} class="rounded-full">
+        <img
+          class="w-sm h-sm rounded-full flex-shrink-0"
+          src={user.avatar}
+          alt={user.name}
+          referrerpolicy="no-referrer"
+        />
+        <span class="truncate">{user.name}</span>
       </Pill>
     {/if}
   </div>
@@ -145,5 +143,5 @@
     {/if}
   </div>
 
-  <InputCheckbox bind:tick_animation {is_selected} {onlongpress} onselect={handleSelect} />
+  <InputCheckbox class="top-0 bottom-0" bind:tick_animation {is_selected} {onlongpress} onselect={handleSelect} />
 </TaskContainer>

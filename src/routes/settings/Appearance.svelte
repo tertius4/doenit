@@ -3,16 +3,24 @@
   import ButtonTextSize from "$lib/components/element/button/ButtonTextSize.svelte";
   import { Moon, Sun } from "$lib/icon";
   import { t, language } from "$lib/services/language.svelte";
-  import { theme } from "$lib/services/theme.svelte";
   import Accordion from "$lib/components/element/Accordion.svelte";
   import { text } from "$lib/services/text.svelte";
+  import { user } from "$lib/base/user.svelte";
 
   /**
    * Handle language change
-   * @param {'af' | 'en'} lang
+   * @param {Language} lang
    */
   function onlanguagechange(lang) {
     language.value = lang;
+  }
+
+  function toggle() {
+    if (user.theme === "dark") {
+      user.theme = "light";
+    } else {
+      user.theme = "dark";
+    }
   }
 </script>
 
@@ -22,12 +30,12 @@
     <h3 class="mb-1">{t("theme")}</h3>
     <button
       class="relative flex h-12 w-full p-1 gap-2 rounded-lg bg-card"
-      onclick={() => theme.toggle()}
+      onclick={toggle}
       aria-label={t("toggle_theme")}
     >
       <div class="relative w-full">
         <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
-          <Sun variant={theme.value === "light" ? "filled" : "outline"} />
+          <Sun variant={user.theme === "light" ? "filled" : "outline"} />
           <span class="font-medium">{t("light_theme")}</span>
         </div>
       </div>
@@ -35,11 +43,11 @@
       <div class="relative w-full">
         <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
           <span class="font-medium">{t("dark_theme")}</span>
-          <Moon variant={theme.value === "dark" ? "filled" : "outline"} />
+          <Moon variant={user.theme === "dark" ? "filled" : "outline"} />
         </div>
       </div>
 
-      <div class="absolute inset-0 {theme.value === 'dark' ? 'translate-x-full' : ''} w-1/2 h-full p-1">
+      <div class="absolute inset-0 {user.theme === 'dark' ? 'translate-x-full' : ''} w-1/2 h-full p-1">
         <div class="rounded-lg h-full z-1 w-full bg-surface"></div>
       </div>
     </button>

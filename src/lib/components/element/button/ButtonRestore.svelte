@@ -2,7 +2,7 @@
   import Modal from "$lib/components/modal/Modal.svelte";
   import { Info, Loading, Restore, Trash } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
-  import DateUtil from "$lib/DateUtil";
+  import { DateUtil } from "$lib/core/date_util";
   import { slide } from "svelte/transition";
 
   /**

@@ -1,4 +1,4 @@
-/** @type {Record<'en' | 'af', Record<string | symbol, string>>} */
+/** @type {Record<Language, Record<string | symbol, string>>} */
 export const translations = {
   af: {
     // System defaults
@@ -72,6 +72,7 @@ export const translations = {
     task_was_created: '"{{task_name}}" is geskep',
     failed_to_update_widget: "Kon nie widget opdateer nie:",
     delete_tasks: "Verwyder take",
+    assigned_to: "Toegewys aan",
 
     // Task Actions & Buttons
     save_changes: "Stoor veranderinge",
@@ -156,6 +157,7 @@ export const translations = {
     sat: "Sa",
 
     // Categories
+    do_now: "Doen nou",
     add_category: "Voeg Kategorie By",
     category: "Kategorie",
     all_categories: "Alle Kategorieë",
@@ -169,8 +171,16 @@ export const translations = {
     edit_category_name: "Wysig naam",
     categories_selected: "{{count}} Kategorieë geselekteer",
     category_selected: "1 Kategorie geselekteer",
+    no_one: "Niemand",
+    share_category: "Wie kan hierdie kategorie en sy take sien?",
+    shared_categories: "Gedeelde Kategorieë",
 
     // Friends & Social
+    leave_friend: "Verlaat Vriend",
+    note_still_sharing_categories: "Nota: U sal steeds bestaande kategorieë en hul take deel.",
+    choose_user: "Wie moet die taak doen?",
+    anyone: "Enigiemand",
+    choose_user_name: "Kies 'n naam vir jou gebruiker",
     connect_with_friend: "Verbind met 'n vriend",
     enter_friend_email: "Voer vriend se e-posadres in",
     send_invite: "Stuur uitnodiging",
@@ -186,7 +196,6 @@ export const translations = {
     cannot_invite_yourself: "Jy kan nie jouself uitnooi nie",
     sync_success: "Take gesinkroniseer",
     sync_error: "Sinkronisasie fout",
-    leave_friend: "Verlaat",
     left_group: "Groep Verlaat",
     user_left_group: '{{user_name}} het die groep "{{room_name}}" verlaat',
     user_not_found: "Gebruiker nie gevind nie",
@@ -407,6 +416,7 @@ export const translations = {
     working_on_it: "Ek werk daaraan…",
 
     // Doenit Plus Subscription
+    manage: "Bestuur",
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Gradeer op na Plus",
     current_plan: "Jou Huidige Plan",
@@ -416,6 +426,7 @@ export const translations = {
     per_month: "per maand",
     start_free_trial: "Begin Gratis Proeftydperk",
     subscribe_now: "Teken Nou In",
+    no_products_found: "Doenit Plus is tans nie beskikbaar nie.",
     one_week_free: "1 week gratis",
     trial_then_price: "1 week gratis proeftydperk, dan R20/maand",
     auto_renews_monthly: "Hernu elke maand outomaties",
@@ -426,6 +437,9 @@ export const translations = {
     benefit_backup: "Outomatiese Rugsteun",
     benefit_backup_desc: "Jou data word outomaties geënkripteer en gerugsteun",
     unlock_plus_features: "Ontsluit Plus Funksies",
+    unlock_premium_features: "Ontsluit premium funksies",
+    whats_included: "Wat is ingesluit",
+    your_benefits: "Jou Voordele",
     why_plus: "Hoekom Plus?",
     plus_feature_collaboration: "Samewerking met Vriende",
     plus_feature_collaboration_desc:
@@ -437,7 +451,10 @@ export const translations = {
     rooms_locked_desc: "Gradeer op na Doenit Plus om kamers te ontsluit en take met jou vriende te deel.",
     backup_locked: "Outomatiese rugsteun is 'n Plus funksie",
     backup_locked_desc: "Gradeer op na Doenit Plus om outomatiese rugsteun te ontsluit.",
-    manage_subscriptions: "Bestuur Google Play Subskripsies",
+    manage_subscriptions: "Bestuur Intekening",
+    reactivate_subscription: "Heraktiveer Intekening",
+    subscription_cancelled_until: "Gekanselleer tot",
+    renews_on: "Hernu op",
     already_free_plan: "Jy is reeds op die gratis plan.",
     cancellation_failed: "Kansellasie het misluk",
 
@@ -450,6 +467,7 @@ export const translations = {
     subscription_active: "Jou subscription is aktief",
 
     you: "Jy",
+    offline: "U is tans vanlyn",
   },
 
   en: {
@@ -522,6 +540,7 @@ export const translations = {
     task_was_created: '"{{task_name}}" was created',
     failed_to_update_widget: "Failed to update widget:",
     delete_tasks: "Delete tasks",
+    assigned_to: "Assigned to",
 
     // Task Actions & Buttons
     save_changes: "Save changes",
@@ -606,6 +625,7 @@ export const translations = {
     sat: "Sat",
 
     // Categories
+    do_now: "Do Now",
     add_category: "Add Category",
     category: "Category",
     all_categories: "All Categories",
@@ -619,8 +639,15 @@ export const translations = {
     edit_category_name: "Edit name",
     categories_selected: "{{count}} Categories selected",
     category_selected: "1 Category selected",
+    no_one: "No one",
+    share_category: "Who can see this category and its tasks?",
+    shared_categories: "Shared Categories",
 
     // Friends & Social
+    leave_friend: "Leave Friend",
+    note_still_sharing_categories: "Note: You will still be sharing existing categories and their tasks.",
+    choose_user: "Who should do the task?",
+    anyone: "Anyone",
     connect_with_friend: "Connect with a friend",
     enter_friend_email: "Enter friend's email address",
     send_invite: "Send invite",
@@ -636,7 +663,6 @@ export const translations = {
     cannot_invite_yourself: "You cannot invite yourself",
     sync_success: "Tasks synchronized",
     sync_error: "Synchronization error",
-    leave_friend: "Leave",
     left_group: "Left Group",
     user_left_group: '{{user_name}} have left the group "{{room_name}}"',
     user_not_found: "User not found",
@@ -734,12 +760,12 @@ export const translations = {
     reminders: "Reminders",
     reminder_time: "Reminder Time",
     notify_past_due_tasks: "Notify me about past due tasks",
-    past_due_date: " ⚠️ You have {{task_count}} tasks past due date ⚠️",
-    past_due_date_singular: " ⚠️ You have 1 task past due date ⚠️",
+    past_due_date: " ⚠️ You have {{task_count}} task overdue ⚠️",
+    past_due_date_singular: " ⚠️ You have one task overdue ⚠️",
     scheduled_for_now: "Task scheduled for now",
     daily_reminder_explanation: "You'll get a reminder at this time every day when you have tasks.",
     daily_reminder_title: "You have {{task_count}} tasks for today:",
-    daily_reminder_title_singular: "You have 1 task for today:",
+    daily_reminder_title_singular: "You have one task for today:",
     notification_granted: "Permissions granted",
     notification_denied: "Permissions denied",
     notification_pending: "Permissions needed",
@@ -856,6 +882,7 @@ export const translations = {
     working_on_it: "I'm working on it…",
 
     // Doenit Plus Subscription
+    manage: "Manage",
     doenit_plus: "Doenit Plus",
     upgrade_to_plus: "Upgrade to Plus",
     current_plan: "Your Current Plan",
@@ -865,6 +892,7 @@ export const translations = {
     per_month: "per month",
     start_free_trial: "Start Free Trial",
     subscribe_now: "Subscribe Now",
+    no_products_found: "Doenit Plus is currently not available.",
     one_week_free: "1 week free",
     trial_then_price: "1 week free trial, then R20/month",
     auto_renews_monthly: "Auto-renews monthly",
@@ -875,6 +903,9 @@ export const translations = {
     benefit_backup: "Automatic Backup",
     benefit_backup_desc: "Your data is automatically backed up",
     unlock_plus_features: "Unlock Plus Features",
+    unlock_premium_features: "Unlock premium features",
+    whats_included: "What's included",
+    your_benefits: "Your Benefits",
     why_plus: "Why Plus?",
     plus_feature_collaboration: "Collaboration with Friends",
     plus_feature_collaboration_desc:
@@ -886,7 +917,10 @@ export const translations = {
     rooms_locked_desc: "Upgrade to Doenit Plus to unlock rooms and share tasks with your friends.",
     backup_locked: "Automatic backup is a Plus feature",
     backup_locked_desc: "Upgrade to Doenit Plus to unlock automatic backup.",
-    manage_subscriptions: "Manage Google Play Subscriptions",
+    manage_subscriptions: "Manage Subscriptions",
+    reactivate_subscription: "Reactivate Subscription",
+    subscription_cancelled_until: "Cancelled until",
+    renews_on: "Renews on",
     already_free_plan: "You are already on the free plan.",
     cancellation_failed: "Cancellation failed",
 
@@ -899,5 +933,6 @@ export const translations = {
     subscription_active: "Your subscription is active",
 
     you: "You",
+    offline: "You are offline",
   },
 };

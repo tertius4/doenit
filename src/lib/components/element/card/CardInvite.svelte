@@ -1,5 +1,5 @@
 <script>
-  import DateUtil from "$lib/DateUtil";
+  import { DateUtil } from "$lib/core/date_util";
   import { Check, Times } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
   import { slide } from "svelte/transition";

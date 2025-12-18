@@ -3,10 +3,11 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Alert } from "$lib/core/alert";
 import { OnlineDB } from "$lib/OnlineDB";
-import user from "$lib/core/user.svelte";
+import { user } from "$lib/base/user.svelte";
 import { t } from "./language.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { DB } from "$lib/DB";
+import { Logger } from "$lib/core/logger";
 
 class PushNotificationService {
   private token: string | null = null;
@@ -15,22 +16,22 @@ class PushNotificationService {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-      // Request permission
+      // Request FCM permission
       const permission = await FirebaseMessaging.requestPermissions();
       if (permission.receive !== "granted") {
         Alert.error(t("push_notification_permission_not_granted"));
         return;
       }
 
+      // Request Local Notifications permission (needed to show foreground notifications)
+      await LocalNotifications.requestPermissions();
+
       // Get FCM token
       const result = await FirebaseMessaging.getToken();
       this.token = result.token;
 
       // Save token to user profile (you'll need to implement this)
-      await this.saveTokenToProfile(this.token);
-
-      // Setup background message handler for when app is killed/background
-      this.setupBackgroundMessageHandler();
+      await this.syncUserData(this.token);
 
       // Listen for incoming messages
       this.setupMessageListener();
@@ -39,114 +40,153 @@ class PushNotificationService {
       this.handleAppLaunchNotification();
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      if (error_message.endsWith("the client is offline.")) return;
+      if (error_message.endsWith("Missing or insufficient permissions.")) return;
+
       Alert.error(`${t("error_initializing_push_notifications")}: ${error_message}`);
     }
   }
 
-  private async saveTokenToProfile(token: string) {
-    if (!user.value) return;
+  private async syncUserData(token: string) {
+    if (!user.is_plus_user) return; // Sinkroniseer slegs vir Plus gebruikers om privaatheid te beskerm
+    if (!user.uid) return;
 
-    const [db_user] = await OnlineDB.User.getAll({
-      filters: [{ field: "email_address", operator: "==", value: user.value.email }],
-      limit: 1,
-    });
-
-    if (db_user) {
-      db_user.fcm_token = token;
-      await OnlineDB.User.update(db_user.id, db_user);
-    } else {
-      await OnlineDB.User.create({ email_address: user.value.email, fcm_token: token });
+    let me = await OnlineDB.User.read(user.uid);
+    if (!me) {
+      me = await OnlineDB.User.getAll({
+        filters: [{ field: "email_address", operator: "==", value: user.email_address }],
+      })
+        .then(([u]) => u)
+        .catch(() => null);
     }
-  }
 
-  private setupBackgroundMessageHandler() {
-    // Note: Capacitor Firebase Messaging handles background messages automatically
-    // and triggers the notificationActionPerformed when user taps the notification
-    // The background processing will be handled in the listeners below
+    if (me) {
+      let is_updated = false;
+
+      // Kyk vir enige veranderinge - Hierdie is al gebruiks inligting wat gestoor word.
+      if (!is_updated && me.avatar !== user.avatar) is_updated = true;
+      if (!is_updated && me.name !== user.name) is_updated = true;
+      if (!is_updated && me.uid !== user.uid) is_updated = true;
+      if (!is_updated && me.email_address !== user.email_address) is_updated = true;
+      if (!is_updated && me.fcm_token !== token) is_updated = true;
+      if (!is_updated && me.language_code !== user.language_code) is_updated = true;
+
+      if (!is_updated) return;
+      await OnlineDB.User.updateById(me.uid, {
+        fcm_token: token,
+        uid: user.uid,
+        avatar: user.avatar,
+        name: user.name,
+        email_address: user.email_address,
+        language_code: user.language_code,
+      });
+    } else {
+      await OnlineDB.User.create({
+        fcm_token: token,
+        uid: user.uid,
+        avatar: user.avatar,
+        name: user.name,
+        email_address: user.email_address,
+        language_code: user.language_code,
+      });
+    }
   }
 
   private async handleAppLaunchNotification() {
     try {
       // Check if app was launched by tapping a notification
-      const result = await FirebaseMessaging.getDeliveredNotifications();
+      await FirebaseMessaging.getDeliveredNotifications();
       // Note: This method may not be available in all versions
       // The notificationActionPerformed listener should handle most cases
     } catch (error) {
       // Method not available or other error - this is expected in some versions
-      console.log('getDeliveredNotifications not available or error:', error);
+      Logger.debug("getDeliveredNotifications not available or error", error);
     }
   }
 
   private setupMessageListener() {
     // Listen for messages when app is in foreground
     FirebaseMessaging.addListener("notificationReceived", async (action) => {
-      console.log('Foreground notification received:', action);
+      Logger.notification("Foreground notification received", action);
       await this.processNotification(action);
     });
 
     // Listen for notification taps (when app is in background)
     FirebaseMessaging.addListener("notificationActionPerformed", async (action) => {
-      console.log('Notification tap performed:', action);
+      Logger.notification("Notification tap performed", action);
       await this.processNotification(action);
     });
 
     // Listen for token refresh
     FirebaseMessaging.addListener("tokenReceived", async (event) => {
-      console.log('FCM token received:', event.token);
+      Logger.notification("FCM token received", event.token);
       this.token = event.token;
-      await this.saveTokenToProfile(event.token);
+      await this.syncUserData(event.token);
     });
   }
 
   private async processNotification(action: any) {
     try {
-      // Debug: Log the entire action object to see what we're receiving
-      console.log('Full action object:', JSON.stringify(action, null, 2));
-      
-      // Try to get data from the FCM data payload first (new format)
+      // Log the entire action object for debugging
+      Logger.debug("Processing notification", action);
+
+      // Check if this is a notification-only message (title + body, no data payload)
+      if (action.notification?.title && action.notification?.body && !action.data) {
+        Logger.debug("Received notification-only message - displaying directly");
+        // For notification-only messages, display them immediately as local notifications
+        const formatted_notification = {
+          id: Date.now() % 1000000,
+          title: action.notification.title,
+          body: action.notification.body,
+        };
+        await LocalNotifications.schedule({ notifications: [formatted_notification] });
+        return;
+      }
+
+      // Try to get data from the FCM data payload
       let notificationData = null;
       let notificationType = null;
 
       // Check for data in various possible locations
       // For Capacitor Firebase Messaging, the data payload is often in different locations
       if (action.data) {
-        console.log('Found data in action.data:', action.data);
+        console.log("Found data in action.data:", action.data);
         notificationData = action.data;
         notificationType = action.data.type;
       } else if (action.notification?.data) {
-        console.log('Found data in action.notification.data:', action.notification.data);
+        console.log("Found data in action.notification.data:", action.notification.data);
         notificationData = action.notification.data;
         notificationType = action.notification.data.type;
       } else if ((action as any).message?.data) {
-        console.log('Found data in action.message.data:', (action as any).message.data);
+        console.log("Found data in action.message.data:", (action as any).message.data);
         notificationData = (action as any).message.data;
         notificationType = (action as any).message.data.type;
       } else if (action.notification?.body) {
-        console.log('Trying to parse body as JSON:', action.notification.body);
+        console.log("Trying to parse body as JSON:", action.notification.body);
         // Fallback to legacy JSON body format
         try {
           const parsed = JSON.parse(action.notification.body);
           notificationType = parsed.type;
           notificationData = parsed.data;
-          console.log('Successfully parsed JSON from body:', { type: notificationType, data: notificationData });
+          console.log("Successfully parsed JSON from body:", { type: notificationType, data: notificationData });
         } catch (e) {
-          console.log('Body is not JSON, treating as regular notification');
+          console.log("Body is not JSON, treating as regular notification");
           // Not JSON, handle as regular notification
           return;
         }
       } else {
-        console.log('No data found in any expected location');
+        console.log("No data found in any expected location");
         return;
       }
 
       if (notificationType && notificationData) {
-        console.log('Processing notification with type:', notificationType, 'data:', notificationData);
+        console.log("Processing notification with type:", notificationType, "data:", notificationData);
         await this.handleDataNotification({ type: notificationType, ...notificationData });
       } else {
-        console.log('Missing type or data:', { type: notificationType, data: notificationData });
+        console.log("Missing type or data:", { type: notificationType, data: notificationData });
       }
     } catch (error) {
-      console.error('Error processing notification:', error);
+      console.error("Error processing notification:", error);
     }
   }
 
@@ -162,31 +202,9 @@ class PushNotificationService {
         id: Date.now() % 1000000,
         title: this.getTitle(type),
         body: body,
-        schedule: { at: new Date(Date.now() + 1000) },
       };
 
       // Show local notification with formatted content
-      await LocalNotifications.schedule({ notifications: [formatted_notification] });
-    } catch (error) {
-      Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
-    }
-  }
-
-  private async handleInviteNotification(notification: any) {
-    try {
-      // Legacy format - parse JSON from body
-      const { type, data } = JSON.parse(notification.body) || {};
-      const body = await this.getBody(type, data);
-      if (!body) return;
-
-      const formatted_notification = {
-        id: Date.now() % 1000000,
-        title: this.getTitle(type),
-        body: body,
-        schedule: { at: new Date(Date.now() + 1000) },
-      };
-
-      // Show local notification with custom actions
       await LocalNotifications.schedule({ notifications: [formatted_notification] });
     } catch (error) {
       Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
@@ -247,33 +265,33 @@ class PushNotificationService {
         }
       case "new_task":
         if (true) {
-          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
-          if (!room) return "";
+          const category = data.category_id ? await DB.Category.get(data.category_id) : null;
+          if (!category) return "";
 
           if (is_english) {
-            return `New task "${data.task_name}" assigned in ${room.name}`;
+            return `New task "${data.task_name}" assigned in ${category.name}`;
           } else {
-            return `Nuwe taak "${data.task_name}" toegeken in ${room.name}`;
+            return `Nuwe taak "${data.task_name}" toegeken in ${category.name}`;
           }
         }
       case "task_updated":
         if (true) {
-          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
-          if (!room) return "";
+          const category = data.category_id ? await DB.Category.get(data.category_id) : null;
+          if (!category) return "";
           if (is_english) {
-            return `Task "${data.task_name}" updated in ${room.name}`;
+            return `Task "${data.task_name}" updated in ${category.name}`;
           } else {
-            return `Taak "${data.task_name}" opgedateer in ${room.name}`;
+            return `Taak "${data.task_name}" opgedateer in ${category.name}`;
           }
         }
       case "user_left_group":
         if (true) {
-          const room = data.room_id ? await DB.Room.get(data.room_id) : null;
-          if (!room) return "";
+          const category = data.category_id ? await DB.Category.get(data.category_id) : null;
+          if (!category) return "";
           if (is_english) {
-            return `${data.user_name} left ${room.name}`;
+            return `${data.user_name} left ${category.name}`;
           } else {
-            return `${data.user_name} het ${room.name} verlaat`;
+            return `${data.user_name} het ${category.name} verlaat`;
           }
         }
       case "friend_request_accepted":

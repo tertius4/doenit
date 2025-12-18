@@ -1,34 +1,28 @@
 <script>
-  import { displayPrettyDate, normalize, sortTasksByDueDate } from "$lib";
-  import { Notify } from "$lib/services/notifications/notifications";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import TaskComponent from "$lib/components/task/Task.svelte";
-  import { getContext, onMount, tick } from "svelte";
-  import { goto, pushState } from "$app/navigation";
+  import { getTasksContext } from "$lib/contexts/tasks.svelte";
+  import { displayPrettyDate, normalize } from "$lib";
   import { t } from "$lib/services/language.svelte";
+  import { Selected } from "$lib/selected.svelte";
   import { SvelteDate } from "svelte/reactivity";
-  import { navigating, page } from "$app/state";
   import { Haptics } from "@capacitor/haptics";
+  import { getContext, onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { Selected } from "$lib/selected";
-  import { OnlineDB } from "$lib/OnlineDB";
-  import user from "$lib/core/user.svelte";
-  import { Alert } from "$lib/core/alert";
+  import { goto } from "$app/navigation";
   import { Plus } from "$lib/icon";
   import { DB } from "$lib/DB";
 
   Selected.tasks.clear();
 
-  /** @type {Task[]} */
-  let tasks = $state([]);
-  /** @type {Category[]} */
-  let categories = $state([]);
-  let current_time = new SvelteDate();
+  const categoriesContext = getCategoriesContext();
+  const tasksContext = getTasksContext();
+  const current_time = new SvelteDate();
 
   /** @type {Value<string>}*/
   const search_text = getContext("search_text");
 
-  const filtered_tasks = $derived(filterTasksByCategory(tasks, search_text.value));
-  const default_category = $derived(categories.find(({ is_default }) => is_default));
+  const filtered_tasks = $derived(filterTasksByCategory(tasksContext.tasks, search_text.value));
 
   onMount(() => {
     // Calculate ms until next minute (00 seconds)
@@ -55,50 +49,6 @@
     };
   });
 
-  onMount(() => {
-    const sub = DB.Task.subscribe((result) => (tasks = sortTasksByDueDate(result)), {
-      selector: { archived: { $ne: true } },
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  onMount(async () => {
-    await tick(); // Make sure router is initialized.
-
-    const { searchParams, origin, pathname } = page.url;
-    const task_id = navigating.from?.params?.item_id || searchParams.get("new_id");
-    if (!!task_id) scrollToTask(task_id);
-
-    const completed_task_ids = searchParams.get("completed_task_ids");
-    if (!!completed_task_ids) {
-      const task_ids = completed_task_ids.split(",");
-      const unique_task_ids = [...new Set(task_ids)];
-      const tasks = await DB.Task.getAll({ selector: { id: { $in: unique_task_ids } } });
-      const promises = tasks.map(async (task) => {
-        await DB.Task.complete(task);
-      });
-
-      await Promise.all(promises).catch(() => Alert.error("Kon nie take as voltooi gemerk nie."));
-    }
-
-    // Update the URL without reloading the page
-    searchParams.delete("new_id");
-    searchParams.delete("completed_task_ids");
-    const url_search = !!searchParams.size ? `${page.url.search}` : "";
-    const new_url = `${origin}${pathname}${url_search}`;
-    pushState(new_url, {});
-  });
-
   /**
    * @param {Task[]} tasks
    * @param {string | null} search_text
@@ -107,7 +57,7 @@
   function filterTasksByCategory(tasks, search_text) {
     const has_search_text = !!search_text?.trim().length;
     const normalized_search = normalize(search_text ?? "");
-    const default_category_id = default_category?.id ?? "";
+    const default_category_id = categoriesContext.default_category?.id ?? "";
 
     const filtered_tasks = [];
     for (let i = 0; i < tasks.length; i++) {
@@ -117,18 +67,27 @@
         if (!in_name) continue;
       }
 
+      if (Selected.do_now) {
+        const now = new Date();
+        const start_date = task.start_date ? new Date(task.start_date) : null;
+        start_date?.setHours(0, 0, 0, 0);
+
+        const temp_due_date = task.due_date || task.start_date;
+        const due_date = temp_due_date ? new Date(temp_due_date) : null;
+        due_date?.setHours(23, 59, 59, 999);
+
+        const is_due_date_in_future = !due_date || due_date >= now;
+        const is_started = !start_date || start_date <= now;
+        const is_past = due_date && due_date < now;
+
+        const do_now = is_past || (is_started && is_due_date_in_future);
+        if (!do_now) continue;
+      }
+
       const has_cat_filter_enabled = !!Selected.categories.size;
       if (has_cat_filter_enabled) {
         const category_id = task.category_id ?? default_category_id;
         if (!Selected.categories.has(category_id)) continue;
-      }
-
-      const has_room_filter_enabled = !!Selected.rooms.size;
-      if (has_room_filter_enabled) {
-        const room_id = task.room_id;
-        if (!room_id || !Selected.rooms.has(room_id)) {
-          continue;
-        }
       }
 
       filtered_tasks.push(task);
@@ -168,21 +127,12 @@
    * @param {Task} task
    */
   async function handleSelect(task) {
-    await DB.Task.complete(task);
-  }
-
-  /**
-   * @param {string} task_id
-   */
-  function scrollToTask(task_id) {
-    const element = document.getElementById(task_id);
-    if (!element) return;
-
-    element.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-      inline: "start",
-    });
+    if (Selected.tasks.has(task.id)) {
+      Selected.tasks.delete(task.id);
+    } else {
+      Selected.tasks.clear();
+      await DB.Task.complete(task);
+    }
   }
 </script>
 
@@ -194,7 +144,7 @@
 
     {#if !is_same_display_date}
       {#key display_date}
-        <div in:fade={{ delay: 700 }} class="text-sm font-semibold pt-1 text-t-secondary">
+        <div in:fade={{ delay: 700 }} class="text-sm font-semibold pt-1">
           {display_date}
         </div>
       {/key}
@@ -211,7 +161,7 @@
     {/key}
   {:else}
     <div class="flex flex-col items-center gap-4 py-12">
-      {#if !Selected.categories.size && !Selected.rooms.size}
+      {#if !Selected.categories.size}
         <div class="text-lg">{t("empty_list")}</div>
       {:else if search_text.value?.trim().length}
         <div class="text-lg">{t("no_tasks_found_for_search")}</div>

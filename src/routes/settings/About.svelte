@@ -8,7 +8,7 @@
   // - android/app/build.gradle – versionName
   // - package.json – version
   const SUPPORT_EMAIL = "doenitapp@gmail.com";
-  const VERSION = "1.3.0";
+  const VERSION = "1.3.3";
 
   async function handleRateApp() {
     await RateApp.openStorePage();
@@ -22,7 +22,7 @@
   }
 </script>
 
-<section class="rounded-md p-4 bg-surface space-y-3 text-t-secondary">
+<section class="rounded-md p-4 bg-surface space-y-3">
   <h3 class="font-semibold text-lg mb-2">{t("about_doenit")}</h3>
 
   <div class="flex justify-between">

@@ -1,39 +1,38 @@
 <script>
   import InputText from "$lib/components/element/input/InputText.svelte";
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import { Trash, Plus, Edit, Check } from "$lib/icon";
+  import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { getUsersContext } from "$lib/contexts/users.svelte";
+  import { backHandler } from "$lib/BackHandler.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { fly, slide } from "svelte/transition";
+  import CardCategory from "./CardCategory.svelte";
+  import { BACK_BUTTON_FUNCTION } from "$lib";
+  import { goto } from "$app/navigation";
+  import { Plus } from "$lib/icon";
   import { onMount } from "svelte";
   import { DB } from "$lib/DB";
-  import { goto } from "$app/navigation";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { backHandler } from "$lib/BackHandler.svelte";
+  import { getTasksContext } from "$lib/contexts/tasks.svelte";
+
+  const categoriesContext = getCategoriesContext();
+  const tasksContext = getTasksContext();
+
+  const CATEGORY_TASKS_COUNT = $derived(
+    tasksContext.tasks.reduce((acc, task) => {
+      if (!task.category_id) return acc;
+      if (task.archived) return acc;
+
+      if (!acc[task.category_id]) {
+        acc[task.category_id] = 0;
+      }
+
+      acc[task.category_id]++;
+      return acc;
+    }, /** @type {Record<string, number>}*/ ({}))
+  );
 
   let new_category_name = $state("");
-  /** @type {string?} */
-  let default_id;
 
   let error_message = $state("");
   let is_editing = $state(false);
-  /** @type {{ name: string, id?: string }?} */
-  let category = $state(null);
-  /** @type {Category[]} */
-  let categories = $state([]);
-
-  onMount(() => {
-    const sub = DB.Category.subscribe((result) => (categories = result), {
-      selector: { archived: { $ne: true }, is_default: { $ne: true } },
-      sort: [{ name: "asc" }],
-    });
-
-    return () => sub.unsubscribe();
-  });
-
-  onMount(async () => {
-    const category = await DB.Category.getDefault();
-    default_id = category.id;
-  });
 
   onMount(() => {
     const token = (BACK_BUTTON_FUNCTION.value = backHandler.register(async () => {
@@ -57,42 +56,10 @@
     await DB.Category.create({
       name: new_category_name.trim(),
       is_default: false,
+      users: [],
     });
 
     new_category_name = "";
-  }
-
-  async function editCategory() {
-    if (!category?.id) return;
-    if (category.id === default_id) return;
-
-    if (!category.name.trim()) {
-      error_message = t("enter_category_name");
-      return;
-    }
-
-    await DB.Category.update(category.id, { name: category.name.trim() });
-
-    category = null;
-    is_editing = false;
-  }
-
-  /**
-   * @param {string} id
-   */
-  async function deleteCategory(id) {
-    if (id === default_id) return;
-
-    await DB.Category.archive(id);
-  }
-
-  /**
-   * @param {Category} cat
-   */
-  function openEditModal({ name, id }) {
-    category = { name, id };
-    is_editing = true;
-    error_message = "";
   }
 </script>
 
@@ -120,54 +87,16 @@
       <div class="text-lg font-semibold">{t("DEFAULT_NAME")}</div>
     </div>
 
-    {#each categories as category (category.id)}
-      <div
-        in:slide
-        out:fly={{ x: 100 }}
-        class="grid grid-cols-[52px_1fr_48px] items-center justify-between bg-surface rounded-lg"
-      >
-        <button class="h-full w-full flex justify-center items-center" onclick={() => openEditModal(category)}>
-          <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
-            <Edit />
-          </div>
-        </button>
-
-        <div class="py-3 w-full text-lg font-semibold truncate">
-          <span>{category.name}</span>
-        </div>
-
-        <button class="h-full text-error flex items-center justify-center" onclick={() => deleteCategory(category.id)}>
-          <Trash />
-        </button>
-      </div>
+    {#each categoriesContext.categories as category, i (category.id)}
+      {@const prev_cat = i > 0 ? categoriesContext.categories[i - 1] : null}
+      {#if i > 0 && !!category.users.length && !prev_cat?.users.length}
+        <h2 class="font-semibold">{t("shared_categories")}</h2>
+      {/if}
+      <CardCategory
+        {category}
+        default_id={categoriesContext.default_category?.id}
+        task_count={CATEGORY_TASKS_COUNT[category.id] || 0}
+      />
     {/each}
   </div>
 </div>
-
-{#if category}
-  <Modal
-    bind:is_open={is_editing}
-    onsubmit={editCategory}
-    onclose={() => {
-      error_message = "";
-    }}
-    class="space-y-4"
-  >
-    <h2 class="text-lg font-semibold">{t("edit_category_name")}</h2>
-    <InputText
-      bind:value={category.name}
-      maxlength="50"
-      focus_on_mount
-      placeholder={t("enter_category_name")}
-      class={{
-        "placeholder:text-error! border-error! bg-error/20!": !!error_message,
-      }}
-      oninput={() => (error_message = "")}
-    />
-
-    <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-lg ml-auto" type="submit">
-      <Check class="h-full" size={18} />
-      <span>{t("save")}</span>
-    </button>
-  </Modal>
-{/if}

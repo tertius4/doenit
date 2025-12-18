@@ -1,7 +1,6 @@
 <script>
   import { page } from "$app/state";
   import { backHandler } from "$lib/BackHandler.svelte";
-  import user from "$lib/core/user.svelte";
   import { Categories, Home, Check, Settings, Shared } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
   import { onMount } from "svelte";
