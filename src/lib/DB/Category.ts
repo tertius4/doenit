@@ -82,7 +82,7 @@ export class CategoryTable extends Table<Category> {
       });
 
       const promises = tasks.map(async (task) => {
-        const encrypted_data = await Secure.compressAndEncrypt(task);
+        const encrypted_data = await Secure.compressAndEncrypt(task, task.category_id || undefined);
         await OnlineDB.Task.create({
           task_id: task.id,
           category_id: task.category_id || "",

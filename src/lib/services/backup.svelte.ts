@@ -1,7 +1,6 @@
 import { cached_automatic_backup, cached_last_backup } from "$lib/cached";
 import { t } from "$lib/services/language.svelte";
 import Files from "$lib/services/files.svelte";
-import * as env from "$env/static/public";
 import { OnlineDB } from "$lib/OnlineDB";
 import { user } from "$lib/base/user.svelte";
 import { Alert } from "$lib/core/alert";
@@ -300,10 +299,23 @@ class BackupClass {
   }
 
   /**
-   * Helper function to derive a crypto key from string
+   * Helper function to derive a crypto key from user ID
+   * Uses Firebase UID to ensure consistency across all user's devices
+   * and enable sharing with collaborators
    */
   private async deriveKey(): Promise<CryptoKey> {
-    const keyString = `${env.PUBLIC_ENCRYPTION_KEY || ""}`.padEnd(32, "0").substring(0, 32);
+    const uid = user.uid;
+    if (!uid) {
+      throw new Error(t("user_not_logged_in"));
+    }
+
+    // Derive a consistent key from user's Firebase UID
+    const encoder = new TextEncoder();
+    const data = encoder.encode(uid);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const keyString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+    
     const keyData = new TextEncoder().encode(keyString);
     return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   }

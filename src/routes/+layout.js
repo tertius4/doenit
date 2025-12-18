@@ -1,4 +1,3 @@
-import { notifications } from "$lib/services/notification.svelte";
 import { text } from "$lib/services/text.svelte";
 import { RateApp } from "$lib/services/rateApp";
 import { user } from "$lib/base/user.svelte";
@@ -14,14 +13,13 @@ export const ssr = false;
 export async function load() {
   try {
     await DB.init();
-    user.init();
+    await user.init();
     for (const id of user.favourite_category_ids) {
       Selected.categories.add(id);
     }
 
     RateApp.showRatingPrompt();
     text.init();
-    notifications.init();
   } catch (error) {
     const error_message = error instanceof Error ? error.message : String(error);
     Alert.error("Fout met inisialisering van die toepassing. Probeer asseblief weer: " + error_message);

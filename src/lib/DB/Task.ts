@@ -166,7 +166,7 @@ export class TaskTable extends Table<Task> {
           return super.delete(online_task.task_id).then(() => null);
         }
 
-        return Secure.decryptAndDecompress(online_task.data) as Promise<Task>;
+        return Secure.decryptAndDecompress(online_task.data, online_task.category_id) as Promise<Task>;
       });
 
       const all_tasks = await Promise.all(promises);
@@ -209,7 +209,7 @@ export class TaskTable extends Table<Task> {
       const email_addresses = DB.Category.getNotificationEmails(category);
       if (!email_addresses.length) return;
 
-      const encrypted_data = await Secure.compressAndEncrypt(db_task);
+      const encrypted_data = await Secure.compressAndEncrypt(db_task, db_task.category_id || undefined);
       await OnlineDB.Task.createWithNotification(
         {
           task_id: db_task.id,
@@ -237,12 +237,12 @@ export class TaskTable extends Table<Task> {
       }
 
       const [encrypted_data, [online_task_encrypted]] = await Promise.all([
-        Secure.compressAndEncrypt(db_task),
+        Secure.compressAndEncrypt(db_task, db_task.category_id || undefined),
         OnlineDB.Task.readMany({ filters: [{ field: "task_id", operator: "==", value: db_task.id }] }),
       ]);
 
       if (online_task_encrypted) {
-        const online_task = (await Secure.decryptAndDecompress(online_task_encrypted.data)) as Task;
+        const online_task = (await Secure.decryptAndDecompress(online_task_encrypted.data, online_task_encrypted.category_id)) as Task;
         if (online_task.completed < db_task.completed) {
           await OnlineDB.Task.completeWithNotification(
             online_task_encrypted.id,
@@ -295,7 +295,7 @@ export class TaskTable extends Table<Task> {
       });
 
       const delete_promises = online_tasks.map(async (online_task) => {
-        const db_task = await Secure.decryptAndDecompress(online_task.data);
+        const db_task = await Secure.decryptAndDecompress(online_task.data, online_task.category_id);
         await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task);
       });
 

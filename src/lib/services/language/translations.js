@@ -437,6 +437,9 @@ export const translations = {
     benefit_backup: "Outomatiese Rugsteun",
     benefit_backup_desc: "Jou data word outomaties geënkripteer en gerugsteun",
     unlock_plus_features: "Ontsluit Plus Funksies",
+    unlock_premium_features: "Ontsluit premium funksies",
+    whats_included: "Wat is ingesluit",
+    your_benefits: "Jou Voordele",
     why_plus: "Hoekom Plus?",
     plus_feature_collaboration: "Samewerking met Vriende",
     plus_feature_collaboration_desc:
@@ -900,6 +903,9 @@ export const translations = {
     benefit_backup: "Automatic Backup",
     benefit_backup_desc: "Your data is automatically backed up",
     unlock_plus_features: "Unlock Plus Features",
+    unlock_premium_features: "Unlock premium features",
+    whats_included: "What's included",
+    your_benefits: "Your Benefits",
     why_plus: "Why Plus?",
     plus_feature_collaboration: "Collaboration with Friends",
     plus_feature_collaboration_desc:

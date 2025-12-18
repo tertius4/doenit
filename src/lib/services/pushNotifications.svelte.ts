@@ -7,6 +7,7 @@ import { user } from "$lib/base/user.svelte";
 import { t } from "./language.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { DB } from "$lib/DB";
+import { Logger } from "$lib/core/logger";
 
 class PushNotificationService {
   private token: string | null = null;
@@ -94,31 +95,31 @@ class PushNotificationService {
   private async handleAppLaunchNotification() {
     try {
       // Check if app was launched by tapping a notification
-      const result = await FirebaseMessaging.getDeliveredNotifications();
+      await FirebaseMessaging.getDeliveredNotifications();
       // Note: This method may not be available in all versions
       // The notificationActionPerformed listener should handle most cases
     } catch (error) {
       // Method not available or other error - this is expected in some versions
-      console.log("getDeliveredNotifications not available or error:", error);
+      Logger.debug("getDeliveredNotifications not available or error", error);
     }
   }
 
   private setupMessageListener() {
     // Listen for messages when app is in foreground
     FirebaseMessaging.addListener("notificationReceived", async (action) => {
-      console.log("Foreground notification received:", action);
+      Logger.notification("Foreground notification received", action);
       await this.processNotification(action);
     });
 
     // Listen for notification taps (when app is in background)
     FirebaseMessaging.addListener("notificationActionPerformed", async (action) => {
-      console.log("Notification tap performed:", action);
+      Logger.notification("Notification tap performed", action);
       await this.processNotification(action);
     });
 
     // Listen for token refresh
     FirebaseMessaging.addListener("tokenReceived", async (event) => {
-      console.log("FCM token received:", event.token);
+      Logger.notification("FCM token received", event.token);
       this.token = event.token;
       await this.syncUserData(event.token);
     });
@@ -126,12 +127,12 @@ class PushNotificationService {
 
   private async processNotification(action: any) {
     try {
-      // Debug: Log the entire action object to see what we're receiving
-      console.log("Full action object:", JSON.stringify(action, null, 2));
+      // Log the entire action object for debugging
+      Logger.debug("Processing notification", action);
 
       // Check if this is a notification-only message (title + body, no data payload)
       if (action.notification?.title && action.notification?.body && !action.data) {
-        console.log("Received notification-only message - displaying directly");
+        Logger.debug("Received notification-only message - displaying directly");
         // For notification-only messages, display them immediately as local notifications
         const formatted_notification = {
           id: Date.now() % 1000000,

@@ -38,9 +38,9 @@ const config: CapacitorConfig = {
   android: {
     buildOptions: {
       keystorePath: "./app.keystore",
-      keystorePassword: process.env.PUBLIC_KEYSTORE_PASSWORD,
-      keystoreAlias: process.env.PUBLIC_KEYSTORE_ALIAS,
-      keystoreAliasPassword: process.env.PUBLIC_KEYSTORE_PASSWORD,
+      keystorePassword: process.env.KEYSTORE_PASSWORD,
+      keystoreAlias: process.env.KEYSTORE_ALIAS,
+      keystoreAliasPassword: process.env.KEYSTORE_PASSWORD,
       releaseType: "AAB",
       signingType: "jarsigner",
     },

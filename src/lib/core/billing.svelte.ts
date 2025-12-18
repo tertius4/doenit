@@ -1,6 +1,7 @@
 import { PUBLIC_APP_ID, PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
 import { user } from "$lib/base/user.svelte";
 import { Capacitor } from "@capacitor/core";
+import { Crown, Users, DownloadCloud } from "$lib/icon";
 
 interface SubscriptionDetails {
   expiryTime: Date | null;
@@ -17,7 +18,44 @@ interface BillingPlugin {
   acknowledgePurchase(options: { purchase_token: string }): Promise<void>;
 }
 
+interface ProductConfig {
+  id: string;
+  name: string;
+  icon: any;
+  title_key: string;
+  description_key: string;
+  benefits: Array<{
+    icon: any;
+    title_key: string;
+    description_key: string;
+  }>;
+}
+
 const BillingService = Capacitor.registerPlugin<BillingPlugin>("BillingService");
+
+// Produk Konfigurasies - Sentraal gestoor in billing service
+export const PRODUCTS_CONFIG: Record<string, ProductConfig> = {
+  "doenit.plus": {
+    id: "doenit.plus",
+    name: "Doenit Plus",
+    icon: Crown,
+    title_key: "plus_plan",
+    description_key: "unlock_premium_features",
+    benefits: [
+      {
+        icon: Users,
+        title_key: "benefit_rooms",
+        description_key: "benefit_rooms_desc",
+      },
+      {
+        icon: DownloadCloud,
+        title_key: "benefit_backup",
+        description_key: "benefit_backup_desc",
+      },
+    ],
+  },
+  // Toekomstige produkte kan hier bygevoeg word
+};
 
 class Billing {
   getToken: (() => Promise<string>) | null = null;
@@ -47,6 +85,16 @@ class Billing {
 
   get subscription_details() {
     return this.#subscription_details;
+  }
+
+  // Haal produk konfigurasie vir 'n spesifieke produk
+  getProductConfig(product_id: string): ProductConfig | null {
+    return PRODUCTS_CONFIG[product_id] || null;
+  }
+
+  // Haal alle produk konfigurasies
+  getAllProductConfigs(): Record<string, ProductConfig> {
+    return PRODUCTS_CONFIG;
   }
 
   async init() {

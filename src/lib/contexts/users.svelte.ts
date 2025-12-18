@@ -10,7 +10,7 @@ export class UsersContext {
 
   private subscription: Subscription | null = null;
 
-  async init() {
+  init() {
     if (this.subscription) return;
 
     this.subscription = DB.User.subscribe(
@@ -20,21 +20,12 @@ export class UsersContext {
         for (const user of result) {
           this.map.set(user.email_address, user);
         }
-
       },
       { sort: [{ name: "asc" }] }
     );
-
-    if (!user.is_friends_enabled) return;
-
-    // Create own user if it doesn't exist (online and locally).
-    const online_user = await this.ensureOnlineUserExists();
-    if (online_user) {
-      await this.ensureLocalUserExists(online_user.id);
-    }
   }
 
-  private async ensureOnlineUserExists() {
+  async ensureOnlineUserExists() {
     const [existing_user] = await OnlineDB.User.getAll({
       filters: [{ field: "email_address", operator: "==", value: user.email_address }],
     }).catch(() => []);
@@ -64,7 +55,7 @@ export class UsersContext {
     return created_user || null;
   }
 
-  private async ensureLocalUserExists(online_user_id: string) {
+  async ensureLocalUserExists(online_user_id: string) {
     const local_user = await DB.User.getOne({
       selector: { email_address: { $eq: user.email_address } },
     }).catch(() => null);
@@ -87,6 +78,8 @@ export class UsersContext {
   }
 
   getUserByEmail(email: string): User | undefined {
+    if (!email) return undefined;
+
     return this.map.get(email);
   }
 }

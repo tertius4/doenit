@@ -10,7 +10,7 @@
   import { Photos } from "$lib/services/photos.svelte";
   import Backup from "$lib/services/backup.svelte";
   import { user } from "$lib/base/user.svelte";
-  import { sortTasksByDueDate } from "$lib";
+  import { sortTasksByDueDate, wait } from "$lib";
   import { Widget } from "$lib/core/widget";
   import { Value } from "$lib/utils.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
@@ -52,6 +52,12 @@
     user.is_logged_in;
 
     untrack(() => Backup.populateLastBackupTime());
+    untrack(async () => {
+      if (!user.is_logged_in) return;
+
+      const online_user = await usersContext.ensureOnlineUserExists();
+      if (online_user) await usersContext.ensureLocalUserExists(online_user.id);
+    });
   });
 
   $effect(() => {
@@ -146,13 +152,27 @@
   });
 
   onMount(() => {
+    untrack(async () => {
+      await notifications.init();
+      await wait(3 * 1000);
+      await notifications.requestPermission();
+    });
+  });
+
+  onMount(() => {
     categoriesContext.init();
     window.addEventListener("online", () => billing.init());
   });
 
   onMount(() => {
-    const sub = DB.Task.subscribe((ts) => handleTasksUpdate(ts));
-    return () => sub.unsubscribe();
+    try {
+      const sub = DB.Task.subscribe((ts) => handleTasksUpdate(ts));
+      return () => sub.unsubscribe();
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      Alert.error(`Kon nie aan plaaslike databasis koppel nie: ${error_message}`);
+      return () => {};
+    }
   });
 
   onMount(() => {

@@ -6,6 +6,7 @@
   import { onMount } from "svelte";
   import Modal from "./modal/Modal.svelte";
   import { Save, Trash } from "$lib/icon";
+  import { Logger } from "$lib/core/logger";
 
   /**
    * @template T
@@ -29,10 +30,12 @@
         // Handle primitive values.
         if (typeof original_value !== "object" || original_value === null) {
           const has_changes = original_value !== current_value;
-          if (has_changes)
-            console.log(
-              `Key: ${key}, Original: ${original_value}, Current: ${current_value}, Has changes: ${has_changes}`
+          if (has_changes) {
+            Logger.debug(
+              `Change detected - Key: ${key}, Original: ${original_value}, Current: ${current_value}`
             );
+          }
+          return has_changes;
           if (has_changes) return true;
         }
 

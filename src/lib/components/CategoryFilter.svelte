@@ -12,6 +12,7 @@
   import TabsContainer from "./element/tabs/TabsContainer.svelte";
   import Categories from "$lib/icon/Categories.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
+  import Drawer from "./element/Drawer.svelte";
 
   const categoriesContext = getCategoriesContext();
 
@@ -40,59 +41,36 @@
 
     return () => backHandler.unregister(token);
   });
-
-  /**
-   * Handle tab changes.
-   * @param {number} i
-   */
-  function handleTabChange(i) {
-    active_tab_index = i;
-  }
 </script>
 
-{#if is_filter_open}
-  <div
-    transition:slide
-    class="absolute w-full flex flex-col shadow-t-md border-t border-default left-0 right-0 mt-1 bg-page rounded-t-2xl h-[60dvh] z-1 bottom-[93px]"
-  >
-    <div class="flex gap-1 max-w-screen">
-      <button
-        type="button"
-        class={{
-          "w-full bg-page p-2 flex gap-2 items-center justify-center rounded-t-2xl translate-y-[1px]": true,
-          "border-transparent z-0": active_tab !== "Categories",
-          "z-2": active_tab === "Categories",
-        }}
-        onclick={() => (active_tab_index = 0)}
-      >
-        <Categories />
-        <span class="font-medium">Kategorieë</span>
-      </button>
+<Drawer is_open={is_filter_open} onclose={() => (is_filter_open = false)}>
+  <div class="grow flex flex-col relative h-full">
+    <div class="absolute top-0 z-10 w-full flex gap-2 items-center justify-center rounded-t-2xl">
+      <Categories />
+      <span class="font-medium">{t("categories")}</span>
     </div>
 
-    <TabsContainer class="border-t border-default" tabs_length={1} {active_tab_index} onchangetab={handleTabChange}>
-      <Tab>
-        <div class="h-full overflow-y-scroll">
-          {#if categoriesContext.default_category}
-            <CategoryButton id={categoriesContext.default_category.id} name={t("DEFAULT_NAME")} />
-          {/if}
+    <div class="pt-6 pb-12 h-full">
+      <div class="max-h-[calc(90vh-48px-24px-28px)] overflow-y-auto">
+        {#if categoriesContext.default_category}
+          <CategoryButton id={categoriesContext.default_category.id} name={t("DEFAULT_NAME")} />
+        {/if}
+  
+        {#each categoriesContext.categories as { id, name } (id)}
+          <CategoryButton {id} {name} />
+        {/each}
+      </div>
+    </div>
 
-          {#each categoriesContext.categories as { id, name } (id)}
-            <CategoryButton {id} {name} />
-          {/each}
-        </div>
-
-        <button
-          class="relative w-full bg-primary text-alt h-12 flex items-center gap-1 px-4 shrink-0"
-          onclick={() => (is_adding = true)}
-        >
-          <Plus class="m-auto text-xl" />
-          <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
-        </button>
-      </Tab>
-    </TabsContainer>
+    <button
+      class="fixed bottom-0 z-10 w-full bg-primary text-alt h-12 flex items-center gap-1 px-4"
+      onclick={() => (is_adding = true)}
+    >
+      <Plus class="m-auto text-xl" />
+      <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
+    </button>
   </div>
-{/if}
+</Drawer>
 
 <button
   class="w-full bg-card rounded-md h-15 px-4 flex items-center justify-between"

@@ -27,6 +27,7 @@ class UserState {
   #notifications: { enabled: boolean; time: string | null; past_tasks: boolean } | null = $state(null);
 
   #is_loading = $state(true);
+
   readonly is_logged_in = $derived(!!this.#uid);
   readonly is_vip = $derived(this.is_logged_in && PUBLIC_ADMIN_EMAILS.includes(this.#email_address || ""));
   readonly is_plus_user = $derived(this.is_logged_in && (billing.is_plus_user || this.is_vip));
@@ -177,8 +178,6 @@ class UserState {
         await GoogleAuth.signOut();
       }
 
-      // TODO: Figure out what do to with the user data.
-
       this.#uid = null;
       this.#id = null;
       this.#name = null;
@@ -242,9 +241,9 @@ class UserState {
       }
 
       this.updateAppTheme(this.#theme);
-      if (!this.#notifications) {
-        await this.requestNotificationsPermission();
-      }
+      // if (!this.#notifications) {
+      //   await this.requestNotificationsPermission();
+      // }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       alert(`Kon nie gebruikerdata laai nie: ${error_message}`);

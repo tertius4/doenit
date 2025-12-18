@@ -11,67 +11,89 @@
   /** @type {Props & Record<string, any>} */
   let { is_open = $bindable(false), onclose, children } = $props();
 
-  let start_y = 0;
-  let current_y = 0;
-  let is_dragging = false;
-  let translate_y = $state(0);
+  // Refs to DOM nodes
+  /** @type {HTMLDivElement} */
+  let drawerEl;
+  /** @type {HTMLDivElement} */
+  let handleEl;
 
-  /**
-   * Handles the start of a touch event.
-   * @param {TouchEvent} e
-   */
+  // Dragging state
+  let startY = 0;
+  let isDragging = false;
+  let pendingTranslate = 0; // pixels
+  let rafId = null;
+  const RELEASE_THRESHOLD = 120;
+
+  // Apply pending translate in RAF to avoid too many DOM updates
+  function applyPendingTransform() {
+    rafId = null;
+    if (!drawerEl) return;
+    drawerEl.style.transform = `translate3d(0, ${Math.max(0, pendingTranslate)}px, 0)`;
+  }
+
+  /** Start drag from handle */
   function handleTouchStart(e) {
-    start_y = e.touches[0].clientY;
-    is_dragging = true;
+    if (!e.touches || e.touches.length !== 1) return;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+    pendingTranslate = 0;
+    if (drawerEl) drawerEl.style.transition = "none";
+    e.stopPropagation();
   }
 
-  /**
-   * Handles touch move events for drag gesture.
-   * @param {TouchEvent} e
-   */
+  /** Move while dragging */
   function handleTouchMove(e) {
-    if (!is_dragging) return;
-    current_y = e.touches[0].clientY;
-    const diff = current_y - start_y;
-    if (diff > 0) {
-      translate_y = diff;
-    }
+    if (!isDragging) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - startY;
+    pendingTranslate = diff > 0 ? diff : 0;
+    if (!rafId) rafId = requestAnimationFrame(applyPendingTransform);
+    e.preventDefault();
   }
 
-  /**
-   * Handles the end of a touch event.
-   */
+  /** End drag */
   function handleTouchEnd() {
-    if (!is_dragging) return;
-    is_dragging = false;
+    if (!isDragging) return;
+    isDragging = false;
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+      applyPendingTransform();
+    }
 
-    if (translate_y > 100) {
-      close();
+    const finalTranslate = pendingTranslate;
+    if (drawerEl) drawerEl.style.transition = "transform 200ms cubic-bezier(.22,.9,.32,1)";
+
+    if (finalTranslate > RELEASE_THRESHOLD) {
+      // animate out then close
+      if (drawerEl) drawerEl.style.transform = `translate3d(0, 100%, 0)`;
+      setTimeout(() => {
+        close();
+        if (drawerEl) {
+          drawerEl.style.transition = "";
+          drawerEl.style.transform = "";
+        }
+      }, 220);
     } else {
-      translate_y = 0;
+      // snap back
+      if (drawerEl) drawerEl.style.transform = `translate3d(0, 0, 0)`;
+      setTimeout(() => {
+        pendingTranslate = 0;
+        if (drawerEl) drawerEl.style.transition = "";
+      }, 220);
     }
   }
 
-  /**
-   * Handles click on the backdrop.
-   */
   function handleBackdropClick() {
     close();
   }
 
-  /**
-   * Closes the drawer.
-   */
   function close() {
     is_open = false;
-    translate_y = 0;
+    pendingTranslate = 0;
     if (onclose) onclose();
   }
 
-  /**
-   * Handles keyboard events.
-   * @param {KeyboardEvent} e
-   */
   function handleKeydown(e) {
     if (e.key === "Escape" && is_open) {
       close();
@@ -82,6 +104,7 @@
     document.addEventListener("keydown", handleKeydown);
     return () => {
       document.removeEventListener("keydown", handleKeydown);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   });
 </script>
@@ -98,22 +121,26 @@
 
     <!-- Drawer -->
     <div
+      bind:this={drawerEl}
       class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl min-h-[40vh] max-h-[90vh] flex flex-col pointer-events-auto shadow-lg"
       transition:fly={{ y: 300, duration: 300 }}
-      style="transform: translateY({translate_y}px)"
-      ontouchstart={handleTouchStart}
-      ontouchmove={handleTouchMove}
-      ontouchend={handleTouchEnd}
+      style="will-change: transform;"
       role="dialog"
       aria-modal="true"
     >
       <!-- Handle -->
-      <div class="flex justify-center p-3 cursor-grab active:cursor-grabbing">
+      <div
+        bind:this={handleEl}
+        class="flex justify-center p-3 cursor-grab active:cursor-grabbing touch-action-none"
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouchMove}
+        ontouchend={handleTouchEnd}
+      >
         <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto px-4 pb-4">
+      <div class="h-full">
         {@render children?.()}
       </div>
     </div>

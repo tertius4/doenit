@@ -92,5 +92,5 @@
     </div>
   {/if}
 
-  <InputCheckbox bind:tick_animation is_selected onselect={handleSelect} {onlongpress} />
+  <InputCheckbox class="top-0 bottom-0" bind:tick_animation is_selected onselect={handleSelect} {onlongpress} />
 </TaskContainer>

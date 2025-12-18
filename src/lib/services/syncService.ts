@@ -3,6 +3,7 @@ import { OnlineDB } from "$lib/OnlineDB";
 import { Secure } from "$lib/core/secure";
 import { user } from "$lib/base/user.svelte";
 import { Cached } from "$lib/core/cache.svelte";
+import { Logger } from "$lib/core/logger";
 
 export class SyncService {
   private static instance: SyncService;
@@ -86,8 +87,10 @@ export class SyncService {
         if (!task && !!online_task) {
           try {
             online_task.deleted = true;
-            const db_task = await Secure.decryptAndDecompress(online_task.data);
-            await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task);
+            const db_task = await Secure.decryptAndDecompress(online_task.data, online_task.category_id);
+            if (db_task) {
+              await OnlineDB.Task.deleteWithNotification(online_task.id, online_task, db_task as Task);
+            }
             this.removePendingTaskId(id);
             continue;
           } catch (error) {}
@@ -97,7 +100,7 @@ export class SyncService {
         if (!task?.category_id) continue;
 
         try {
-          const encrypted_data = await Secure.compressAndEncrypt(task);
+          const encrypted_data = await Secure.compressAndEncrypt(task, task.category_id);
 
           if (online_task) {
             await OnlineDB.Task.updateWithNotification(
@@ -123,9 +126,9 @@ export class SyncService {
 
           // Remove from pending sync queue
           this.removePendingTaskId(task.id);
-          console.log(`Successfully synced task ${task.id}`);
+          Logger.sync(`Successfully synced task ${task.id}`);
         } catch (error) {
-          console.warn(`Failed to sync task ${task.id}:`, error);
+          Logger.warn(`Failed to sync task ${task.id}`, error);
           // Keep in queue for next attempt
         }
       }

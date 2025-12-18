@@ -52,3 +52,12 @@ Die Doenit CLI hanteer **alles** wat jy nodig het:
 - Help en inligting
 
 **Net een opdrag - alles beskikbaar!** ✨
+
+1. Widget klaar maak werk nie lekker nie.
+2. Ma se koop het nie gewerk nie.
+3. Laai van Vriende op eerste slag werk nie.
+4. Notifications crash partykeer die app.
+5. Shareable Tasks
+6. Location based reminders
+7. Daily summary
+8. iOS

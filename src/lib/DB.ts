@@ -5,6 +5,7 @@ import { TaskTable } from "./DB/Task";
 import { InviteTable } from "./DB/Invite.svelte";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { UserTable } from "./DB/User";
+import { Logger } from "$lib/core/logger";
 
 async function initDB() {
   addRxPlugin(RxDBMigrationSchemaPlugin);
@@ -153,13 +154,15 @@ async function initDB() {
 
   const task_needed = await collections.Task.migrationNeeded();
   if (task_needed) {
-    console.log("Task migration needed");
+    Logger.db("Task migration needed - starting migration");
     await collections.Task.migratePromise(1000);
+    Logger.db("Task migration completed");
   }
   const cate_needed = await collections.Category.migrationNeeded();
   if (cate_needed) {
-    console.log("Category migration needed");
+    Logger.db("Category migration needed - starting migration");
     await collections.Category.migratePromise(1000);
+    Logger.db("Category migration completed");
   }
 
   return DB;

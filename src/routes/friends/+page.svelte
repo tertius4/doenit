@@ -17,12 +17,12 @@
   const usersContext = getUsersContext();
 
   const invites = $derived(DB.Invite.invites);
-  const is_loading = $derived(user.is_loading);
+  const me = $derived(user.email_address ? usersContext.getUserByEmail(user.email_address) : null);
   let has_checked = false;
 
   $effect(() => {
     // Verban toegang as Vriende funksie nie geaktiveer is nie.
-    if (is_loading) return;
+    if (user.is_loading) return;
 
     untrack(async () => {
       if (has_checked) return;
@@ -43,8 +43,6 @@
           Alert.error(result.error_message || t("something_went_wrong"));
           return goto(`/plus`);
         }
-      } else {
-        
       }
     });
   });
@@ -138,7 +136,7 @@
   }
 </script>
 
-{#if !!user.is_loading}
+{#if !user.is_logged_in}
   <div class="text-center py-8">
     <Loading class="text-4xl mx-auto mb-2 opacity-50" />
     <p>{t("loading")}</p>
@@ -151,7 +149,9 @@
       {/if}
     {/each}
 
-    <CardFriend user={usersContext.getUserByEmail(user.email_address)} />
+    {#if me}
+      <CardFriend user={me} />
+    {/if}
 
     {#each usersContext.users as _user}
       {#if user.email_address !== _user.email_address}

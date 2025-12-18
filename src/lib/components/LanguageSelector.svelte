@@ -22,9 +22,14 @@
     language.value = lang;
     is_open = false;
   }
+
+  function handleClose() {
+    is_open = false;
+    language.value = language.value || "af";
+  }
 </script>
 
-<Drawer {is_open} onclose={() => (is_open = false)}>
+<Drawer {is_open} onclose={handleClose}>
   <div class="mb-6">
     <h3 class="mb-3 font-regular text-lg">In watter taal moet Doenit praat?</h3>
 

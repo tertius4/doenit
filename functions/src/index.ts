@@ -337,7 +337,17 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       let subscription = subscription_result.data;
       functions.logger.info(`Subscription document retrieved. Created: ${subscription?.verifiedAt}`);
       if (subscription?.purchase_token === purchase_token && subscription?.active) {
-        res.json({ success: true, valid: true, message: "Subscription already verified" });
+        res.json({ 
+          success: true, 
+          valid: true, 
+          message: "Subscription already verified",
+          subscription: {
+            expiryTime: subscription.expiry_time,
+            autoRenewing: subscription.auto_renewing || false,
+            isCancelled: subscription.is_cancelled || false,
+            cancelReason: subscription.cancel_reason,
+          },
+        });
         return;
       }
 

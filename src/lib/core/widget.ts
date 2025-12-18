@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { Logger } from "$lib/core/logger";
 
 export interface TaskWidgetPlugin {
   updateTasks({ tasks, categories }: { tasks: Task[]; categories: Category[] }): Promise<{ success: boolean }>;
@@ -14,9 +15,10 @@ export class Widget {
       if (!Capacitor.isNativePlatform()) return;
 
       const result = await TaskWidget.updateLanguage({ language });
-      console.log("[💬 Widget]: Language update result:", JSON.stringify(result));
+      Logger.widget("Language updated", result);
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      Logger.error("Widget updateLanguage failed", error);
       alert(`Kon nie widget se 'updateLanguage' bywerk nie: ${error_message}`);
     }
   }
@@ -26,9 +28,10 @@ export class Widget {
       if (!Capacitor.isNativePlatform()) return;
 
       const result = await TaskWidget.updateTheme({ theme });
-      console.log("[💬 Widget]: Theme update result:", JSON.stringify(result));
+      Logger.widget("Theme updated", result);
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      Logger.error("Widget updateTheme failed", error);
       alert(`Kon nie widget se 'updateTheme' bywerk nie: ${error_message}`);
     }
   }
@@ -41,9 +44,10 @@ export class Widget {
       if (!Capacitor.isNativePlatform()) return;
 
       const result = await TaskWidget.updateTasks({ tasks, categories });
-      console.log("[💬 Widget]:", result);
+      Logger.widget("Tasks updated", result);
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
+      Logger.error("Widget updateTasks failed", error);
       alert(`Kon nie widget se 'updateTasks' bywerk nie: ${error_message}`);
     }
   }
