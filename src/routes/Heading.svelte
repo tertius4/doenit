@@ -24,6 +24,7 @@
     "/categories": t("categories"),
     "/settings": t("settings"),
     "/plus": t("doenit_plus"),
+    "/daily-summary": t("daily_summary"),
   });
 
   const title = $derived(TITLES[page.route.id ?? "/"] ?? t("task_list"));

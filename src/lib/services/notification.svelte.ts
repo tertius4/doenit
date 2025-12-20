@@ -5,6 +5,7 @@ import { DB } from "$lib/DB";
 import { sortTasksByDueDate, wait } from "$lib";
 import { App } from "@capacitor/app";
 import { user } from "$lib/base/user.svelte";
+import { DateUtil } from "$lib/core/date_util";
 
 class Notification {
   #initiated: boolean = false;
@@ -88,14 +89,15 @@ class Notification {
         await this.init();
       }
 
-      if (!user.notifications.enabled || !user.notifications.time) {
+      const notifications_config = user.notifications;
+      if (!notifications_config || !notifications_config.enabled || !notifications_config.time) {
         console.warn("Kennisgewings is gedeaktiveer of tyd nie gestel nie.");
         return;
       }
 
       // Validate time format
-      if (!/^\d{2}:\d{2}$/.test(user.notifications.time)) {
-        console.error(`Invalid time format: ${user.notifications.time}. Expected HH:mm format.`);
+      if (!/^\d{2}:\d{2}$/.test(notifications_config.time)) {
+        console.error(`Invalid time format: ${notifications_config.time}. Expected HH:mm format.`);
         return;
       }
 
@@ -106,7 +108,7 @@ class Notification {
 
       // Today at the specified time or default to 8:00 AM.
       const date = new Date();
-      const [hours = 8, minutes = 0] = user.notifications.time.split(":").map(Number) ?? [];
+      const [hours = 8, minutes = 0] = notifications_config.time.split(":").map(Number) ?? [];
 
       // Validate parsed time values
       if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
@@ -121,7 +123,7 @@ class Notification {
       const TIME_SPECIFIC_ID_BASE = 300000;
 
       // Add past task notifications
-      const past_task_notifications = this.getPastTaskNotification(all_tasks, date);
+      const past_task_notifications = this.getPastTaskNotification(all_tasks, date, notifications_config.past_tasks);
       notifications.push(...past_task_notifications);
 
       for (let i = 0; i < 30; i++) {
@@ -199,8 +201,8 @@ class Notification {
     }
   }
 
-  private getPastTaskNotification(all_tasks: Task[], start_date: Date) {
-    if (!user.notifications.past_tasks) return [];
+  private getPastTaskNotification(all_tasks: Task[], start_date: Date, past_tasks_enabled?: boolean) {
+    if (!past_tasks_enabled) return [];
 
     const PAST_TASKS_ID_BASE = 100000;
     const notifications = [];
@@ -240,6 +242,74 @@ class Notification {
           body,
           id: Date.now() % 1000000,
           schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second later
+        },
+      ],
+    });
+  }
+
+  async scheduleDailySummary() {
+    const daily_summary_config = user.daily_summary;
+    if (!daily_summary_config || !daily_summary_config.enabled || !daily_summary_config.time) {
+      console.warn("Daily summary is disabled or time not set.");
+      return;
+    }
+
+    // Kyk of daar take wat bedoel wat vir vandag geskeduleer is.
+    const all_tasks = await DB.Task.getAll({});
+    let has_task_for_today = false;
+    for (let task of all_tasks) {
+      if (!task.start_date) continue;
+
+      const start_date = new Date(task.start_date);
+      const due_date = task.due_date ? new Date(task.due_date) : null;
+      const now = new Date();
+
+      if (!due_date) {
+        if (DateUtil.isSameDay(start_date, now)) {
+          has_task_for_today = true;
+        }
+
+        break;
+      } else if (now > start_date && now < due_date) {
+        has_task_for_today = true;
+        break;
+      }
+    }
+
+    if (!has_task_for_today) return;
+
+    // Cancel existing daily summary notification
+    const DAILY_SUMMARY_ID = 999999;
+    await LocalNotifications.cancel({ notifications: [{ id: DAILY_SUMMARY_ID }] });
+
+    // Validate time format
+    if (!/^\d{2}:\d{2}$/.test(daily_summary_config.time)) {
+      console.error(`Invalid time format: ${daily_summary_config.time}. Expected HH:mm format.`);
+      return;
+    }
+
+    const [hours, minutes] = daily_summary_config.time.split(":").map(Number);
+    const now = new Date();
+    const notification_date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+    // If time has passed today, schedule for tomorrow
+    if (notification_date <= now) {
+      notification_date.setDate(notification_date.getDate() + 1);
+    }
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: DAILY_SUMMARY_ID,
+          title: t("daily_summary_notification_title"),
+          body: t("daily_summary_notification_body"),
+          schedule: {
+            at: notification_date,
+            allowWhileIdle: true,
+          },
+          extra: {
+            type: "daily_summary",
+          },
         },
       ],
     });

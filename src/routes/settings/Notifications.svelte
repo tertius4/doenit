@@ -36,6 +36,10 @@
    */
   function handleTimeChange({ value }) {
     if (value === time) return;
+    if (!value) {
+      time = user.notifications.time;
+      return;
+    }
 
     user.updateNotificationSettings({ time: value });
     notifications.scheduleNotifications();

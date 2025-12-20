@@ -57,6 +57,22 @@
  */
 
 /**
+ * Daily summary of task completion and activity.
+ * @typedef {Object} DailySummary
+ * @property {string} id - Primary key (format: "summary_YYYY-MM-DD").
+ * @property {string} date - ISO string date for the summary.
+ * @property {number} completed_count - Number of tasks completed on this day.
+ * @property {number} incomplete_count - Number of tasks that were due but not completed.
+ * @property {number} completion_rate - Completion rate (0-1).
+ * @property {number} consecutive_days - Number of consecutive days with app opens.
+ * @property {string[]} task_ids_completed - Array of task IDs completed on this day.
+ * @property {string[]} task_ids_incomplete - Array of task IDs that were incomplete on this day.
+ * @property {string} last_app_open - ISO string timestamp of last app open on this day.
+ * @property {string} created_at - Timestamp when the summary was created.
+ * @property {string} updated_at - Timestamp when the summary was last updated.
+ */
+
+/**
  * @typedef {Object} OnlineTask
  * @property {string} id - Primary key (UUID).
  * @property {boolean} [deleted]
@@ -168,6 +184,18 @@
 
 /** @typedef {import('firebase/auth').Unsubscribe} FirebaseUnsubscribe */
 /** @typedef {import('dexie').Subscription} Subscription */
+
+/**
+ * @typedef {Object} DailySummaryData
+ * @property {Task[]} completed_today - Today's completed tasks.
+ * @property {Task[]} incomplete_due_today - Today's incomplete due tasks.
+ * @property {Task[]} created_today - Tasks created today.
+ * @property {Task[]} due_tomorrow - Tasks due tomorrow.
+ * @property {Task[]} overdue_tasks - Overdue tasks.
+ * @property {number} completion_rate - Completion rate (0-1).
+ * @property {number} consecutive_productive_days - Number of consecutive productive days.
+ * @property {DailySummary} [summary_record] - The daily summary record.
+ */
 
 // /**
 //  * Represents a room for shared tasks.

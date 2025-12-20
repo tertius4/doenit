@@ -30,7 +30,7 @@
 </script>
 
 <Drawer {is_open} onclose={handleClose}>
-  <div class="mb-6">
+  <div class="mb-6 px-2">
     <h3 class="mb-3 font-regular text-lg">In watter taal moet Doenit praat?</h3>
 
     <div class="flex gap-2 w-full">

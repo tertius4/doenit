@@ -2,6 +2,7 @@
   import About from "./About.svelte";
   import Backup from "./Backup.svelte";
   import Notifications from "./Notifications.svelte";
+  import DailySummary from "./DailySummary.svelte";
   import DoenitPlus from "./DoenitPlus.svelte";
   import AppSettings from "./AppSettings.svelte";
   import Appearance from "./Appearance.svelte";
@@ -24,6 +25,7 @@
   <UserDisplay />
   <Appearance />
   <Notifications />
+  <DailySummary />
   <AppSettings />
   <DoenitPlus />
   <Backup />

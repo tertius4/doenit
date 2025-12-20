@@ -57,14 +57,21 @@ public class MainActivity extends BridgeActivity {
         Log.d(Const.LOG_TAG_DOENIT, "MainActivity onResume called");
         super.onResume();
 
-        // Handle intent
-        Intent intent = getIntent();
+        // Wait for WebView to be ready before performing operations
         Bridge bridge = getBridge();
+        if (bridge != null) {
+            WebView webView = bridge.getWebView();
+            if (webView != null) {
+                webView.post(() -> {
+                    // Handle intent navigation
+                    Intent intent = getIntent();
+                    Utils.navigateToRoute(bridge, intent);
 
-        Utils.navigateToRoute(bridge, intent);
-
-        // Check for pending task updates from SharedPreferences
-        checkForPendingTaskUpdates();
+                    // Check for pending task updates from SharedPreferences
+                    checkForPendingTaskUpdates();
+                });
+            }
+        }
     }
 
     /**
@@ -100,20 +107,24 @@ public class MainActivity extends BridgeActivity {
 
             WebView webView = bridge.getWebView();
             if (webView == null) {
+                Log.w(Const.LOG_TAG_DOENIT, "WebView is null, cannot forward task completion");
                 return;
             }
 
             Log.d(Const.LOG_TAG_DOENIT, "Found pending task update for taskIds: " + taskIds);
-            String js = String.format(
-                "window.location.href = '/?completed_task_ids=%s';",
+            final String js = String.format(
+                "if (window.location) { window.location.href = '/?completed_task_ids=%s'; }",
                 taskIds
             );
 
             webView.post(() -> {
-                webView.evaluateJavascript(js, null);
+                try {
+                    webView.evaluateJavascript(js, null);
+                    DB.clearData();
+                } catch (Exception e) {
+                    Log.e(Const.LOG_TAG_DOENIT, "Error executing JavaScript for task completion", e);
+                }
             });
-
-            DB.clearData();
         } catch (Exception e) {
             Log.e(Const.LOG_TAG_DOENIT, "Error checking for pending task updates", e);
         }

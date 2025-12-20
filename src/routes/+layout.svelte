@@ -4,6 +4,7 @@
   import { UsersContext, setUsersContext } from "$lib/contexts/users.svelte";
   import { setTasksContext, TasksContext } from "$lib/contexts/tasks.svelte";
   import { notifications } from "$lib/services/notification.svelte";
+  import { DailySummary } from "$lib/services/dailySummary.svelte";
   import { onDestroy, onMount, setContext, tick, untrack } from "svelte";
   import { SyncService } from "$lib/services/syncService";
   import { backHandler } from "$lib/BackHandler.svelte";
@@ -156,6 +157,25 @@
       await notifications.init();
       await wait(3 * 1000);
       await notifications.requestPermission();
+    });
+  });
+
+  onMount(() => {
+    untrack(async () => {
+      // Initialize daily summary
+      await DailySummary.recordAppOpen();
+      if (user.daily_summary.enabled) {
+        await notifications.scheduleDailySummary();
+      }
+
+      // Listen for notification taps
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      await LocalNotifications.addListener("localNotificationActionPerformed", async (notification) => {
+        const extra = notification.notification.extra;
+        if (extra?.type === "daily_summary") {
+          await goto("/daily-summary");
+        }
+      });
     });
   });
 

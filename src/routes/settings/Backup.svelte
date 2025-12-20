@@ -66,7 +66,7 @@
         <InputSwitch bind:value={Backup.automatic_backup} />
       </div>
 
-      <ButtonBackup is_loading={Backup.is_loading} onclick={createBackup} class="mb-4" />
+      <ButtonBackup is_loading={Backup.is_loading} onclick={() => createBackup()} class="mb-4" />
       {#if has_backup}
         <ButtonRestore is_loading={Backup.is_loading} onclick={restoreBackup} getBackup={handleBackup} />
       {/if}

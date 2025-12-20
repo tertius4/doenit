@@ -107,7 +107,7 @@
       ]}
     />
     {#if can_clear && !!value}
-      <ButtonClear onclick={clearValue} />
+      <ButtonClear onclick={clearValue} class="absolute top-0 bottom-0 right-0" />
     {/if}
   </div>
 {:else}

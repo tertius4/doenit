@@ -10,6 +10,7 @@
     "/create": Check,
     "/complete": Home,
     "/categories": Home,
+    "/daily-summary": Home,
     "/plus": Home,
     "/settings": Home,
     "/[item_id]": Check,

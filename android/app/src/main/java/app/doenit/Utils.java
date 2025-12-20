@@ -97,16 +97,21 @@ public class Utils {
 
         WebView webView = bridge.getWebView();
         if (webView == null) {
+            Log.w(Const.LOG_TAG_DOENIT, "WebView is null, cannot navigate to route");
             return;
         }
 
         Log.d(Const.LOG_TAG_DOENIT, "Navigating to route: " + encodedRoute);
         webView.post(() -> {
-            webView.evaluateJavascript(
-                    "if (window.location && window.location.pathname !== '" + encodedRoute + "') { " +
-                            "  window.location.pathname = '" + encodedRoute + "'; " +
-                            "}",
-                    null);
+            try {
+                webView.evaluateJavascript(
+                        "if (window.location && window.location.pathname !== '" + encodedRoute + "') { " +
+                                "  window.location.pathname = '" + encodedRoute + "'; " +
+                                "}",
+                        null);
+            } catch (Exception e) {
+                Log.e(Const.LOG_TAG_DOENIT, "Error navigating to route: " + encodedRoute, e);
+            }
         });
     }
 

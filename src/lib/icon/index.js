@@ -1,97 +1,50 @@
-import About from "./About.svelte";
-import ArrowLeft from "./ArrowLeft.svelte";
-import Back from "./Back.svelte";
-import Bell from "./Bell.svelte";
-import Burger from "./Burger.svelte";
-import Camera from "./Camera.svelte";
-import Categories from "./Categories.svelte";
-import Check from "./Check.svelte";
-import CheckCircle from "./CheckCircle.svelte";
-import ChevronLeft from "./ChevronLeft.svelte";
-import Crown from "./Crown.svelte";
-import ChevronRight from "./ChevronRight.svelte";
-import Clock from "./Clock.svelte";
-import DownChevron from "./DownChevron.svelte";
-import Download from "./Download.svelte";
-import DownloadCloud from "./DownloadCloud.svelte";
-import Edit from "./Edit.svelte";
-import Gallery from "./Gallery.svelte";
-import Google from "./Google.svelte";
-import Home from "./Home.svelte";
-import Important from "./Important.svelte";
-import Info from "./Info.svelte";
-import Leave from "./Leave.svelte";
-import Loading from "./Loading.svelte";
-import Lock from "./Lock.svelte";
-import Mail from "./Mail.svelte";
-import Moon from "./Moon.svelte";
-import More from "./More.svelte";
-import New from "./New.svelte";
-import Plus from "./Plus.svelte";
-import Restore from "./Restore.svelte";
-import Save from "./Save.svelte";
-import Search from "./Search.svelte";
-import Settings from "./Settings.svelte";
-import Share from "./Share.svelte";
-import Shared from "./Shared.svelte";
-import Star from "./Star.svelte";
-import Sync from "./Sync.svelte";
-import Sun from "./Sun.svelte";
-import TestTube from "./TestTube.svelte";
-import Times from "./Times.svelte";
-import Trash from "./Trash.svelte";
-import Upload from "./Upload.svelte";
-import UserPlus from "./UserPlus.svelte";
-import Users from "./Users.svelte";
-import X from "./X.svelte";
-import XCircle from "./XCircle.svelte";
-
-export {
-  About,
-  ArrowLeft,
-  Back,
-  Bell,
-  Burger,
-  Camera,
-  Categories,
-  Check,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  Clock,
-  DownChevron,
-  Download,
-  DownloadCloud,
-  Edit,
-  Gallery,
-  Google,
-  Home,
-  Important,
-  Info,
-  Leave,
-  Loading,
-  Lock,
-  Mail,
-  Moon,
-  More,
-  New,
-  Plus,
-  Restore,
-  Save,
-  Search,
-  Settings,
-  Share,
-  Shared,
-  Star,
-  Sync,
-  Sun,
-  TestTube,
-  Times,
-  Trash,
-  Upload,
-  UserPlus,
-  Users,
-  X,
-  XCircle,
-};
+export { default as About } from "./About.svelte";
+export { default as ArrowLeft } from "./ArrowLeft.svelte";
+export { default as ArrowRight } from "./ArrowRight.svelte";
+export { default as Back } from "./Back.svelte";
+export { default as Bell } from "./Bell.svelte";
+export { default as Burger } from "./Burger.svelte";
+export { default as Camera } from "./Camera.svelte";
+export { default as Categories } from "./Categories.svelte";
+export { default as Check } from "./Check.svelte";
+export { default as ChartBar } from "./ChartBar.svelte";
+export { default as CheckCircle } from "./CheckCircle.svelte";
+export { default as ChevronLeft } from "./ChevronLeft.svelte";
+export { default as Crown } from "./Crown.svelte";
+export { default as ChevronRight } from "./ChevronRight.svelte";
+export { default as Clock } from "./Clock.svelte";
+export { default as DownChevron } from "./DownChevron.svelte";
+export { default as Download } from "./Download.svelte";
+export { default as DownloadCloud } from "./DownloadCloud.svelte";
+export { default as Edit } from "./Edit.svelte";
+export { default as Gallery } from "./Gallery.svelte";
+export { default as Google } from "./Google.svelte";
+export { default as Home } from "./Home.svelte";
+export { default as Important } from "./Important.svelte";
+export { default as Info } from "./Info.svelte";
+export { default as Leave } from "./Leave.svelte";
+export { default as Loading } from "./Loading.svelte";
+export { default as Lock } from "./Lock.svelte";
+export { default as Mail } from "./Mail.svelte";
+export { default as Moon } from "./Moon.svelte";
+export { default as More } from "./More.svelte";
+export { default as New } from "./New.svelte";
+export { default as Plus } from "./Plus.svelte";
+export { default as Offline } from "./Offline.svelte";
+export { default as Restore } from "./Restore.svelte";
+export { default as Save } from "./Save.svelte";
+export { default as Search } from "./Search.svelte";
+export { default as Settings } from "./Settings.svelte";
+export { default as Share } from "./Share.svelte";
+export { default as Shared } from "./Shared.svelte";
+export { default as Star } from "./Star.svelte";
+export { default as Sync } from "./Sync.svelte";
+export { default as Sun } from "./Sun.svelte";
+export { default as TestTube } from "./TestTube.svelte";
+export { default as Times } from "./Times.svelte";
+export { default as Trash } from "./Trash.svelte";
+export { default as Upload } from "./Upload.svelte";
+export { default as UserPlus } from "./UserPlus.svelte";
+export { default as Users } from "./Users.svelte";
+export { default as X } from "./X.svelte";
+export { default as XCircle } from "./XCircle.svelte";

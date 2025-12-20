@@ -25,6 +25,7 @@ class UserState {
   #text_size: TextSize = $state(16);
   #theme: Theme = $state("dark");
   #notifications: { enabled: boolean; time: string | null; past_tasks: boolean } | null = $state(null);
+  #daily_summary: { enabled: boolean; time: string } | null = $state(null);
 
   #is_loading = $state(true);
 
@@ -105,6 +106,10 @@ class UserState {
 
   get notifications() {
     return this.#notifications ?? { enabled: false, time: null, past_tasks: false };
+  }
+
+  get daily_summary() {
+    return this.#daily_summary ?? { enabled: false, time: "20:00" };
   }
 
   async init() {
@@ -223,6 +228,27 @@ class UserState {
     }
   }
 
+  updateDailySummarySettings(settings: { enabled?: boolean; time?: string }) {
+    if (!this.#daily_summary) {
+      this.#daily_summary = { enabled: false, time: "20:00" };
+    }
+
+    let is_updated = false;
+    if (settings.enabled !== undefined) {
+      this.#daily_summary.enabled = settings.enabled;
+      is_updated = true;
+    }
+
+    if (settings.time !== undefined) {
+      this.#daily_summary.time = settings.time;
+      is_updated = true;
+    }
+
+    if (is_updated) {
+      this.saveUserData();
+    }
+  }
+
   private async loadUser() {
     try {
       const { value } = await Preferences.get({ key: "user" });
@@ -232,12 +258,21 @@ class UserState {
         this.#text_size = user.text_size || "16";
         this.#theme = user.theme || "dark";
         this.#notifications = user.notifications;
+        this.#daily_summary = user.daily_summary;
         this.#favourite_category_ids = user.favourite_category_ids || [];
         this.#id = user.id || null;
         this.#uid = user.uid || null;
         this.#name = user.name || null;
         this.#email_address = user.email_address || null;
         this.#avatar = user.avatar || null;
+      }
+
+      // Initialize default settings if not set (first launch or cleared data)
+      if (!this.#notifications) {
+        this.#notifications = { enabled: false, time: null, past_tasks: false };
+      }
+      if (!this.#daily_summary) {
+        this.#daily_summary = { enabled: false, time: "20:00" };
       }
 
       this.updateAppTheme(this.#theme);
@@ -299,6 +334,7 @@ class UserState {
       text_size: this.#text_size,
       theme: this.#theme,
       notifications: this.#notifications,
+      daily_summary: this.#daily_summary,
     };
 
     await Preferences.set({

@@ -8,26 +8,29 @@
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { goto } from "$app/navigation";
   import { Plus } from "$lib/icon";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { DB } from "$lib/DB";
   import { getTasksContext } from "$lib/contexts/tasks.svelte";
 
   const categoriesContext = getCategoriesContext();
   const tasksContext = getTasksContext();
 
-  const CATEGORY_TASKS_COUNT = $derived(
-    tasksContext.tasks.reduce((acc, task) => {
-      if (!task.category_id) return acc;
-      if (task.archived) return acc;
+  const CATEGORY_TASKS_COUNT = $derived.by(() => {
+    return tasksContext.tasks.reduce((acc, task) => {
+      untrack(() => {
+        const category_id = task.category_id || categoriesContext.default_category?.id;
+        if (!category_id) return;
+        if (task.archived) return;
 
-      if (!acc[task.category_id]) {
-        acc[task.category_id] = 0;
-      }
+        if (!acc[category_id]) {
+          acc[category_id] = 0;
+        }
 
-      acc[task.category_id]++;
+        acc[category_id]++;
+      });
       return acc;
-    }, /** @type {Record<string, number>}*/ ({}))
-  );
+    }, /** @type {Record<string, number>}*/ ({}));
+  });
 
   let new_category_name = $state("");
 
@@ -83,8 +86,11 @@
   </div>
 
   <div class="flex flex-col space-y-2">
-    <div class="flex items-center justify-between px-4 py-2 bg-surface rounded-md">
+    <div class="flex items-center gap-2 px-4 py-2 bg-surface rounded-md">
       <div class="text-lg font-semibold">{t("DEFAULT_NAME")}</div>
+      <div class="h-fit bg-page rounded-full py-0.5 px-2 aspect-square flex items-center justify-center">
+        <span class="text-muted font-light">{CATEGORY_TASKS_COUNT[categoriesContext.default_category?.id]}</span>
+      </div>
     </div>
 
     {#each categoriesContext.categories as category, i (category.id)}

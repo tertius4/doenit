@@ -1,16 +1,51 @@
-import { deleteObject, getStorage, ref, uploadBytes } from "firebase/storage";
 import { FirebaseStorage } from "@capacitor-firebase/storage";
 import { Filesystem, Directory } from "@capacitor/filesystem";
-import { getApp, initializeApp } from "$lib/chunk/firebase-app";
-import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 
 class Files {
   static async upload(path: string, blob: Blob): Promise<SimpleResult> {
     try {
-      const storage = Files.getFirebaseStorage();
-      const storageRef = ref(storage, path);
+      // For mobile (Android/iOS), we need to save blob to a temporary file first
+      // and use the URI, not the blob directly
+      const tempFileName = `temp_upload_${Date.now()}_${path.split("/").pop()}`;
 
-      await uploadBytes(storageRef, blob);
+      // Convert Blob to base64
+      const reader = new FileReader();
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:image/png;base64,")
+          const base64 = result.split(",")[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      // Write blob to temporary file
+      const writeResult = await Filesystem.writeFile({
+        path: tempFileName,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+
+      // Upload using the file URI
+      await FirebaseStorage.uploadFile(
+        {
+          path: path,
+          uri: writeResult.uri,
+          metadata: {
+            contentType: blob.type || "application/octet-stream",
+            cacheControl: "public, max-age=31536000",
+          },
+        },
+        () => {}
+      );
+
+      // Clean up temporary file
+      await Filesystem.deleteFile({
+        path: tempFileName,
+        directory: Directory.Cache,
+      });
 
       return { success: true };
     } catch (error) {
@@ -63,28 +98,13 @@ class Files {
 
   static async delete(path: string): Promise<boolean> {
     try {
-      const storage = Files.getFirebaseStorage();
-      const storageRef = ref(storage, path);
-
-      await deleteObject(storageRef);
+      await FirebaseStorage.deleteFile({ path });
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Delete failed";
       console.error(`Delete failed: ${errorMessage}`);
       return false;
     }
-  }
-
-  private static getFirebaseStorage() {
-    let app;
-
-    try {
-      app = getApp(APP_NAME);
-    } catch {
-      app = initializeApp(FIREBASE_CONFIG, APP_NAME);
-    }
-
-    return getStorage(app, "doenitdb");
   }
 }
 

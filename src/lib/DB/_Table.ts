@@ -1,7 +1,7 @@
 import { DateUtil } from "$lib/core/date_util";
 import type { MangoQuery, RxCollection } from "$lib/chunk/rxdb";
 
-export class Table<T extends Task | Category | User> {
+export class Table<T extends Task | Category | User | DailySummary> {
   collection: RxCollection<T>;
 
   constructor(collection: RxCollection<T>) {
@@ -66,7 +66,7 @@ export class Table<T extends Task | Category | User> {
     if (typeof id !== "string") throw new Error(`Cannot fetch ${this.collection.name} with id: ${id}`);
 
     const doc = await this.collection.findOne(id).exec();
-    if (!doc) throw new Error(`${this.collection.name} with id ${id} not found`);
+    if (!doc) throw new Error(`[DB]: ${this.collection.name} with id ${id} not found`);
 
     return doc.toJSON() as T;
   }

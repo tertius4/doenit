@@ -5,6 +5,7 @@ import { TaskTable } from "./DB/Task";
 import { InviteTable } from "./DB/Invite.svelte";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { UserTable } from "./DB/User";
+import { DailySummaryTable } from "./DB/DailySummary";
 import { Logger } from "$lib/core/logger";
 
 async function initDB() {
@@ -150,6 +151,37 @@ async function initDB() {
         primaryKey: "id",
       },
     },
+    DailySummary: {
+      autoMigrate: false,
+      migrationStrategies: {
+        1: function (oldDoc) {
+          delete oldDoc.is_marked_complete;
+          return oldDoc;
+        },
+      },
+      schema: {
+        title: "daily_summary",
+        version: 1,
+        description: "describes a daily summary",
+        type: "object",
+        properties: {
+          id: { type: "string", maxLength: 50 },
+          date: { type: "string", format: "date-time" },
+          completed_count: { type: "number" },
+          incomplete_count: { type: "number" },
+          completion_rate: { type: "number" },
+          consecutive_days: { type: "number" },
+          task_ids_completed: { type: "array", items: { type: "string" } },
+          task_ids_incomplete: { type: "array", items: { type: "string" } },
+          last_app_open: { type: "string", format: "date-time" },
+          created_at: { type: "string" },
+          updated_at: { type: "string" },
+        },
+        required: ["id", "date", "created_at", "updated_at"],
+        primaryKey: "id",
+        indexes: ["date", "created_at"],
+      },
+    },
   });
 
   const task_needed = await collections.Task.migrationNeeded();
@@ -172,15 +204,17 @@ class DBClass {
   #Task: TaskTable | undefined;
   #Category: CategoryTable | undefined;
   #User: UserTable | undefined;
+  #DailySummary: DailySummaryTable | undefined;
   #Invite = new InviteTable();
 
   async init() {
-    if (!!this.#Task && !!this.#Category && !!this.#User && !!this.#Invite) return;
+    if (!!this.#Task && !!this.#Category && !!this.#User && !!this.#DailySummary && !!this.#Invite) return;
 
     const db = await initDB();
     this.#Task = new TaskTable(db.collections.Task);
     this.#Category = new CategoryTable(db.collections.Category);
     this.#User = new UserTable(db.collections.User);
+    this.#DailySummary = new DailySummaryTable(db.collections.DailySummary);
   }
 
   get Task(): TaskTable {
@@ -199,6 +233,12 @@ class DBClass {
     if (!this.#User) throw new Error("User table not initialized");
 
     return this.#User;
+  }
+
+  get DailySummary(): DailySummaryTable {
+    if (!this.#DailySummary) throw new Error("DailySummary table not initialized");
+
+    return this.#DailySummary;
   }
 
   get Invite(): InviteTable {

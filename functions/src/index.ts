@@ -64,7 +64,12 @@ function getFirebaseStorage(): App {
 }
 
 // Helper function to verify Google Play purchase
-async function verifyGooglePlayPurchase(packageName: string, productId: string, purchaseToken: string, userEmail: string) {
+async function verifyGooglePlayPurchase(
+  packageName: string,
+  productId: string,
+  purchaseToken: string,
+  userEmail: string
+) {
   try {
     // Initialize Google Auth with service account
     const auth = new google.auth.GoogleAuth({
@@ -92,20 +97,15 @@ async function verifyGooglePlayPurchase(packageName: string, productId: string, 
     const expiryTime = purchase?.expiryTimeMillis ? parseInt(purchase.expiryTimeMillis) : 0;
     const isNotExpired = expiryTime > now;
     const isPaid = purchase.paymentState === 1; // 1 = Received
-    
-    const isValid =
-      purchase &&
-      purchase.startTimeMillis &&
-      purchase.expiryTimeMillis &&
-      isNotExpired &&
-      isPaid;
+
+    const isValid = purchase && purchase.startTimeMillis && purchase.expiryTimeMillis && isNotExpired && isPaid;
 
     // Check if the obfuscatedAccountId matches the user's email
     const obfuscatedAccountId = purchase?.obfuscatedExternalAccountId;
     const emailMatches = !obfuscatedAccountId || obfuscatedAccountId === userEmail;
 
     // Check if subscription is cancelled but still active (not yet expired)
-    const isCancelled = purchase?.cancelReason !== undefined && purchase?.cancelReason !== null;
+    const isCancelled = !!purchase?.cancelReason;
 
     return {
       isValid: isValid && emailMatches,
@@ -115,7 +115,7 @@ async function verifyGooglePlayPurchase(packageName: string, productId: string, 
       emailMatches,
       obfuscatedAccountId,
       isCancelled,
-      cancelReason: purchase?.cancelReason,
+      cancelReason: purchase?.cancelReason || null,
     };
   } catch (error) {
     functions.logger.error("Google Play verification error:", error);
@@ -337,15 +337,15 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
       let subscription = subscription_result.data;
       functions.logger.info(`Subscription document retrieved. Created: ${subscription?.verifiedAt}`);
       if (subscription?.purchase_token === purchase_token && subscription?.active) {
-        res.json({ 
-          success: true, 
-          valid: true, 
+        res.json({
+          success: true,
+          valid: true,
           message: "Subscription already verified",
           subscription: {
             expiryTime: subscription.expiry_time,
             autoRenewing: subscription.auto_renewing || false,
             isCancelled: subscription.is_cancelled || false,
-            cancelReason: subscription.cancel_reason,
+            cancelReason: subscription.cancel_reason || null,
           },
         });
         return;
@@ -353,10 +353,17 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
       try {
         // Actually verify the purchase with Google Play
-        const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token, user.email_address || decoded_token.email || '');
+        const verificationResult = await verifyGooglePlayPurchase(
+          package_name,
+          product_id,
+          purchase_token,
+          user.email_address || decoded_token.email || ""
+        );
         if (!verificationResult.isValid) {
           if (!verificationResult.emailMatches) {
-            functions.logger.warn(`Email mismatch: Purchase made with ${verificationResult.obfuscatedAccountId}, user is ${user.email_address}`);
+            functions.logger.warn(
+              `Email mismatch: Purchase made with ${verificationResult.obfuscatedAccountId}, user is ${user.email_address}`
+            );
             res.json({
               valid: false,
               error: "Purchase belongs to a different account",
@@ -384,7 +391,7 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
         subscription.auto_renewing = verificationResult.autoRenewing;
         subscription.order_id = verificationResult.orderId;
         subscription.is_cancelled = verificationResult.isCancelled;
-        subscription.cancel_reason = verificationResult.cancelReason;
+        subscription.cancel_reason = verificationResult.cancelReason || null;
         await saveSubscription(subscription);
 
         user_result.data.user_ref.set({ is_plus_user: true }, { merge: true });
@@ -398,7 +405,7 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
             expiryTime: verificationResult.expiryTime,
             autoRenewing: verificationResult.autoRenewing,
             isCancelled: verificationResult.isCancelled,
-            cancelReason: verificationResult.cancelReason,
+            cancelReason: verificationResult.cancelReason || null,
           },
         });
       } catch (error) {

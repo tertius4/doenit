@@ -40,12 +40,18 @@ public class CreateTaskActivity extends BridgeActivity {
             if (webView != null) {
                 Log.d(Const.LOG_TAG_DOENIT, "Navigating to /create route");
                 webView.post(() -> {
-                    webView.evaluateJavascript(
-                            "if (window.location && window.location.pathname !== '/create') { " +
-                                    "  window.location.pathname = '/create'; " +
-                                    "}",
-                            null);
+                    try {
+                        webView.evaluateJavascript(
+                                "if (window.location && window.location.pathname !== '/create') { " +
+                                        "  window.location.pathname = '/create'; " +
+                                        "}",
+                                null);
+                    } catch (Exception e) {
+                        Log.e(Const.LOG_TAG_DOENIT, "Error navigating to /create route", e);
+                    }
                 });
+            } else {
+                Log.w(Const.LOG_TAG_DOENIT, "WebView is null, cannot navigate to /create");
             }
         }
     }
@@ -67,12 +73,18 @@ public class CreateTaskActivity extends BridgeActivity {
             WebView webView = bridge.getWebView();
             if (webView != null) {
                 webView.post(() -> {
-                    webView.evaluateJavascript(
-                            "if (window.location && window.location.pathname !== '/create') { " +
-                                    "  window.location.pathname = '/create'; " +
-                                    "}",
-                            null);
+                    try {
+                        webView.evaluateJavascript(
+                                "if (window.location && window.location.pathname !== '/create') { " +
+                                        "  window.location.pathname = '/create'; " +
+                                        "}",
+                                null);
+                    } catch (Exception e) {
+                        Log.e(Const.LOG_TAG_DOENIT, "Error navigating to /create route in onNewIntent", e);
+                    }
                 });
+            } else {
+                Log.w(Const.LOG_TAG_DOENIT, "WebView is null in onNewIntent, cannot navigate to /create");
             }
         }
     }

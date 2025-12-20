@@ -8,9 +8,10 @@ import { DateUtil } from "$lib/core/date_util";
 import { DB } from "$lib/DB";
 
 class BackupClass {
+  #automatic_backup: boolean = $state(false);
+  #is_initialized = false;
   last_backup_at: string = $state(t("never"));
   is_loading: boolean = $state(false);
-  #automatic_backup: boolean = $state(false);
 
   constructor() {
     cached_automatic_backup.get().then((value) => {
@@ -35,6 +36,9 @@ class BackupClass {
   }
 
   init() {
+    if (this.#is_initialized) return;
+
+    this.#is_initialized = true;
     this.checkLastBackup();
     window.addEventListener("online", async () => {
       this.checkLastBackup();
@@ -57,14 +61,16 @@ class BackupClass {
       // If more than a day ago, create a backup
       const time_diff_ms = last_backup_at ? Date.now() - +last_backup_at : Infinity;
       if (time_diff_ms > BACKUP_INTERVAL) {
-        const result = await Backup.createBackup();
-        if (!result.success && result.error_message === t("no_changes_since_last_backup")) {
-          // If no changes since last backup, just update the last_backup_at
-          this.last_backup_at = DateUtil.format(new Date(), "ddd, DD MMM YYYY, HH:mm");
-        }
+        await Backup.createBackup();
       }
     } catch (error) {
-      Alert.error(t("error_checking_last_backup") + " " + error);
+      const error_message = error instanceof Error ? error.message : String(error);
+      if (error_message === t("no_changes_since_last_backup")) {
+        // If no changes since last backup, just update the last_backup_at
+        this.last_backup_at = DateUtil.format(new Date(), "ddd, DD MMM YYYY, HH:mm");
+      } else {
+        Alert.error(`${t("error_checking_last_backup")} ${error_message}`);
+      }
     }
     this.is_loading = false;
   }
@@ -114,15 +120,18 @@ class BackupClass {
         selector: { archived: { $ne: true } },
         sort: [{ created_at: "desc" }],
       });
+
       const categories = await DB.Category.getAll({
         selector: { archived: { $ne: true } },
         sort: [{ created_at: "desc" }],
       });
+
       const users = await DB.User.getAll({
         sort: [{ created_at: "desc" }],
       });
 
       const encrypted_data = await this.compressAndEncrypt({ tasks, categories, users });
+
       const encrypted_blob = new Blob([encrypted_data], { type: "application/octet-stream" });
       const sha256 = await this.sha256FromJson({ tasks, categories, users });
 
@@ -132,7 +141,8 @@ class BackupClass {
           { field: "sha256", operator: "==", value: sha256 },
         ],
       }).catch(() => []);
-      if (!existing_backups.length) {
+
+      if (!!existing_backups.length) {
         throw Error(t("no_changes_since_last_backup"));
       }
 
@@ -141,6 +151,7 @@ class BackupClass {
         filters: [{ field: "user_id", operator: "==", value: user_id }],
         sort: [{ field: "timestamp", direction: "desc" }],
       }).catch(() => []);
+
       for (let i = 2; i < user_backups.length; i++) {
         const backup_to_delete = user_backups[i];
         await OnlineDB.BackupManifest.delete(backup_to_delete.id);
@@ -148,9 +159,9 @@ class BackupClass {
       }
 
       const file_path = `users/${user_id}/snapshots/${new Date().toISOString()}.bin`;
-      const uploadResult = await Files.upload(file_path, encrypted_blob);
-      if (!uploadResult.success) {
-        throw new Error(uploadResult.error_message || t("file_upload_failed"));
+      const upload_result = await Files.upload(file_path, encrypted_blob);
+      if (!upload_result.success) {
+        throw new Error(upload_result.error_message || t("file_upload_failed"));
       }
 
       await OnlineDB.BackupManifest.create({
@@ -163,6 +174,7 @@ class BackupClass {
 
       await cached_last_backup.set(new Date().toISOString());
       this.last_backup_at = DateUtil.format(new Date(), "ddd, DD MMM YYYY, HH:mm");
+
       this.is_loading = false;
       return { success: true };
     } catch (error) {
@@ -181,12 +193,14 @@ class BackupClass {
       }
 
       const blob = await Files.download(manifest.file_path);
+
       const encrypted_data = await blob.text();
       if (!encrypted_data) {
         throw new Error(t("failed_to_read_backup_data"));
       }
 
       const data = await this.decryptAndDecompress(encrypted_data);
+
       if (!data.tasks || !data.categories) {
         throw new Error(t("invalid_backup_data_format"));
       }
@@ -207,6 +221,7 @@ class BackupClass {
     } catch (error) {
       this.is_loading = false;
       const error_message = error instanceof Error ? error.message : String(error);
+      Alert.error(`Restore failed at current step: ${error_message}`);
       return { success: false, error_message };
     }
   }
@@ -312,10 +327,13 @@ class BackupClass {
     // Derive a consistent key from user's Firebase UID
     const encoder = new TextEncoder();
     const data = encoder.encode(uid);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const keyString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-    
+    const keyString = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .substring(0, 32);
+
     const keyData = new TextEncoder().encode(keyString);
     return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   }

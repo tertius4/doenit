@@ -7,7 +7,7 @@
   import CardFriend from "./CardFriend.svelte";
   import { user } from "$lib/base/user.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { Check, Loading } from "$lib/icon";
+  import { Offline, Check, Loading } from "$lib/icon";
   import { onMount, untrack } from "svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { Alert } from "$lib/core/alert";
@@ -15,10 +15,11 @@
   import { DB } from "$lib/DB";
 
   const usersContext = getUsersContext();
+  let has_checked = false;
 
   const invites = $derived(DB.Invite.invites);
   const me = $derived(user.email_address ? usersContext.getUserByEmail(user.email_address) : null);
-  let has_checked = false;
+  const is_offline = $derived(typeof navigator !== "undefined" && !navigator.onLine);
 
   $effect(() => {
     // Verban toegang as Vriende funksie nie geaktiveer is nie.
@@ -137,10 +138,19 @@
 </script>
 
 {#if !user.is_logged_in}
-  <div class="text-center py-8">
-    <Loading class="text-4xl mx-auto mb-2 opacity-50" />
-    <p>{t("loading")}</p>
-  </div>
+  {#if is_offline}
+    <!-- A nice offline message or UI can be placed here -->
+    <div class="text-center py-8">
+      <!-- Offline icon here -->
+       <Offline class="text-4xl mx-auto mb-2 opacity-50" />
+      <p>{t("offline")}</p>
+    </div>
+  {:else}
+    <div class="text-center py-8">
+      <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+      <p>{t("loading")}</p>
+    </div>
+  {/if}
 {:else if user.is_friends_enabled}
   <div class="space-y-2">
     {#each invites as invite (invite.id)}
