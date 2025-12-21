@@ -164,9 +164,6 @@
     untrack(async () => {
       // Initialize daily summary
       await DailySummary.recordAppOpen();
-      if (user.daily_summary.enabled) {
-        await notifications.scheduleDailySummary();
-      }
 
       // Listen for notification taps
       const { LocalNotifications } = await import("@capacitor/local-notifications");

@@ -89,6 +89,8 @@ class Notification {
         await this.init();
       }
 
+      await this.scheduleDailySummary();
+
       const notifications_config = user.notifications;
       if (!notifications_config || !notifications_config.enabled || !notifications_config.time) {
         console.warn("Kennisgewings is gedeaktiveer of tyd nie gestel nie.");
@@ -234,19 +236,6 @@ class Notification {
     return notifications;
   }
 
-  send(title: string, body: string) {
-    LocalNotifications.schedule({
-      notifications: [
-        {
-          title,
-          body,
-          id: Date.now() % 1000000,
-          schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second later
-        },
-      ],
-    });
-  }
-
   async scheduleDailySummary() {
     const daily_summary_config = user.daily_summary;
     if (!daily_summary_config || !daily_summary_config.enabled || !daily_summary_config.time) {
@@ -254,40 +243,7 @@ class Notification {
       return;
     }
 
-    // Kyk of daar take wat bedoel wat vir vandag geskeduleer is.
-    const all_tasks = await DB.Task.getAll({});
-    let has_task_for_today = false;
-    for (let task of all_tasks) {
-      const start_date = task.start_date ? new Date(task.start_date) : null;
-      const due_date = task.due_date ? new Date(task.due_date) : null;
-      const now = new Date();
-
-      // Check if task was completed today
-      if (!!task.completed_at) {
-        const completed_date = new Date(task.completed_at);
-        if (DateUtil.isSameDay(completed_date, now)) {
-          has_task_for_today = true;
-          break;
-        }
-      }
-
-      if (!start_date) continue;
-      if (!due_date) {
-        if (DateUtil.isSameDay(start_date, now)) {
-          has_task_for_today = true;
-          break;
-        }
-      } else if (now > start_date && now < due_date) {
-        has_task_for_today = true;
-        break;
-      }
-    }
-
-    if (!has_task_for_today) return;
-
-    // Cancel existing daily summary notification
-    const DAILY_SUMMARY_ID = 999999;
-    await LocalNotifications.cancel({ notifications: [{ id: DAILY_SUMMARY_ID }] });
+    const DAILY_SUMMARY_ID_BASE = 400000;
 
     // Validate time format
     if (!/^\d{2}:\d{2}$/.test(daily_summary_config.time)) {
@@ -296,22 +252,54 @@ class Notification {
     }
 
     const [hours, minutes] = daily_summary_config.time.split(":").map(Number);
-    const now = new Date();
-    const notification_date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+    const all_tasks = await DB.Task.getAll({});
+    const notifications = [];
 
-    // If time has passed today, schedule for tomorrow
-    if (notification_date <= now) {
-      notification_date.setDate(notification_date.getDate() + 1);
+    // Schedule notifications for 30 days in advance
+    const now = new Date();
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+    // If time has passed today, start from tomorrow
+    if (date <= now) {
+      date.setDate(date.getDate() + 1);
     }
 
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: DAILY_SUMMARY_ID,
+    for (let i = 0; i < 30; i++) {
+      let has_task_for_day = false;
+
+      // Check if there are tasks scheduled for this day
+      for (let task of all_tasks) {
+        const start_date = task.start_date ? new Date(task.start_date) : null;
+        const due_date = task.due_date ? new Date(task.due_date) : null;
+
+        // Check if task was completed on this day
+        if (!!task.completed_at) {
+          const completed_date = new Date(task.completed_at);
+          if (DateUtil.isSameDay(completed_date, date)) {
+            has_task_for_day = true;
+            break;
+          }
+        }
+
+        if (!start_date) continue;
+        if (!due_date) {
+          if (DateUtil.isSameDay(start_date, date)) {
+            has_task_for_day = true;
+            break;
+          }
+        } else if (date >= start_date && date <= due_date) {
+          has_task_for_day = true;
+          break;
+        }
+      }
+
+      if (has_task_for_day) {
+        notifications.push({
+          id: DAILY_SUMMARY_ID_BASE + i,
           title: t("daily_summary_notification_title"),
           body: t("daily_summary_notification_body"),
           schedule: {
-            at: notification_date,
+            at: new Date(+date),
             allowWhileIdle: true,
           },
           sound: "notification.wav",
@@ -320,6 +308,29 @@ class Notification {
           extra: {
             type: "daily_summary",
           },
+        });
+      }
+
+      // Move to next day
+      date.setDate(date.getDate() + 1);
+    }
+
+    if (notifications.length > 0) {
+      await LocalNotifications.schedule({ notifications });
+      console.debug(`[😨 Doenit]: ${notifications.length} daily summary notifications scheduled.`);
+    } else {
+      console.debug("[😨 Doenit]: No daily summary notifications to schedule");
+    }
+  }
+
+  send(title: string, body: string) {
+    LocalNotifications.schedule({
+      notifications: [
+        {
+          title,
+          body,
+          id: Date.now() % 1000000,
+          schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second later
         },
       ],
     });
