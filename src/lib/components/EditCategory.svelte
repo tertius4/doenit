@@ -26,6 +26,20 @@
 
   const original_users = new SvelteSet(category.users || []);
 
+  const users = $derived.by(() => {
+    if (!category.users?.length) return [];
+
+    const users = [];
+    for (const email of category.users) {
+      const user = usersContext.getUserByEmail(email);
+      if (!user || user.is_pending) continue;
+
+      users.push(user);
+    }
+
+    return users;
+  });
+
   async function editCategory() {
     try {
       if (!category?.id) return;
@@ -72,10 +86,10 @@
   />
 
   {#if !!user.is_friends_enabled}
-    {#if !!usersContext.map.size}
+    {#if !!users.length}
       <div class="flex flex-col gap-1 overflow-y-auto h-fit">
         <span class="font-semibold">{t("share_category")}</span>
-        {#each usersContext.users as category_user}
+        {#each users as category_user}
           {@const is_me = category_user.email_address === user.email_address}
           {@const is_selected = !!category.id && edit_users.has(category_user.email_address)}
 

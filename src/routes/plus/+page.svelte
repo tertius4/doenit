@@ -116,7 +116,7 @@
   }
 </script>
 
-<div class="max-w-2xl mx-auto px-4 py-6">
+<div class="max-w-2xl mx-auto py-6">
   <!-- Header Section -->
   <div class="text-center mb-8">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">

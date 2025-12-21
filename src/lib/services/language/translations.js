@@ -199,6 +199,13 @@ export const translations = {
     left_group: "Groep Verlaat",
     user_left_group: '{{user_name}} het die groep "{{room_name}}" verlaat',
     user_not_found: "Gebruiker nie gevind nie",
+    is_not_using_app: "gebruik nog nie Doenit nie. Deel die toep met hulle!",
+    share_app: "Deel Toepassing",
+    share_app_message: "{{name}} wil met jou op Doenit inskakel! Laai die toep af om saam georganiseerd te bly.",
+    someone: "Iemand",
+    shared_successfully: "Suksesvol gedeel!",
+    link_copied: "Skakel gekopieer na knipbord!",
+    share_failed: "Kon nie toep deel nie",
 
     // Room Management
     edit_room: "Wysig Groep",
@@ -314,6 +321,7 @@ export const translations = {
     // Daily Summary
     daily_summary: "Dag verslag",
     daily_summary_enabled: "Dag verslag is aan",
+    daily_summary_disabled: "Dag verslag is af",
     daily_summary_description: "Kry 'n opsomming van jou dag se take elke aand",
     daily_summary_time_description: "Stel die tyd wanneer jy jou dag se verslag wil ontvang",
     daily_summary_notification_title: "Jou dag se opsomming 📊",
@@ -701,6 +709,13 @@ export const translations = {
     left_group: "Left Group",
     user_left_group: '{{user_name}} have left the group "{{room_name}}"',
     user_not_found: "User not found",
+    is_not_using_app: "doesn't have Doenit yet. Share the app with them!",
+    share_app: "Share App",
+    share_app_message: "{{name}} wants to connect with you on Doenit! Download the app to stay organised together.",
+    someone: "Someone",
+    shared_successfully: "Shared successfully!",
+    link_copied: "Link copied to clipboard!",
+    share_failed: "Could not share app",
 
     // Room Management
     edit_room: "Edit room",
@@ -815,7 +830,8 @@ export const translations = {
     // Daily Summary
     daily_summary: "Daily Summary",
     daily_summary_completed: "Daily summary completed",
-    daily_summary_enabled: "Enable daily summary",
+    daily_summary_enabled: "Daily Summary is enabled",
+    daily_summary_disabled: "Daily Summary is disabled",
     daily_summary_description: "Get a summary of your day's tasks every evening",
     daily_summary_time_description: "Set the time when you want to receive your daily summary",
     daily_summary_notification_title: "Your day's summary 📊",

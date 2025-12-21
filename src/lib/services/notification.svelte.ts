@@ -258,18 +258,25 @@ class Notification {
     const all_tasks = await DB.Task.getAll({});
     let has_task_for_today = false;
     for (let task of all_tasks) {
-      if (!task.start_date) continue;
-
-      const start_date = new Date(task.start_date);
+      const start_date = task.start_date ? new Date(task.start_date) : null;
       const due_date = task.due_date ? new Date(task.due_date) : null;
       const now = new Date();
 
+      // Check if task was completed today
+      if (!!task.completed_at) {
+        const completed_date = new Date(task.completed_at);
+        if (DateUtil.isSameDay(completed_date, now)) {
+          has_task_for_today = true;
+          break;
+        }
+      }
+
+      if (!start_date) continue;
       if (!due_date) {
         if (DateUtil.isSameDay(start_date, now)) {
           has_task_for_today = true;
+          break;
         }
-
-        break;
       } else if (now > start_date && now < due_date) {
         has_task_for_today = true;
         break;
@@ -307,6 +314,9 @@ class Notification {
             at: notification_date,
             allowWhileIdle: true,
           },
+          sound: "notification.wav",
+          smallIcon: "ic_stat_logo",
+          channelId: "default",
           extra: {
             type: "daily_summary",
           },

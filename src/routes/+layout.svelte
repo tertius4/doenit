@@ -174,6 +174,8 @@
         const extra = notification.notification.extra;
         if (extra?.type === "daily_summary") {
           await goto("/daily-summary");
+        } else {
+          await goto("/");
         }
       });
     });

@@ -59,7 +59,9 @@
     <!-- Main toggle -->
     <div class="flex items-center justify-between">
       <div class="flex-1">
-        <div class="text-sm font-medium">{t("daily_summary_enabled")}</div>
+        <div class="text-sm font-medium">
+          {enabled ? t("daily_summary_enabled") : t("daily_summary_disabled")}
+        </div>
         <div class="text-xs text-muted mt-1">{t("daily_summary_description")}</div>
       </div>
       <InputSwitch bind:value={enabled} />

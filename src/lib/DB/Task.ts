@@ -242,7 +242,10 @@ export class TaskTable extends Table<Task> {
       ]);
 
       if (online_task_encrypted) {
-        const online_task = (await Secure.decryptAndDecompress(online_task_encrypted.data, online_task_encrypted.category_id)) as Task;
+        const online_task = (await Secure.decryptAndDecompress(
+          online_task_encrypted.data,
+          online_task_encrypted.category_id
+        )) as Task;
         if (online_task.completed < db_task.completed) {
           await OnlineDB.Task.completeWithNotification(
             online_task_encrypted.id,
