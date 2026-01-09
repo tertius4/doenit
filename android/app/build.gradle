@@ -14,6 +14,24 @@ if (envSpecificFile.exists()) {
 def appId = envProps.getProperty('PUBLIC_APP_ID', 'doenit.app')
 def appName = envProps.getProperty('PUBLIC_APP_NAME', 'Doenit')
 
+// Copy the appropriate google-services file based on environment
+def googleServicesSource = nodeEnv == 'development' ? 
+    'google-services.dev.json' : 
+    'google-services.prod.json'
+def googleServicesSourceFile = file(googleServicesSource)
+def googleServicesDestFile = file('google-services.json')
+
+if (googleServicesSourceFile.exists()) {
+    copy {
+        from googleServicesSourceFile
+        into projectDir
+        rename { 'google-services.json' }
+    }
+    logger.lifecycle("Copied ${googleServicesSource} to google-services.json for ${nodeEnv} build")
+} else {
+    logger.warn("Warning: ${googleServicesSource} not found!")
+}
+
 apply plugin: 'com.google.gms.google-services'
 
 android {
@@ -23,8 +41,8 @@ android {
         applicationId appId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 123
-        versionName "1.4.0"
+        versionCode 159
+        versionName "1.4.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // Set app name based on environment

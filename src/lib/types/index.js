@@ -41,6 +41,7 @@
  * @property {string} [avatar] - URL to the user's avatar image.
  * @property {boolean} [is_pending] - Indicates if the connection is pending.
  * @property {string} email_address - Email address of the user.
+ * @property {boolean} [is_plus_user] - Indicates if the user has a Plus subscription.
  * @property {string} created_at - Timestamp when the user was created.
  * @property {string} updated_at - Timestamp when the user was last updated.
  */
@@ -151,6 +152,21 @@
  * @property {number} purchase_state
  * @property {boolean} acknowledged
  * @property {string} order_id
+ * @property {number} purchase_time
+ * @property {string} title
+ * @property {string} description
+ * @property {string} price
+ * @property {number} price_amount_micros
+ * @property {string} price_currency_code
+ */
+
+/**
+ * Represents subscription details for a product.
+ * @typedef {Object} SubscriptionDetails
+ * @property {Date | null} expiryTime
+ * @property {boolean} autoRenewing
+ * @property {boolean} isCancelled
+ * @property {number} [cancelReason]
  */
 
 /**

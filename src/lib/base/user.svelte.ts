@@ -1,5 +1,5 @@
 import { getAuth, signOut as firebaseSignOut, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { PUBLIC_ADMIN_EMAILS, PUBLIC_GOOGLE_AUTH } from "$env/static/public";
+import { PUBLIC_VIP_EMAILS, PUBLIC_GOOGLE_AUTH, PUBLIC_DEV_EMAILS } from "$env/static/public";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getApp, initializeApp } from "$lib/chunk/firebase-app";
 import { APP_NAME, FIREBASE_CONFIG, normalize } from "$lib";
@@ -30,7 +30,8 @@ class UserState {
   #is_loading = $state(true);
 
   readonly is_logged_in = $derived(!!this.#uid);
-  readonly is_vip = $derived(this.is_logged_in && PUBLIC_ADMIN_EMAILS.includes(this.#email_address || ""));
+  readonly is_developer = $derived(this.is_logged_in && PUBLIC_DEV_EMAILS.includes(this.#email_address || ""));
+  readonly is_vip = $derived(this.is_logged_in && PUBLIC_VIP_EMAILS.includes(this.#email_address || ""));
   readonly is_plus_user = $derived(this.is_logged_in && (billing.is_plus_user || this.is_vip));
 
   readonly is_friends_enabled: boolean = $derived(this.is_plus_user);
@@ -160,6 +161,7 @@ class UserState {
         };
 
         await this.sync(user_data);
+        await billing.init();
       }
 
       this.#is_loading = false;
@@ -189,6 +191,8 @@ class UserState {
       this.#email_address = null;
       this.#avatar = null;
       await Preferences.remove({ key: "user" });
+      
+      await billing.init();
 
       return { success: true };
     } catch (error) {
@@ -293,17 +297,23 @@ class UserState {
     auth.onAuthStateChanged(async (firebase_user) => {
       if (!firebase_user) return;
 
-      billing.init();
-      billing.getToken = firebase_user.getIdToken.bind(firebase_user);
-      this.getToken = firebase_user.getIdToken.bind(firebase_user);
-      const user_data: Partial<User> = {
-        uid: firebase_user.uid,
-        name: firebase_user.displayName || undefined,
-        email_address: normalize(firebase_user.email || ""),
-        avatar: firebase_user.photoURL || undefined,
-      };
+      try {
+        this.getToken = firebase_user.getIdToken.bind(firebase_user);
+        const user_data: Partial<User> = {
+          uid: firebase_user.uid,
+          name: firebase_user.displayName || undefined,
+          email_address: normalize(firebase_user.email || ""),
+          avatar: firebase_user.photoURL || undefined,
+        };
 
-      await user.sync(user_data);
+        await user.sync(user_data);
+
+        billing.getToken = this.getToken;
+        await billing.init();
+      } catch (error) {
+        const error_message = error instanceof Error ? error.message : JSON.stringify(error);
+        alert(`Kon nie gebruiker sinchroniseer nie: ${error_message}`);
+      }
     });
   }
 

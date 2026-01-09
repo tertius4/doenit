@@ -521,3 +521,33 @@ export function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
+
+/**
+ * Retry helper with exponential backoff
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @param {number} [retries=3]
+ * @param {number} [delay=1000]
+ * @param {string} [operation_name="operation"]
+ * @returns {Promise<T>}
+ */
+export async function retry(fn, retries = 3, delay = 1000, operation_name = "operation") {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.log(`${operation_name} attempt ${i + 1} failed: ${error_message}`);
+
+      const is_last_attempt = i === retries - 1;
+      if (is_last_attempt) throw error;
+
+      // Exponential backoff
+      const wait_ms = delay * Math.pow(2, i);
+      console.log(`Retrying ${operation_name} in ${wait_ms}ms...`);
+      await wait(wait_ms);
+    }
+  }
+
+  throw new Error(`${operation_name} failed after ${retries} attempts`);
+}

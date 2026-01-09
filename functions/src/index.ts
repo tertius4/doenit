@@ -66,7 +66,7 @@ function getFirebaseStorage(): App {
 // Helper function to verify Google Play purchase
 async function verifyGooglePlayPurchase(
   packageName: string,
-  productId: string,
+  product_id: string,
   purchaseToken: string,
   userEmail: string
 ) {
@@ -86,7 +86,7 @@ async function verifyGooglePlayPurchase(
     // Verify the subscription purchase
     const response = await androidpublisher.purchases.subscriptions.get({
       packageName: packageName,
-      subscriptionId: productId,
+      subscriptionId: product_id,
       token: purchaseToken,
     });
 
@@ -266,10 +266,10 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
       await userDocRef.set(
         {
           subscription: {
-            productId: product_id,
-            purchaseToken: purchase_token,
+            product_id: product_id,
+            purchase_token: purchase_token,
             platform: "android",
-            cancelledAt: FieldValue.serverTimestamp(),
+            cancelled_at: FieldValue.serverTimestamp(),
             active: false,
           },
           is_plus_user: false,

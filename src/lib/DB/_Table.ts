@@ -47,7 +47,7 @@ export class Table<T extends Task | Category | User | DailySummary> {
   }
 
   async createMany(items: Omit<T, "id" | "created_at" | "archived" | "updated_at">[]): Promise<{ success: T[] }> {
-    if (!items || !items.length) throw new Error("Items are required");
+    if (!items || !items.length) return { success: [] };
 
     const created_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
     const updated_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");

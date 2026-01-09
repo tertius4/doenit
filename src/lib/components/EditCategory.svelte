@@ -26,18 +26,23 @@
 
   const original_users = new SvelteSet(category.users || []);
 
-  const users = $derived.by(() => {
+  const category_users = $derived.by(() => {
     if (!category.users?.length) return [];
 
     const users = [];
     for (const email of category.users) {
-      const user = usersContext.getUserByEmail(email);
-      if (!user || user.is_pending) continue;
+      const is_me = email === user.email_address;
+      const current_user = usersContext.getUserByEmail(email);
+      if (!current_user || current_user.is_pending || is_me) continue;
 
-      users.push(user);
+      users.push(current_user);
     }
 
     return users;
+  });
+
+  const potential_users = $derived.by(() => {
+    return usersContext.users.filter((u) => !category.users?.includes(u.email_address) && !u.is_pending);
   });
 
   async function editCategory() {
@@ -86,28 +91,44 @@
   />
 
   {#if !!user.is_friends_enabled}
-    {#if !!users.length}
-      <div class="flex flex-col gap-1 overflow-y-auto h-fit">
-        <span class="font-semibold">{t("share_category")}</span>
-        {#each users as category_user}
-          {@const is_me = category_user.email_address === user.email_address}
-          {@const is_selected = !!category.id && edit_users.has(category_user.email_address)}
+    <div class="flex flex-col gap-1 overflow-y-auto h-fit">
+      <span class="font-semibold">{t("share_category")}</span>
+      <CardFriend is_selectable={false} user={usersContext.getUserByEmail(user.email_address || "")} />
 
-          <CardFriend
-            is_selectable={!is_me && !original_users.has(category_user.email_address)}
-            user={category_user}
-            {is_selected}
-            onclick={() => {
-              if (is_selected) {
-                edit_users.delete(category_user.email_address);
-              } else {
-                edit_users.add(category_user.email_address);
-              }
-            }}
-          />
-        {/each}
-      </div>
-    {/if}
+      {#each category_users as category_user (category_user.email_address)}
+        {@const is_selected = !!category.id && edit_users.has(category_user.email_address)}
+
+        <CardFriend
+          is_selectable={!original_users.has(category_user.email_address)}
+          user={category_user}
+          {is_selected}
+          onclick={() => {
+            if (is_selected) {
+              edit_users.delete(category_user.email_address);
+            } else {
+              edit_users.add(category_user.email_address);
+            }
+          }}
+        />
+      {/each}
+
+      {#each potential_users as user (user.email_address)}
+        {@const is_selected = !!category.id && edit_users.has(user.email_address)}
+
+        <CardFriend
+          is_selectable
+          {user}
+          {is_selected}
+          onclick={() => {
+            if (is_selected) {
+              edit_users.delete(user.email_address);
+            } else {
+              edit_users.add(user.email_address);
+            }
+          }}
+        />
+      {/each}
+    </div>
   {/if}
 
   <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-lg ml-auto" type="submit">

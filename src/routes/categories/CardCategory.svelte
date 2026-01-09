@@ -75,7 +75,7 @@
 
     <div class="py-3 w-full text-lg font-semibold truncate flex gap-2">
       <span>{category.name}</span>
-      <div class="h-fit bg-page rounded-full py-0.5 px-2 aspect-square flex items-center justify-center">
+      <div class="h-fit bg-page rounded-full px-2 aspect-square flex items-center justify-center">
         <span class="text-muted font-light">{task_count}</span>
       </div>
     </div>

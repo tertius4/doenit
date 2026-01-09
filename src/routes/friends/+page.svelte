@@ -3,11 +3,11 @@
   import { getUsersContext } from "$lib/contexts/users.svelte";
   import { CardInvite } from "$lib/components/element/card";
   import { backHandler } from "$lib/BackHandler.svelte";
+  import { Offline, Check, Loading } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
   import CardFriend from "./CardFriend.svelte";
   import { user } from "$lib/base/user.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { Offline, Check, Loading } from "$lib/icon";
   import { onMount, untrack } from "svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { Alert } from "$lib/core/alert";
@@ -30,19 +30,19 @@
       has_checked = true;
 
       if (user.is_logged_in) {
-        if (!user.is_friends_enabled) goto(`/plus`);
+        if (!user.is_friends_enabled) goto(`/subscriptions`);
         return;
       }
 
       const result = await user.signIn();
       if (!result.success) {
         if (result.error_message === "USER_CANCELED") {
-          return goto(`/plus`);
+          return goto(`/subscriptions`);
         }
 
         if (result.error_message !== "U is vanlyn") {
           Alert.error(result.error_message || t("something_went_wrong"));
-          return goto(`/plus`);
+          return goto(`/subscriptions`);
         }
       }
     });
@@ -142,7 +142,7 @@
     <!-- A nice offline message or UI can be placed here -->
     <div class="text-center py-8">
       <!-- Offline icon here -->
-       <Offline class="text-4xl mx-auto mb-2 opacity-50" />
+      <Offline class="text-4xl mx-auto mb-2 opacity-50" />
       <p>{t("offline")}</p>
     </div>
   {:else}

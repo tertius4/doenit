@@ -7,7 +7,7 @@
 
   const IS_PENDING = false;
   function navigateToPlus() {
-    goto("/plus");
+    goto("/subscriptions");
   }
 </script>
 

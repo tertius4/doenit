@@ -23,7 +23,7 @@
     "/complete": t("completed_tasks"),
     "/categories": t("categories"),
     "/settings": t("settings"),
-    "/plus": t("doenit_plus"),
+    "/subscriptions": t("doenit_plus"),
     "/daily-summary": t("daily_summary"),
   });
 

@@ -3,7 +3,7 @@
 </script>
 
 <a
-  href="/plus"
+  href="/subscriptions"
   class="bg-surface rounded-lg items-center p-4 flex justify-between relative gap-4 w-full transition-colors cursor-pointer"
 >
   <div class="flex flex-col gap-2 w-full">

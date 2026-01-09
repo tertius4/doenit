@@ -25,7 +25,9 @@
   async function handleSignOut() {
     is_open = false;
 
+    is_loading = true;
     const result = await user.signOut();
+    is_loading = false;
     if (result.success) return;
 
     Alert.error(result.error_message || t("something_went_wrong"));

@@ -1,171 +1,113 @@
 import { PUBLIC_APP_ID, PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
 import { user } from "$lib/base/user.svelte";
 import { Capacitor } from "@capacitor/core";
-import { Crown, Users, DownloadCloud } from "$lib/icon";
-
-interface SubscriptionDetails {
-  expiryTime: Date | null;
-  autoRenewing: boolean;
-  isCancelled: boolean;
-  cancelReason?: number;
-}
+import { retry, wait } from "$lib";
+import { Alert } from "./alert";
 
 interface BillingPlugin {
   initialize(): Promise<void>;
   queryProductDetails(options: { product_ids: string[] }): Promise<{ products: Product[] }>;
   startPurchase(options: { product_id: string; email_address: string }): Promise<{ purchase_token: string }>;
-  queryPurchases(): Promise<{ purchases: Purchase[] }>;
+  queryPurchases(options: { email_address: string }): Promise<{ purchases: Purchase[] }>;
   acknowledgePurchase(options: { purchase_token: string }): Promise<void>;
-}
-
-interface ProductConfig {
-  id: string;
-  name: string;
-  icon: any;
-  title_key: string;
-  description_key: string;
-  benefits: Array<{
-    icon: any;
-    title_key: string;
-    description_key: string;
-  }>;
 }
 
 const BillingService = Capacitor.registerPlugin<BillingPlugin>("BillingService");
 
-// Produk Konfigurasies - Sentraal gestoor in billing service
-export const PRODUCTS_CONFIG: Record<string, ProductConfig> = {
-  "doenit.plus": {
-    id: "doenit.plus",
-    name: "Doenit Plus",
-    icon: Crown,
-    title_key: "plus_plan",
-    description_key: "unlock_premium_features",
-    benefits: [
-      {
-        icon: Users,
-        title_key: "benefit_rooms",
-        description_key: "benefit_rooms_desc",
-      },
-      {
-        icon: DownloadCloud,
-        title_key: "benefit_backup",
-        description_key: "benefit_backup_desc",
-      },
-    ],
-  },
-  // Toekomstige produkte kan hier bygevoeg word
-};
-
 class Billing {
   getToken: (() => Promise<string>) | null = null;
   #initialized = $state(false);
-  #is_plus_user = $state(false);
-  #subscription_product: Product | null = $state(null);
-  #current_purchase: Purchase | null = $state(null);
-  #subscription_details: SubscriptionDetails | null = $state(null);
+  #products: Product[] = $state([]);
+  #purchases: Purchase[] = $state([]);
+  #subscription_details_map: Map<string, SubscriptionDetails> = $state(new Map());
 
-  readonly PRODUCT_ID = "doenit.plus";
+  is_plus_user = $state(false);
 
   get initialized() {
     return this.#initialized;
   }
 
-  get is_plus_user() {
-    return this.#is_plus_user;
+  get products() {
+    return this.#products;
   }
 
-  get subscription_product() {
-    return this.#subscription_product;
-  }
-
-  get current_purchase() {
-    return this.#current_purchase;
-  }
-
-  get subscription_details() {
-    return this.#subscription_details;
-  }
-
-  // Haal produk konfigurasie vir 'n spesifieke produk
-  getProductConfig(product_id: string): ProductConfig | null {
-    return PRODUCTS_CONFIG[product_id] || null;
-  }
-
-  // Haal alle produk konfigurasies
-  getAllProductConfigs(): Record<string, ProductConfig> {
-    return PRODUCTS_CONFIG;
+  get purchases() {
+    return this.#purchases;
   }
 
   async init() {
     if (!Capacitor.isNativePlatform()) return;
-    if (!navigator.onLine) return;
 
     try {
       await BillingService.initialize();
       this.#initialized = true;
 
-      // Laai produkte
-      await this.loadProducts();
-
       // Kyk vir bestaande aankope
       await this.checkSubscriptionStatus();
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      alert(`Kon nie betaaldiens-initialisering voltooi nie: ${error_message}`);
+      Alert.error(`Kon nie betaaldiens-initialisering voltooi nie: ${error_message}`);
     }
   }
 
-  async loadProducts() {
+  async loadProducts(): Promise<Product[]> {
     try {
-      const { products } = await BillingService.queryProductDetails({
-        product_ids: [this.PRODUCT_ID],
-      });
+      const queryProducts = async () => {
+        const result = await BillingService.queryProductDetails({
+          product_ids: ["doenit.plus", "doenit.testing"],
+        });
 
-      if (products.length > 0) {
-        this.#subscription_product = products[0];
-      }
+        const products = result.products ?? [];
+
+        // Haal die app naam uit die title van die produk uit.
+        for (let i = 0; i < products.length; i++) {
+          products[i].title = products[i].title.replace(/\(.*\)$/, "");
+        }
+
+        return products;
+      };
+
+      return retry(queryProducts, 3, 1000, "loadProducts");
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      alert(`Kon nie produkte laai nie: ${error_message}`);
+      Alert.error(`Kon nie produkte laai nie: ${error_message}`);
+      return [];
     }
   }
 
   async checkSubscriptionStatus() {
     try {
-      const { purchases } = await BillingService.queryPurchases();
-      const active_purchase = purchases.find((p) => p.product_id === this.PRODUCT_ID && p.purchase_state === 1);
+      const queryPurchases = () => BillingService.queryPurchases({ email_address: user.email_address || "" });
+      const { purchases } = await retry(queryPurchases, 3, 1000, "checkSubscriptionStatus");
 
-      if (active_purchase) {
-        // Bevestig aankoop as dit nog nie bevestig is nie
-        if (!active_purchase.acknowledged) {
-          await this.acknowledgePurchase(active_purchase.purchase_token);
+      // Clear previous state
+      this.#purchases = [];
+      this.#subscription_details_map.clear();
+
+      // Process each active purchase
+      for (const purchase of purchases) {
+        if (!purchase.acknowledged) {
+          await this.acknowledgePurchase(purchase.purchase_token);
         }
 
-        // Stuur purchase token na backend vir verifikasie
-        // Backend sal kyk of die purchase se obfuscatedAccountId ooreenstem met user.email_address
-        const verificationResult = await this.verifyPurchaseWithBackend(active_purchase);
+        // Verify purchase with backend
+        const verificationResult = await this.verifyPurchaseWithBackend(purchase);
+        this.is_plus_user = verificationResult.isValid;
+        if (!verificationResult.isValid) continue;
 
-        if (verificationResult.isValid) {
-          this.#current_purchase = active_purchase;
-          this.#is_plus_user = true;
-          this.#subscription_details = verificationResult.details;
-        } else {
-          this.#is_plus_user = false;
-          this.#current_purchase = null;
-          this.#subscription_details = null;
+        purchase.title = purchase.title?.replace(/\(Doenit–Afrikaanse ToDo\/Taaklys\)$/, "");
+        this.#purchases.push(purchase);
+        if (verificationResult.details) {
+          this.#subscription_details_map.set(purchase.product_id, verificationResult.details);
         }
-      } else {
-        this.#is_plus_user = false;
-        this.#current_purchase = null;
       }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      alert(`Kon nie intekenstatus nagaan nie: ${error_message}`);
+      Alert.error(`Kon nie intekenstatus nagaan nie: ${error_message}`);
     }
   }
 
-  async subscribe() {
+  async subscribe(product_id: string) {
     if (!this.#initialized) {
       alert("Betalingsdiens is nie geïnitialiseer nie.");
       return;
@@ -174,7 +116,7 @@ class Billing {
     try {
       const result = await BillingService.startPurchase({
         email_address: user.email_address ?? "",
-        product_id: this.PRODUCT_ID,
+        product_id: product_id,
       });
 
       // Check if result and purchase_token exist
@@ -259,10 +201,26 @@ class Billing {
     }
   }
 
-  async reactivate() {
-    // Reactivating is done through Google Play Store
-    // Just refresh the subscription status to check if user has reactivated
-    await this.checkSubscriptionStatus();
+  async queryPurchases(): Promise<{ purchases: Purchase[] }> {
+    if (!Capacitor.isNativePlatform()) {
+      return { purchases: [] };
+    }
+
+    try {
+      const { purchases } = await BillingService.queryPurchases({
+        email_address: user.email_address ?? "",
+      });
+
+      for (let i = 0; i < purchases.length; i++) {
+        purchases[i].title = purchases[i].title?.replace(/\(Doenit–Afrikaanse ToDo\/Taaklys\)$/, "");
+      }
+
+      return { purchases };
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to query purchases:", error_message);
+      throw error;
+    }
   }
 }
 

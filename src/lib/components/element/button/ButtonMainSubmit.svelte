@@ -11,7 +11,7 @@
     "/complete": Home,
     "/categories": Home,
     "/daily-summary": Home,
-    "/plus": Home,
+    "/subscriptions": Home,
     "/settings": Home,
     "/[item_id]": Check,
   };
