@@ -9,6 +9,7 @@ import com.android.billingclient.api.QueryPurchasesParams;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsParams.Product;
 import com.android.billingclient.api.QueryProductDetailsParams.Product.Builder;
+import com.android.billingclient.api.AcknowledgePurchaseParams;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -377,9 +378,9 @@ public class BillingPlugin extends Plugin {
         }
 
         // Query product details for all purchased products
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder();
-        params.setProductList(product_list);
-        params.build();
+        QueryProductDetailsParams.Builder builder = QueryProductDetailsParams.newBuilder();
+        builder.setProductList(product_list);
+        QueryProductDetailsParams params = builder.build();
 
         billingClient.queryProductDetailsAsync(params, (productDetailsResult, productDetailsList) -> {
             JSArray purchasesArray = new JSArray();
@@ -444,9 +445,9 @@ public class BillingPlugin extends Plugin {
 
     private void acknowledgePurchaseInternal(PluginCall call) {
         String purchaseToken = call.getString("purchase_token");
-        AcknowledgePurchaseParams params = AcknowledgePurchaseParams.newBuilder();
-        params.setPurchaseToken(purchaseToken);
-        params.build();
+        AcknowledgePurchaseParams.Builder builder = AcknowledgePurchaseParams.newBuilder();
+        builder.setPurchaseToken(purchaseToken);
+        AcknowledgePurchaseParams params = builder.build();
 
         billingClient.acknowledgePurchase(params, billingResult -> {
             if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {

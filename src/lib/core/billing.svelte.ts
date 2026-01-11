@@ -19,7 +19,6 @@ class Billing {
   #initialized = $state(false);
   #products: Product[] = $state([]);
   #purchases: Purchase[] = $state([]);
-  #subscription_details_map: Map<string, SubscriptionDetails> = $state(new Map());
 
   is_plus_user = $state(false);
 
@@ -82,7 +81,6 @@ class Billing {
 
       // Clear previous state
       this.#purchases = [];
-      this.#subscription_details_map.clear();
 
       // Process each active purchase
       for (const purchase of purchases) {
@@ -92,14 +90,12 @@ class Billing {
 
         // Verify purchase with backend
         const verificationResult = await this.verifyPurchaseWithBackend(purchase);
-        this.is_plus_user = verificationResult.isValid;
-        if (!verificationResult.isValid) continue;
+        if (purchase.product_id === "doenit.plus" && verificationResult.isValid) {
+          this.is_plus_user = verificationResult.isValid;
+        }
 
         purchase.title = purchase.title?.replace(/\(Doenit–Afrikaanse ToDo\/Taaklys\)$/, "");
         this.#purchases.push(purchase);
-        if (verificationResult.details) {
-          this.#subscription_details_map.set(purchase.product_id, verificationResult.details);
-        }
       }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
