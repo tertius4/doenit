@@ -24,8 +24,8 @@
   import { navigating, page } from "$app/state";
   import { DB } from "$lib/DB";
   import "../app.css";
-  import { billing } from "$lib/core/billing.svelte";
   import LanguageSelector from "$lib/components/LanguageSelector.svelte";
+  import { BillingContext, setBillingContext } from "$lib/contexts/billing.svelte";
 
   let { children } = $props();
 
@@ -35,6 +35,7 @@
   const usersContext = setUsersContext(new UsersContext());
   const categoriesContext = setCategoriesContext(new CategoriesContext());
   const tasksContext = setTasksContext(new TasksContext());
+  const billingContext = setBillingContext(new BillingContext());
 
   /** @type {FirebaseUnsubscribe?} */
   let unsubscribeOnlineTasks = null;
@@ -52,6 +53,7 @@
   $effect(() => {
     user.is_logged_in;
 
+    untrack(() => billingContext.refresh());
     untrack(() => Backup.populateLastBackupTime());
     untrack(async () => {
       if (!user.is_logged_in) return;
@@ -180,7 +182,7 @@
 
   onMount(() => {
     categoriesContext.init();
-    window.addEventListener("online", () => billing.init());
+    window.addEventListener("online", () => billingContext.refresh());
   });
 
   onMount(() => {

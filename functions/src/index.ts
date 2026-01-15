@@ -414,7 +414,6 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
         subscription.expiry_time = verificationResult.expiryTime;
         subscription.auto_renewing = verificationResult.autoRenewing;
-        subscription.order_id = verificationResult.orderId;
         subscription.is_cancelled = verificationResult.isCancelled;
         subscription.cancel_reason = verificationResult.cancelReason || null;
         await saveSubscription(subscription);

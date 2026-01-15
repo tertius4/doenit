@@ -10,6 +10,12 @@ import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsParams.Product;
 import com.android.billingclient.api.QueryProductDetailsParams.Product.Builder;
 import com.android.billingclient.api.AcknowledgePurchaseParams;
+import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails;
+import com.android.billingclient.api.ProductDetails.PricingPhase;
+
+import static com.android.billingclient.api.BillingClient.BillingResponseCode;
+import static com.android.billingclient.api.BillingClient.ProductType;
+import static com.android.billingclient.api.Purchase.PurchaseState;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -26,486 +32,743 @@ import java.util.List;
 @CapacitorPlugin(name = "BillingService")
 public class BillingPlugin extends Plugin {
     private static final String TAG = "[Doenit BillingPlugin]";
-    private BillingClient billingClient;
-    private boolean isInitialized = false;
-    private PluginCall pendingPurchaseCall;
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 1000;
+    
+    private BillingClient billing_client;
+    private PluginCall pending_purchase_call;
 
-    private BillingClientStateListener createStateListener(PluginCall call, Runnable onSuccess) {
-        return new BillingClientStateListener() {
+    @PluginMethod
+    public void initialize(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            String msg = "Activity not available for billing";
+            Log.e(TAG, msg);
+            rejectWithError(call, "ACTIVITY_UNAVAILABLE", msg);
+            return;
+        }
+
+        BillingClient.Builder builder = BillingClient.newBuilder(activity);
+        builder.setListener(this::handlePurchaseUpdate);
+        builder.enablePendingPurchases();
+        billing_client = builder.build();
+
+        if (billing_client == null) {
+            String msg = "Failed to initialize billing client";
+            rejectWithError(call, "INIT_FAILED", msg);
+            return;
+        }
+
+        connectWithRetry(call, null, 0);
+    }
+
+    private void connectWithRetry(PluginCall call, Runnable on_success, int retry_count) {
+        BillingClientStateListener listener = new BillingClientStateListener() {
             @Override
-            public void onBillingSetupFinished(BillingResult billingResult) {
-                int response_code = billingResult.getResponseCode();
-                if (response_code != BillingClient.BillingResponseCode.OK) {
-                    Log.e(TAG, "Failed to initialize: " + billingResult.getDebugMessage());
-                    call.reject("Failed to initialize billing: " + billingResult.getDebugMessage());
+            public void onBillingSetupFinished(BillingResult billing_result) {
+                int code = billing_result.getResponseCode();
+                
+                if (code == BillingResponseCode.OK) {
+                    if (on_success != null) {
+                        on_success.run();
+                        return;
+                    }
+                    call.resolve();
                     return;
                 }
-
-                isInitialized = true;
-                if (onSuccess != null) {
-                    onSuccess.run();
-                } else {
-                    call.resolve();
+                
+                boolean should_retry = retry_count < MAX_RETRIES;
+                boolean can_retry = isRetryableError(code);
+                
+                if (!should_retry || !can_retry) {
+                    String msg = "Failed to initialize billing: ";
+                    msg += billing_result.getDebugMessage();
+                    rejectWithError(call, "CONNECTION_FAILED", msg);
+                    return;
                 }
+                
+                int attempt = retry_count + 1;
+                String log_msg = "Billing connection failed, retrying... ";
+                log_msg += "(" + attempt + "/" + MAX_RETRIES + ")";
+                Log.w(TAG, log_msg);
+                
+                Activity activity = getActivity();
+                if (activity == null) {
+                    return;
+                }
+                
+                activity.runOnUiThread(() -> {
+                    try {
+                        long delay = RETRY_DELAY_MS * (retry_count + 1);
+                        Thread.sleep(delay);
+                        connectWithRetry(call, on_success, attempt);
+                    } catch (InterruptedException e) {
+                        String msg = "Failed to initialize billing: ";
+                        msg += billing_result.getDebugMessage();
+                        rejectWithError(call, "CONNECTION_FAILED", msg);
+                    }
+                });
             }
 
             @Override
             public void onBillingServiceDisconnected() {
-                isInitialized = false;
                 Log.w(TAG, "Billing service disconnected");
             }
         };
+        
+        billing_client.startConnection(listener);
     }
 
-    private void initializeBillingClient() {
-        Activity activity = getActivity();
-        if (activity == null) {
-            Log.e(TAG, "Activity not available for billing client initialization");
+    private boolean isRetryableError(int code) {
+        if (code == BillingResponseCode.SERVICE_UNAVAILABLE) {
+            return true;
+        }
+        if (code == BillingResponseCode.SERVICE_DISCONNECTED) {
+            return true;
+        }
+        if (code == BillingResponseCode.ERROR) {
+            return true;
+        }
+        return false;
+    }
+
+    private void rejectWithError(PluginCall call, String error_code, String message) {
+        if (call == null) {
+            return;
+        }
+        
+        JSObject error = new JSObject();
+        error.put("code", error_code);
+        error.put("message", message);
+        call.reject(message, error);
+    }
+
+    private void handlePurchaseUpdate(BillingResult billing_result, List<Purchase> purchases) {
+        int response_code = billing_result.getResponseCode();
+
+        if (response_code == BillingResponseCode.USER_CANCELED) {
+            handleUserCancelled();
             return;
         }
 
-        PurchasesUpdatedListener purchasesUpdatedListener = (billingResult, purchases) -> {
-            handlePurchaseUpdate(billingResult, purchases);
-        };
+        if (response_code != BillingResponseCode.OK) {
+            handlePurchaseError(billing_result, response_code);
+            return;
+        }
 
-        BillingClient.Builder builder = BillingClient.newBuilder(activity)
-                .setListener(purchasesUpdatedListener)
-                .enablePendingPurchases();
+        if (purchases == null) {
+            return;
+        }
 
-        billingClient = builder.build();
+        int count = purchases.size();
+        String msg = "Purchase successful, processing " + count + " purchase(s)";
+        Log.d(TAG, msg);
+
+        for (Purchase purchase : purchases) {
+            processPurchase(purchase);
+        }
     }
 
-    private void reconnectAndExecute(PluginCall call, Runnable onSuccess) {
-        if (billingClient == null) {
-            Log.w(TAG, "Billing client is null, initializing...");
-            initializeBillingClient();
-            if (billingClient == null) {
-                call.reject("Failed to initialize billing client");
+    private void handleUserCancelled() {
+        Log.d(TAG, "User cancelled purchase");
+        
+        if (pending_purchase_call == null) {
+            return;
+        }
+
+        String msg = "User cancelled the purchase";
+        rejectWithError(pending_purchase_call, "USER_CANCELED", msg);
+        clearPendingPurchaseCall();
+    }
+
+    private void handlePurchaseError(BillingResult billing_result, int response_code) {
+        String msg = "Purchase failed: " + billing_result.getDebugMessage();
+        Log.e(TAG, msg);
+
+        if (pending_purchase_call == null) {
+            return;
+        }
+
+        String error_code = String.valueOf(response_code);
+        String error_msg = billing_result.getDebugMessage();
+        rejectWithError(pending_purchase_call, error_code, error_msg);
+        clearPendingPurchaseCall();
+    }
+
+    private void clearPendingPurchaseCall() {
+        pending_purchase_call = null;
+    }
+
+    private void processPurchase(Purchase purchase) {
+        int purchase_state = purchase.getPurchaseState();
+        boolean is_pending = purchase_state == PurchaseState.PENDING;
+
+        if (pending_purchase_call != null) {
+            JSObject result = new JSObject();
+            String token = purchase.getPurchaseToken();
+            List<String> products = purchase.getProducts();
+            String product_id = products.get(0);
+            String order_id = purchase.getOrderId();
+            
+            result.put("purchase_token", token);
+            result.put("product_id", product_id);
+            result.put("order_id", order_id);
+            result.put("pending", is_pending);
+            
+            pending_purchase_call.resolve(result);
+            clearPendingPurchaseCall();
+        }
+
+        if (is_pending) {
+            return;
+        }
+
+        if (purchase_state != PurchaseState.PURCHASED) {
+            return;
+        }
+
+        if (purchase.isAcknowledged()) {
+            return;
+        }
+
+        acknowledgePurchaseInternal(purchase);
+    }
+
+    private void acknowledgePurchaseInternal(Purchase purchase) {
+        String token = purchase.getPurchaseToken();
+        
+        AcknowledgePurchaseParams.Builder builder = AcknowledgePurchaseParams.newBuilder();
+        builder.setPurchaseToken(token);
+        AcknowledgePurchaseParams params = builder.build();
+
+        billing_client.acknowledgePurchase(params, result -> {
+            int code = result.getResponseCode();
+            
+            if (code == BillingResponseCode.OK) {
+                Log.d(TAG, "Purchase acknowledged successfully");
                 return;
             }
-        }
 
-        billingClient.startConnection(createStateListener(call, onSuccess));
+            String msg = "Failed to acknowledge purchase: ";
+            msg += result.getDebugMessage();
+            Log.e(TAG, msg);
+        });
     }
 
     @PluginMethod
-    public void initialize(PluginCall call) {
-        initializeBillingClient();
-        if (billingClient == null) {
-            call.reject("Failed to initialize billing client");
-            return;
-        }
-        billingClient.startConnection(createStateListener(call, null));
-    }
-
-    private void handlePurchaseUpdate(BillingResult billingResult, List<Purchase> purchases) {
-        int responseCode = billingResult.getResponseCode();
-
-        if (responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            Log.d(TAG, "Purchase successful, processing " + purchases.size() + " purchase(s)");
-            for (Purchase purchase : purchases) {
-                handlePurchase(purchase);
-            }
-        } else if (responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-            Log.d(TAG, "User cancelled purchase");
-            if (pendingPurchaseCall != null) {
-                JSObject error = new JSObject();
-                error.put("code", "USER_CANCELED");
-                error.put("message", "User cancelled the purchase");
-                pendingPurchaseCall.reject("User cancelled", error);
-                pendingPurchaseCall = null;
-            }
-        } else {
-            Log.e(TAG, "Purchase failed: " + billingResult.getDebugMessage());
-            if (pendingPurchaseCall != null) {
-                JSObject error = new JSObject();
-                error.put("code", String.valueOf(responseCode));
-                error.put("message", billingResult.getDebugMessage());
-                pendingPurchaseCall.reject("Purchase failed", error);
-                pendingPurchaseCall = null;
-            }
-        }
-    }
-
-    @PluginMethod
-    public void queryProductDetails(PluginCall call) {
-        if (!isInitialized || !billingClient.isReady()) {
-            reconnectAndExecute(call, () -> queryProductDetailsInternal(call));
+    public void queryProducts(PluginCall call) {
+        if (!billing_client.isReady()) {
+            Runnable retry = () -> queryProducts(call);
+            connectWithRetry(call, retry, 0);
             return;
         }
 
-        queryProductDetailsInternal(call);
-    }
-
-    private void queryProductDetailsInternal(PluginCall call) {
         JSArray product_ids = call.getArray("product_ids");
         if (product_ids == null) {
-            call.reject("Missing product_ids parameter");
+            String msg = "Missing product_ids parameter";
+            rejectWithError(call, "MISSING_PARAM", msg);
             return;
         }
 
-        List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
+        List<Product> product_list = buildProductList(call, product_ids);
+        if (product_list == null) {
+            return;
+        }
+
+        QueryProductDetailsParams.Builder builder = QueryProductDetailsParams.newBuilder();
+        builder.setProductList(product_list);
+        QueryProductDetailsParams params = builder.build();
+
+        billing_client.queryProductDetailsAsync(
+            params,
+            (result, details_list) -> {
+                handleProductDetailsResponse(call, result, details_list);
+            });
+    }
+
+    private List<Product> buildProductList(PluginCall call,JSArray product_ids) {
+        List<Product> product_list = new ArrayList<>();
+
         try {
-            for (int i = 0; i < product_ids.length(); i++) {
+            int count = product_ids.length();
+            for (int i = 0; i < count; i++) {
                 String product_id = product_ids.getString(i);
-                productList.add(
-                        QueryProductDetailsParams.Product.newBuilder()
-                                .setProductId(product_id)
-                                .setProductType(BillingClient.ProductType.SUBS)
-                                .build());
+                Product product = createProduct(product_id);
+                product_list.add(product);
             }
         } catch (JSONException e) {
             Log.e(TAG, "Invalid product IDs", e);
-            call.reject("Invalid product IDs", e);
+            String msg = "Invalid product IDs: " + e.getMessage();
+            rejectWithError(call, "INVALID_PARAMS", msg);
+            return null;
+        }
+
+        return product_list;
+    }
+
+    private Product createProduct(String product_id) {
+        Builder builder = QueryProductDetailsParams.Product.newBuilder();
+        builder.setProductId(product_id);
+        builder.setProductType(ProductType.SUBS);
+        return builder.build();
+    }
+
+    private void handleProductDetailsResponse(PluginCall call, BillingResult billing_result, List<ProductDetails> product_details_list) {
+        int response_code = billing_result.getResponseCode();
+        if (response_code != BillingResponseCode.OK) {
+            String msg = "Failed to query products: ";
+            msg += billing_result.getDebugMessage();
+            Log.e(TAG, msg);
+            String code = String.valueOf(response_code);
+            rejectWithError(call, code, msg);
             return;
         }
 
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(productList)
-                .build();
+        if (product_details_list == null) {
+            String msg = "No product details returned";
+            rejectWithError(call, "NO_PRODUCTS", msg);
+            return;
+        }
 
-        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                Log.e(TAG, "Failed to query products: " + billingResult.getDebugMessage());
-                call.reject("Failed to query products: " + billingResult.getDebugMessage());
-                return;
+        JSArray products = new JSArray();
+        for (ProductDetails details : product_details_list) {
+            JSObject product = buildProductObject(details);
+            if (product == null) {
+                continue;
             }
+            products.put(product);
+        }
 
-            JSArray products = new JSArray();
-            for (ProductDetails productDetails : productDetailsList) {
-                JSObject product = BillingUtils.productDetailsToJSObject(productDetails);
-                products.put(product);
-            }
+        JSObject result = new JSObject();
+        result.put("products", products);
+        call.resolve(result);
+    }
 
-            JSObject result = new JSObject();
-            result.put("products", products);
-            call.resolve(result);
-        });
+    private JSObject buildProductObject(ProductDetails details) {
+        List<SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+        if (offers == null || offers.isEmpty()) {
+            return null;
+        }
+
+        SubscriptionOfferDetails offer = offers.get(0);
+        List<PricingPhase> phases = 
+            offer.getPricingPhases().getPricingPhaseList();
+
+        if (phases == null || phases.isEmpty()) {
+            return null;
+        }
+
+        JSObject product = new JSObject();
+        String product_id = details.getProductId();
+        String title = details.getTitle();
+        String description = details.getDescription();
+        
+        product.put("product_id", product_id);
+        product.put("title", title);
+        product.put("description", description);
+
+        PricingPhase phase = phases.get(0);
+        String price = phase.getFormattedPrice();
+        long price_micros = phase.getPriceAmountMicros();
+        String currency = phase.getPriceCurrencyCode();
+        
+        product.put("price", price);
+        product.put("price_currency_code", currency);
+
+        return product;
     }
 
     @PluginMethod
     public void startPurchase(PluginCall call) {
-        if (!isInitialized || !billingClient.isReady()) {
-            reconnectAndExecute(call, () -> startPurchaseInternal(call));
+        if (!billing_client.isReady()) {
+            Runnable retry = () -> startPurchase(call);
+            connectWithRetry(call, retry, 0);
             return;
         }
-        startPurchaseInternal(call);
-    }
 
-    private void startPurchaseInternal(PluginCall call) {
         String product_id = call.getString("product_id");
         String email_address = call.getString("email_address");
 
         if (Utils.isEmpty(product_id)) {
-            call.reject("Missing product_id parameter");
+            String msg = "Missing product_id parameter";
+            rejectWithError(call, "MISSING_PARAM", msg);
             return;
         }
 
-        if (billingClient == null) {
-            call.reject("Billing client not initialized");
+        if (billing_client == null) {
+            String msg = "Billing client not initialized";
+            rejectWithError(call, "NOT_INITIALIZED", msg);
             return;
         }
 
-        // Replace any existing pending call
-        if (pendingPurchaseCall != null) {
-            Log.w(TAG, "Superseding existing pending purchase");
-            pendingPurchaseCall.reject("Purchase superseded by new purchase request");
-        }
-        pendingPurchaseCall = call;
+        pending_purchase_call = call;
 
-        // Query product details
-        List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
-        productList.add(
-                QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(product_id)
-                        .setProductType(BillingClient.ProductType.SUBS)
-                        .build());
+        List<Product> product_list = new ArrayList<>();
+        Product product = createProduct(product_id);
+        product_list.add(product);
 
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(productList)
-                .build();
+        QueryProductDetailsParams.Builder builder = QueryProductDetailsParams.newBuilder();
+        builder.setProductList(product_list);
+        QueryProductDetailsParams params = builder.build();
 
-        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                Log.e(TAG, "Failed to query product: " + billingResult.getDebugMessage());
-                rejectPendingPurchase("Failed to query product: " + billingResult.getDebugMessage());
-                return;
-            }
-
-            if (productDetailsList == null || productDetailsList.isEmpty()) {
-                rejectPendingPurchase("Product not found: " + product_id);
-                return;
-            }
-
-            ProductDetails productDetails = productDetailsList.get(0);
-            if (productDetails.getSubscriptionOfferDetails() == null ||
-                    productDetails.getSubscriptionOfferDetails().isEmpty()) {
-                rejectPendingPurchase("No subscription offers available for: " + product_id);
-                return;
-            }
-
-            launchBillingFlow(productDetails, email_address);
-        });
+        billing_client.queryProductDetailsAsync(
+            params,
+            (result, details_list) -> {
+                handleStartPurchaseResponse(
+                    result,
+                    details_list,
+                    product_id,
+                    email_address);
+            });
     }
 
-    private void launchBillingFlow(ProductDetails productDetails, String email_address) {
-        ProductDetails.SubscriptionOfferDetails offerDetails = productDetails.getSubscriptionOfferDetails().get(0);
+    private void handleStartPurchaseResponse(BillingResult billing_result, List<ProductDetails> product_details_list, String product_id, String email_address) {
+        int response_code = billing_result.getResponseCode();
+        
+        if (response_code != BillingResponseCode.OK) {
+            String msg = "Failed to query product: ";
+            msg += billing_result.getDebugMessage();
+            Log.e(TAG, msg);
+            rejectPendingPurchase("QUERY_FAILED", msg);
+            return;
+        }
 
-        List<BillingFlowParams.ProductDetailsParams> productDetailsParamsList = new ArrayList<>();
-        productDetailsParamsList.add(
-                BillingFlowParams.ProductDetailsParams.newBuilder()
-                        .setProductDetails(productDetails)
-                        .setOfferToken(offerDetails.getOfferToken())
-                        .build());
+        if (product_details_list == null || product_details_list.isEmpty()) {
+            String msg = "Product not found: " + product_id;
+            rejectPendingPurchase("PRODUCT_NOT_FOUND", msg);
+            return;
+        }
 
-        BillingFlowParams.Builder flowParamsBuilder = BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(productDetailsParamsList);
+        ProductDetails details = product_details_list.get(0);
+        List<SubscriptionOfferDetails> offers = 
+            details.getSubscriptionOfferDetails();
 
-        // Set obfuscated account ID if email provided
+        if (offers == null || offers.isEmpty()) {
+            String msg = "No subscription offers available for: " + product_id;
+            rejectPendingPurchase("NO_OFFERS", msg);
+            return;
+        }
+
+        SubscriptionOfferDetails offer = offers.get(0);
+        launchBillingFlow(details, offer, email_address);
+    }
+
+    private void launchBillingFlow(ProductDetails details, SubscriptionOfferDetails offer, String email_address) {
+        String offer_token = offer.getOfferToken();
+        
+        BillingFlowParams.ProductDetailsParams params = 
+            BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(details)
+                .setOfferToken(offer_token)
+                .build();
+
+        List<BillingFlowParams.ProductDetailsParams> params_list = 
+            new ArrayList<>();
+        params_list.add(params);
+
+        BillingFlowParams.Builder builder = BillingFlowParams.newBuilder();
+        builder.setProductDetailsParamsList(params_list);
+
         if (!Utils.isEmpty(email_address)) {
-            String hashedAccountId = BillingUtils.hashAccountId(email_address);
-            if (!Utils.isEmpty(hashedAccountId)) {
-                flowParamsBuilder.setObfuscatedAccountId(hashedAccountId);
+            String hashed = Utils.hashAccountId(email_address);
+            if (!Utils.isEmpty(hashed)) {
+                builder.setObfuscatedAccountId(hashed);
             }
         }
 
-        BillingFlowParams flowParams = flowParamsBuilder.build();
+        BillingFlowParams flow_params = builder.build();
         Activity activity = getActivity();
 
         if (activity == null) {
-            rejectPendingPurchase("Activity not available");
+            String msg = "Activity not available";
+            rejectPendingPurchase("ACTIVITY_UNAVAILABLE", msg);
             return;
         }
 
-        BillingResult launchResult = billingClient.launchBillingFlow(activity, flowParams);
-        if (launchResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-            Log.e(TAG, "Failed to launch billing flow: " + launchResult.getDebugMessage());
-            rejectPendingPurchase("Failed to launch billing flow: " + launchResult.getDebugMessage());
+        BillingResult result = 
+            billing_client.launchBillingFlow(activity, flow_params);
+        int code = result.getResponseCode();
+
+        if (code == BillingResponseCode.OK) {
+            return;
         }
+
+        String msg = "Failed to launch billing flow: ";
+        msg += result.getDebugMessage();
+        Log.e(TAG, msg);
+        rejectPendingPurchase("LAUNCH_FAILED", msg);
     }
 
-    private void rejectPendingPurchase(String message) {
-        if (pendingPurchaseCall != null) {
-            pendingPurchaseCall.reject(message);
-            pendingPurchaseCall = null;
+    private void rejectPendingPurchase(String error_code, String message) {
+        if (pending_purchase_call == null) {
+            return;
         }
+        
+        rejectWithError(pending_purchase_call, error_code, message);
+        clearPendingPurchaseCall();
     }
 
     @PluginMethod
     public void queryPurchases(PluginCall call) {
-        if (!isInitialized || !billingClient.isReady()) {
-            reconnectAndExecute(call, () -> queryPurchasesInternal(call));
+        if (!billing_client.isReady()) {
+            Runnable retry = () -> queryPurchases(call);
+            connectWithRetry(call, retry, 0);
             return;
         }
-        queryPurchasesInternal(call);
-    }
 
-    private void queryPurchasesInternal(PluginCall call) {
         String email_address = call.getString("email_address");
         if (Utils.isEmpty(email_address)) {
-            JSObject result = new JSObject();
-            result.put("purchases", new JSArray());
-            call.resolve(result);
+            resolveEmptyPurchases(call);
             return;
         }
 
-        String hashed_account_id = BillingUtils.hashAccountId(email_address);
+        String hashed_account_id = Utils.hashAccountId(email_address);
         if (Utils.isEmpty(hashed_account_id)) {
-            JSObject result = new JSObject();
-            result.put("purchases", new JSArray());
-            call.resolve(result);
+            resolveEmptyPurchases(call);
             return;
         }
 
-        String subs = BillingClient.ProductType.SUBS;
-        QueryPurchasesParams query_params = QueryPurchasesParams.newBuilder().setProductType(subs).build();
-        billingClient.queryPurchasesAsync(
-                query_params,
-                (billingResult, purchases) -> {
-                    if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                        Log.e(TAG, "Query purchases failed: " + billingResult.getDebugMessage());
-                        call.reject("Failed to query purchases: " + billingResult.getDebugMessage());
-                        return;
-                    }
+        QueryPurchasesParams.Builder builder = QueryPurchasesParams.newBuilder();
+        builder.setProductType(ProductType.SUBS);
+        QueryPurchasesParams params = builder.build();
 
-                    Log.d(TAG, "Query returned " + (purchases != null ? purchases.size() : 0) + " total purchases");
-                    List<Purchase> filtered_purchases = new ArrayList<>();
-                    for (Purchase purchase : purchases) {
-                        AccountIdentifiers identifiers = purchase.getAccountIdentifiers();
-                        if (identifiers == null) {
-                            continue;
-                        }
-
-                        String purchase_account_id = identifiers.getObfuscatedAccountId();
-                        if (!hashed_account_id.equals(purchase_account_id)) {
-                            continue;
-                        }
-
-                        filtered_purchases.add(purchase);
-
-                    }
-
-                    if (filtered_purchases.isEmpty()) {
-                        JSObject result = new JSObject();
-                        result.put("purchases", new JSArray());
-                        call.resolve(result);
-                        return;
-                    }
-
-                    queryPurchasesWithDetails(call, filtered_purchases);
-                });
-
+        billing_client.queryPurchasesAsync(
+            params,
+            (result, purchases) -> {
+                handleQueryPurchasesResponse(
+                    call,
+                    result,
+                    purchases,
+                    hashed_account_id);
+            });
     }
 
-    private void queryPurchasesWithDetails(PluginCall call, List<Purchase> purchases) {
-        // Collect all product IDs from purchases
+    private void resolveEmptyPurchases(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("purchases", new JSArray());
+        call.resolve(result);
+    }
+
+    private void handleQueryPurchasesResponse(PluginCall call, BillingResult billing_result, List<Purchase> purchases, String hashed_account_id) {
+        int response_code = billing_result.getResponseCode();
+        
+        if (response_code != BillingResponseCode.OK) {
+            String msg = "Query purchases failed: ";
+            msg += billing_result.getDebugMessage();
+            Log.e(TAG, msg);
+            String error_msg = "Failed to query purchases: " + msg;
+            String code = String.valueOf(response_code);
+            rejectWithError(call, code, error_msg);
+            return;
+        }
+
+        int total = purchases != null ? purchases.size() : 0;
+        Log.d(TAG, "Query returned " + total + " total purchases");
+
+        List<Purchase> filtered = filterPurchasesByAccount(purchases, hashed_account_id);
+
+        if (filtered.isEmpty()) {
+            resolveEmptyPurchases(call);
+            return;
+        }
+
+        List<Product> product_list = buildProductListFromPurchases(filtered);
+
+        QueryProductDetailsParams.Builder builder = QueryProductDetailsParams.newBuilder();
+        builder.setProductList(product_list);
+        QueryProductDetailsParams params = builder.build();
+
+        billing_client.queryProductDetailsAsync(
+            params,
+            (details_result, details_list) -> {
+                resolvePurchasesWithDetails(
+                    call,
+                    filtered,
+                    details_result,
+                    details_list);
+            });
+    }
+
+    private List<Purchase> filterPurchasesByAccount(List<Purchase> purchases, String hashed_account_id) {
+        List<Purchase> filtered = new ArrayList<>();
+
+        if (purchases == null) {
+            return filtered;
+        }
+
+        for (Purchase purchase : purchases) {
+            AccountIdentifiers identifiers = 
+                purchase.getAccountIdentifiers();
+            
+            if (identifiers == null) {
+                continue;
+            }
+
+            String purchase_account_id = identifiers.getObfuscatedAccountId();
+            if (!hashed_account_id.equals(purchase_account_id)) {
+                continue;
+            }
+            
+            filtered.add(purchase);
+        }
+
+        return filtered;
+    }
+
+    private List<Product> buildProductListFromPurchases(List<Purchase> purchases) {
         List<Product> product_list = new ArrayList<>();
 
         for (Purchase purchase : purchases) {
             List<String> products = purchase.getProducts();
+            
             if (products == null || products.isEmpty()) {
                 continue;
             }
 
             String product_id = products.get(0);
-
-            Builder productBuilder = QueryProductDetailsParams.Product.newBuilder();
-            productBuilder.setProductId(product_id);
-            productBuilder.setProductType(BillingClient.ProductType.SUBS);
-            Product product = productBuilder.build();
-
+            Product product = createProduct(product_id);
             product_list.add(product);
         }
 
-        // Query product details for all purchased products
-        QueryProductDetailsParams.Builder builder = QueryProductDetailsParams.newBuilder();
-        builder.setProductList(product_list);
-        QueryProductDetailsParams params = builder.build();
+        return product_list;
+    }
 
-        billingClient.queryProductDetailsAsync(params, (productDetailsResult, productDetailsList) -> {
-            JSArray purchasesArray = new JSArray();
+    private void resolvePurchasesWithDetails(PluginCall call, List<Purchase> purchases, BillingResult details_result, List<ProductDetails> details_list) {
+        JSArray purchases_array = new JSArray();
 
-            for (Purchase purchase : purchases) {
-                List<String> products = purchase.getProducts();
-                if (products == null || products.isEmpty()) {
-                    continue;
-                }
+        for (Purchase purchase : purchases) {
+            JSObject purchase_obj = buildPurchaseObject(
+                purchase,
+                details_result,
+                details_list);
 
-                // If purchase_state is not 1 (PURCHASED), skip adding product details
-                if (purchase.getPurchaseState() != Purchase.PurchaseState.PURCHASED) {
-                    continue;
-                }
+            if (purchase_obj == null) {
+                continue;
+            }
+            
+            purchases_array.put(purchase_obj);
+        }
 
-                String product_id = products.get(0);
+        JSObject result = new JSObject();
+        result.put("purchases", purchases_array);
+        call.resolve(result);
+    }
 
-                JSObject purchaseObj = new JSObject();
-                purchaseObj.put("product_id", product_id);
-                purchaseObj.put("purchase_token", purchase.getPurchaseToken());
-                purchaseObj.put("purchase_state", purchase.getPurchaseState());
-                purchaseObj.put("acknowledged", purchase.isAcknowledged());
-                purchaseObj.put("order_id", purchase.getOrderId());
-                purchaseObj.put("purchase_time", purchase.getPurchaseTime());
+    private JSObject buildPurchaseObject(Purchase purchase, BillingResult details_result, List<ProductDetails> details_list) {
+        List<String> products = purchase.getProducts();
+        if (products == null || products.isEmpty()) {
+            return null;
+        }
 
-                if (productDetailsList == null) {
-                    purchasesArray.put(purchaseObj);
-                    continue;
-                }
+        int purchase_state = purchase.getPurchaseState();
+        if (purchase_state != PurchaseState.PURCHASED) {
+            return null;
+        }
 
-                boolean details_found = productDetailsResult.getResponseCode() == BillingClient.BillingResponseCode.OK;
-                if (!details_found) {
-                    purchasesArray.put(purchaseObj);
-                    continue;
-                }
+        String product_id = products.get(0);
+        String purchase_token = purchase.getPurchaseToken();
+        boolean acknowledged = purchase.isAcknowledged();
+        String order_id = purchase.getOrderId();
+        long purchase_time = purchase.getPurchaseTime();
 
-                // Add product details if available
-                for (ProductDetails productDetails : productDetailsList) {
-                    if (productDetails.getProductId().equals(product_id)) {
-                        BillingUtils.addPricingToPurchase(purchaseObj, productDetails, product_id);
-                        break;
-                    }
-                }
+        JSObject obj = new JSObject();
+        obj.put("product_id", product_id);
+        obj.put("purchase_token", purchase_token);
+        obj.put("acknowledged", acknowledged);
+        obj.put("order_id", order_id);
+        obj.put("purchase_time", purchase_time);
 
-                purchasesArray.put(purchaseObj);
+        if (details_list == null) {
+            return obj;
+        }
+
+        int code = details_result.getResponseCode();
+        if (code != BillingResponseCode.OK) {
+            return obj;
+        }
+
+        for (ProductDetails details : details_list) {
+            String details_product_id = details.getProductId();
+            
+            if (!details_product_id.equals(product_id)) {
+                continue;
             }
 
-            JSObject result = new JSObject();
-            result.put("purchases", purchasesArray);
-            call.resolve(result);
-        });
+            String title = details.getTitle();
+            String description = details.getDescription();
+            obj.put("title", title);
+            obj.put("description", description);
+
+            List<SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+            
+            if (offers == null || offers.isEmpty()) {
+                return null;
+            }
+
+            SubscriptionOfferDetails offer = offers.get(0);
+            List<PricingPhase> phases = offer.getPricingPhases().getPricingPhaseList();
+            
+            if (phases == null || phases.isEmpty()) {
+                return null;
+            }
+
+            PricingPhase phase = phases.get(0);
+            String price = phase.getFormattedPrice();
+            long price_micros = phase.getPriceAmountMicros();
+            String currency = phase.getPriceCurrencyCode();
+            
+            obj.put("price", price);
+            obj.put("price_currency_code", currency);
+
+            break;
+        }
+
+        return obj;
     }
 
     @PluginMethod
     public void acknowledgePurchase(PluginCall call) {
-        if (!isInitialized || !billingClient.isReady()) {
-            reconnectAndExecute(call, () -> acknowledgePurchaseInternal(call));
+        if (!billing_client.isReady()) {
+            Runnable retry = () -> acknowledgePurchase(call);
+            connectWithRetry(call, retry, 0);
             return;
         }
-        acknowledgePurchaseInternal(call);
-    }
 
-    private void acknowledgePurchaseInternal(PluginCall call) {
-        String purchaseToken = call.getString("purchase_token");
+        String purchase_token = call.getString("purchase_token");
+        
+        if (Utils.isEmpty(purchase_token)) {
+            String msg = "Missing purchase_token parameter";
+            rejectWithError(call, "MISSING_PARAM", msg);
+            return;
+        }
+
         AcknowledgePurchaseParams.Builder builder = AcknowledgePurchaseParams.newBuilder();
-        builder.setPurchaseToken(purchaseToken);
+        builder.setPurchaseToken(purchase_token);
         AcknowledgePurchaseParams params = builder.build();
 
-        billingClient.acknowledgePurchase(params, billingResult -> {
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+        billing_client.acknowledgePurchase(params, result -> {
+            int code = result.getResponseCode();
+            
+            if (code == BillingResponseCode.OK) {
                 call.resolve();
-            } else {
-                call.reject("Failed to acknowledge purchase: " + billingResult.getDebugMessage());
+                return;
             }
+
+            String msg = "Failed to acknowledge purchase: ";
+            msg += result.getDebugMessage();
+            String error_code = String.valueOf(code);
+            rejectWithError(call, error_code, msg);
         });
-    }
-
-    private void handlePurchase(Purchase purchase) {
-        int purchaseState = purchase.getPurchaseState();
-
-        if (purchaseState == Purchase.PurchaseState.PURCHASED) {
-            resolvePurchase(purchase, false);
-            acknowledgePurchaseIfNeeded(purchase);
-        } else if (purchaseState == Purchase.PurchaseState.PENDING) {
-            resolvePurchase(purchase, true);
-        }
-    }
-
-    private void resolvePurchase(Purchase purchase, boolean isPending) {
-        if (pendingPurchaseCall != null) {
-            JSObject result = new JSObject();
-            result.put("purchase_token", purchase.getPurchaseToken());
-            result.put("product_id", purchase.getProducts().get(0));
-            result.put("order_id", purchase.getOrderId());
-            if (isPending) {
-                result.put("pending", true);
-            }
-            pendingPurchaseCall.resolve(result);
-            pendingPurchaseCall = null;
-        }
-    }
-
-    private void acknowledgePurchaseIfNeeded(Purchase purchase) {
-        if (!purchase.isAcknowledged()) {
-            AcknowledgePurchaseParams params = AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.getPurchaseToken())
-                    .build();
-
-            billingClient.acknowledgePurchase(params, billingResult -> {
-                if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                    Log.e(TAG, "Failed to acknowledge purchase: " + billingResult.getDebugMessage());
-                }
-            });
-        }
     }
 
     @Override
     protected void handleOnDestroy() {
-        if (billingClient != null && billingClient.isReady()) {
-            billingClient.endConnection();
+        clearPendingPurchaseCall();
+        
+        if (billing_client != null && billing_client.isReady()) {
+            billing_client.endConnection();
         }
-        if (pendingPurchaseCall != null) {
-            pendingPurchaseCall.reject("Plugin destroyed");
-            pendingPurchaseCall = null;
-        }
+
         super.handleOnDestroy();
     }
 }

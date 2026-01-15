@@ -10,8 +10,12 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Utils {
+
+    private static final String TAG = Const.LOG_TAG_DOENIT_UTILS;
 
     /**
      * Escapes a string for safe use in JavaScript by replacing single and double
@@ -143,5 +147,39 @@ public class Utils {
 
     public static boolean isEmpty(String value) {
         return value == null || value.trim().isEmpty() || value.equals("null");
+    }
+
+    /**
+     * Hashes a string using SHA-256 and returns the first 64 characters.
+     * Used for obfuscating account IDs in Google Play billing.
+     * 
+     * @param input The string to hash
+     * @return The hashed string truncated to 64 characters, or null if hashing
+     *         fails
+     */
+    public static String hashAccountId(String input) {
+        if (Utils.isEmpty(input)) {
+            return null;
+        }
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes());
+            StringBuilder hexString = new StringBuilder();
+
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            // Truncate to 64 characters (Google's max for obfuscatedAccountId)
+            return hexString.substring(0, Math.min(64, hexString.length()));
+        } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "Failed to hash account ID", e);
+            return null;
+        }
     }
 }

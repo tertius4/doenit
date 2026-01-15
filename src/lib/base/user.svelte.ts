@@ -4,7 +4,6 @@ import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getApp, initializeApp } from "$lib/chunk/firebase-app";
 import { APP_NAME, FIREBASE_CONFIG, normalize } from "$lib";
 import { Preferences } from "@capacitor/preferences";
-import { billing } from "$lib/core/billing.svelte";
 import { t } from "$lib/services/language.svelte";
 import { Capacitor } from "@capacitor/core";
 import { Device } from "@capacitor/device";
@@ -26,13 +25,17 @@ class UserState {
   #theme: Theme = $state("dark");
   #notifications: { enabled: boolean; time: string | null; past_tasks: boolean } | null = $state(null);
   #daily_summary: { enabled: boolean; time: string } | null = $state(null);
+  #products: Product[] = $state([]);
 
   #is_loading = $state(true);
 
   readonly is_logged_in = $derived(!!this.#uid);
   readonly is_developer = $derived(this.is_logged_in && PUBLIC_DEV_EMAILS.includes(this.#email_address || ""));
   readonly is_vip = $derived(this.is_logged_in && PUBLIC_VIP_EMAILS.includes(this.#email_address || ""));
-  readonly is_plus_user = $derived(this.is_logged_in && (billing.is_plus_user || this.is_vip));
+  readonly is_plus_bought = $derived(
+    this.products.some((p) => p.product_id === "doenit.plus" && !p.is_canceled && p.is_active)
+  );
+  readonly is_plus_user = $derived(this.is_logged_in && (this.is_plus_bought || this.is_vip));
 
   readonly is_friends_enabled: boolean = $derived(this.is_plus_user);
   readonly is_backup_enabled: boolean = $derived(this.is_plus_user);
@@ -113,6 +116,15 @@ class UserState {
     return this.#daily_summary ?? { enabled: false, time: "20:00" };
   }
 
+  get products() {
+    return this.#products;
+  }
+
+  set products(products: Product[]) {
+    this.#products = products;
+    this.saveUserData();
+  }
+
   async init() {
     await this.loadUser();
     this.#is_loading = false;
@@ -151,7 +163,6 @@ class UserState {
       const firebase_user = user_credential.user;
       if (firebase_user) {
         this.getToken = firebase_user.getIdToken.bind(firebase_user);
-        billing.getToken = firebase_user.getIdToken.bind(firebase_user);
 
         const user_data: Partial<User> = {
           uid: firebase_user.uid,
@@ -161,7 +172,6 @@ class UserState {
         };
 
         await this.sync(user_data);
-        await billing.init();
       }
 
       this.#is_loading = false;
@@ -191,8 +201,6 @@ class UserState {
       this.#email_address = null;
       this.#avatar = null;
       await Preferences.remove({ key: "user" });
-      
-      await billing.init();
 
       return { success: true };
     } catch (error) {
@@ -269,6 +277,7 @@ class UserState {
         this.#name = user.name || null;
         this.#email_address = user.email_address || null;
         this.#avatar = user.avatar || null;
+        this.#products = user.products || [];
       }
 
       // Initialize default settings if not set (first launch or cleared data)
@@ -307,9 +316,6 @@ class UserState {
         };
 
         await user.sync(user_data);
-
-        billing.getToken = this.getToken;
-        await billing.init();
       } catch (error) {
         const error_message = error instanceof Error ? error.message : JSON.stringify(error);
         alert(`Kon nie gebruiker sinchroniseer nie: ${error_message}`);
@@ -345,6 +351,7 @@ class UserState {
       theme: this.#theme,
       notifications: this.#notifications,
       daily_summary: this.#daily_summary,
+      products: this.#products,
     };
 
     await Preferences.set({

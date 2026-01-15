@@ -140,24 +140,27 @@
  * @property {string} title
  * @property {string} description
  * @property {string} price
- * @property {number} price_amount_micros
  * @property {string} price_currency_code
+ * @property {string} [purchase_token]
+ * @property {boolean} is_active
+ * @property {string} [verified_at]
+ * @property {boolean} is_canceled
+ * @property {Date} [expiry_date]
  */
 
 /**
  * For the Google Play Billing products.
  * @typedef {Object} Purchase
  * @property {string} product_id
- * @property {string} purchase_token
- * @property {number} purchase_state
- * @property {boolean} acknowledged
- * @property {string} order_id
- * @property {number} purchase_time
  * @property {string} title
  * @property {string} description
  * @property {string} price
- * @property {number} price_amount_micros
  * @property {string} price_currency_code
+ * @property {string} purchase_token
+ * @property {number} purchase_state
+ * @property {number} purchase_time
+ * @property {boolean} acknowledged
+ * @property {string} [verified_at]
  */
 
 /**
