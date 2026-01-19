@@ -31,9 +31,9 @@ class UserState {
 
   readonly is_logged_in = $derived(!!this.#uid);
   readonly is_developer = $derived(this.is_logged_in && PUBLIC_DEV_EMAILS.includes(this.#email_address || ""));
-  readonly is_vip = $derived(this.is_logged_in && PUBLIC_VIP_EMAILS.includes(this.#email_address || ""));
+  readonly is_vip = $derived(this.is_logged_in && true /* PUBLIC_VIP_EMAILS.includes(this.#email_address || "") */);
   readonly is_plus_bought = $derived(
-    this.products.some((p) => p.product_id === "doenit.plus" && !p.is_canceled && p.is_active)
+    this.products.some((p) => p.product_id === "doenit.plus" && !p.is_canceled && p.is_active),
   );
   readonly is_plus_user = $derived(this.is_logged_in && (this.is_plus_bought || this.is_vip));
 
@@ -289,9 +289,6 @@ class UserState {
       }
 
       this.updateAppTheme(this.#theme);
-      // if (!this.#notifications) {
-      //   await this.requestNotificationsPermission();
-      // }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       alert(`Kon nie gebruikerdata laai nie: ${error_message}`);

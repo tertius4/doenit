@@ -3,7 +3,7 @@
   import Backup from "./Backup.svelte";
   import Notifications from "./Notifications.svelte";
   import DailySummary from "./DailySummary.svelte";
-  import DoenitPlus from "./DoenitPlus.svelte";
+  // import DoenitPlus from "./DoenitPlus.svelte";
   import AppSettings from "./AppSettings.svelte";
   import Appearance from "./Appearance.svelte";
   import UserDisplay from "./UserDisplay.svelte";
@@ -27,7 +27,7 @@
   <Notifications />
   <DailySummary />
   <AppSettings />
-  <DoenitPlus />
+  <!-- <DoenitPlus /> -->
   <Backup />
   <About />
 </div>

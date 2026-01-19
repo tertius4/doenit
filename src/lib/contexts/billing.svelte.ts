@@ -18,8 +18,8 @@ interface BillingProduct {
 interface BillingPlugin {
   initialize(): Promise<void>;
   queryProducts(options: { product_ids: string[] }): Promise<{ products: BillingProduct[] }>;
-  startPurchase(options: { product_id: string; email_address: string }): Promise<{ purchase_token: string }>;
-  queryPurchases(options: { email_address: string }): Promise<{ purchases: Purchase[] }>;
+  startPurchase(options: { product_id: string; account_id: string }): Promise<{ purchase_token: string }>;
+  queryPurchases(options: { account_id: string }): Promise<{ purchases: Purchase[] }>;
   acknowledgePurchase(options: { purchase_token: string }): Promise<void>;
 }
 
@@ -30,8 +30,9 @@ export class BillingContext {
 
   async subscribe(product_id: string) {
     try {
+      if (!user.uid) throw new Error("Gebruiker nie aangemeld nie");
       const result = await BillingService.startPurchase({
-        email_address: user.email_address ?? "",
+        account_id: user.uid,
         product_id: product_id,
       });
 
@@ -48,7 +49,7 @@ export class BillingContext {
     } catch (error: any) {
       const error_message = error instanceof Error ? error.message : String(error);
       if (error_message !== "User cancelled") {
-        alert(`Kon nie 'subscribe' nie: ${error_message}`);
+        alert(`Kon nie inteken nie: ${error_message}`);
       }
     }
   }
@@ -57,6 +58,7 @@ export class BillingContext {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
+      if (!user.uid) throw new Error("Gebruiker nie aangemeld nie");
       if (!this.#is_initialized) {
         await BillingService.initialize();
         this.#is_initialized = true;
@@ -81,7 +83,9 @@ export class BillingContext {
         });
       }
 
-      const { purchases } = await BillingService.queryPurchases({ email_address: user.email_address || "" });
+      const { purchases } = await BillingService.queryPurchases({
+        account_id: user.uid,
+      });
       for (const purchase of purchases) {
         purchase.title = purchase.title.replace(/\(.*\)$/, "");
 
@@ -97,6 +101,10 @@ export class BillingContext {
         let verified_at = null;
         const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
         // Verifieer die aankoop met die backend, as dit langer as 'n week gelede was.
+
+        // Could not (yet) sync with google.
+        if (!user.getToken) return;
+
         if (!purchase.verified_at || Date.now() - +new Date(purchase.verified_at) > WEEK_IN_MS) {
           const result = await verifyPurchaseWithBackend(purchase);
           verified_at = new Date().toISOString();

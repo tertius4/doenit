@@ -1,6 +1,7 @@
 package doenit.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.util.Log;
 
 import com.android.billingclient.api.*;
@@ -34,7 +35,7 @@ public class BillingPlugin extends Plugin {
     private static final String TAG = "[Doenit BillingPlugin]";
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000;
-    
+
     private BillingClient billing_client;
     private PluginCall pending_purchase_call;
 
@@ -67,7 +68,7 @@ public class BillingPlugin extends Plugin {
             @Override
             public void onBillingSetupFinished(BillingResult billing_result) {
                 int code = billing_result.getResponseCode();
-                
+
                 if (code == BillingResponseCode.OK) {
                     if (on_success != null) {
                         on_success.run();
@@ -76,27 +77,27 @@ public class BillingPlugin extends Plugin {
                     call.resolve();
                     return;
                 }
-                
+
                 boolean should_retry = retry_count < MAX_RETRIES;
                 boolean can_retry = isRetryableError(code);
-                
+
                 if (!should_retry || !can_retry) {
                     String msg = "Failed to initialize billing: ";
                     msg += billing_result.getDebugMessage();
                     rejectWithError(call, "CONNECTION_FAILED", msg);
                     return;
                 }
-                
+
                 int attempt = retry_count + 1;
                 String log_msg = "Billing connection failed, retrying... ";
                 log_msg += "(" + attempt + "/" + MAX_RETRIES + ")";
                 Log.w(TAG, log_msg);
-                
+
                 Activity activity = getActivity();
                 if (activity == null) {
                     return;
                 }
-                
+
                 activity.runOnUiThread(() -> {
                     try {
                         long delay = RETRY_DELAY_MS * (retry_count + 1);
@@ -115,7 +116,7 @@ public class BillingPlugin extends Plugin {
                 Log.w(TAG, "Billing service disconnected");
             }
         };
-        
+
         billing_client.startConnection(listener);
     }
 
@@ -136,7 +137,7 @@ public class BillingPlugin extends Plugin {
         if (call == null) {
             return;
         }
-        
+
         JSObject error = new JSObject();
         error.put("code", error_code);
         error.put("message", message);
@@ -171,7 +172,7 @@ public class BillingPlugin extends Plugin {
 
     private void handleUserCancelled() {
         Log.d(TAG, "User cancelled purchase");
-        
+
         if (pending_purchase_call == null) {
             return;
         }
@@ -209,12 +210,12 @@ public class BillingPlugin extends Plugin {
             List<String> products = purchase.getProducts();
             String product_id = products.get(0);
             String order_id = purchase.getOrderId();
-            
+
             result.put("purchase_token", token);
             result.put("product_id", product_id);
             result.put("order_id", order_id);
             result.put("pending", is_pending);
-            
+
             pending_purchase_call.resolve(result);
             clearPendingPurchaseCall();
         }
@@ -236,14 +237,14 @@ public class BillingPlugin extends Plugin {
 
     private void acknowledgePurchaseInternal(Purchase purchase) {
         String token = purchase.getPurchaseToken();
-        
+
         AcknowledgePurchaseParams.Builder builder = AcknowledgePurchaseParams.newBuilder();
         builder.setPurchaseToken(token);
         AcknowledgePurchaseParams params = builder.build();
 
         billing_client.acknowledgePurchase(params, result -> {
             int code = result.getResponseCode();
-            
+
             if (code == BillingResponseCode.OK) {
                 Log.d(TAG, "Purchase acknowledged successfully");
                 return;
@@ -280,13 +281,13 @@ public class BillingPlugin extends Plugin {
         QueryProductDetailsParams params = builder.build();
 
         billing_client.queryProductDetailsAsync(
-            params,
-            (result, details_list) -> {
-                handleProductDetailsResponse(call, result, details_list);
-            });
+                params,
+                (result, details_list) -> {
+                    handleProductDetailsResponse(call, result, details_list);
+                });
     }
 
-    private List<Product> buildProductList(PluginCall call,JSArray product_ids) {
+    private List<Product> buildProductList(PluginCall call, JSArray product_ids) {
         List<Product> product_list = new ArrayList<>();
 
         try {
@@ -313,7 +314,8 @@ public class BillingPlugin extends Plugin {
         return builder.build();
     }
 
-    private void handleProductDetailsResponse(PluginCall call, BillingResult billing_result, List<ProductDetails> product_details_list) {
+    private void handleProductDetailsResponse(PluginCall call, BillingResult billing_result,
+            List<ProductDetails> product_details_list) {
         int response_code = billing_result.getResponseCode();
         if (response_code != BillingResponseCode.OK) {
             String msg = "Failed to query products: ";
@@ -351,8 +353,7 @@ public class BillingPlugin extends Plugin {
         }
 
         SubscriptionOfferDetails offer = offers.get(0);
-        List<PricingPhase> phases = 
-            offer.getPricingPhases().getPricingPhaseList();
+        List<PricingPhase> phases = offer.getPricingPhases().getPricingPhaseList();
 
         if (phases == null || phases.isEmpty()) {
             return null;
@@ -362,7 +363,7 @@ public class BillingPlugin extends Plugin {
         String product_id = details.getProductId();
         String title = details.getTitle();
         String description = details.getDescription();
-        
+
         product.put("product_id", product_id);
         product.put("title", title);
         product.put("description", description);
@@ -371,7 +372,7 @@ public class BillingPlugin extends Plugin {
         String price = phase.getFormattedPrice();
         long price_micros = phase.getPriceAmountMicros();
         String currency = phase.getPriceCurrencyCode();
-        
+
         product.put("price", price);
         product.put("price_currency_code", currency);
 
@@ -387,7 +388,7 @@ public class BillingPlugin extends Plugin {
         }
 
         String product_id = call.getString("product_id");
-        String email_address = call.getString("email_address");
+        String account_id = call.getString("account_id");
 
         if (Utils.isEmpty(product_id)) {
             String msg = "Missing product_id parameter";
@@ -412,19 +413,20 @@ public class BillingPlugin extends Plugin {
         QueryProductDetailsParams params = builder.build();
 
         billing_client.queryProductDetailsAsync(
-            params,
-            (result, details_list) -> {
-                handleStartPurchaseResponse(
-                    result,
-                    details_list,
-                    product_id,
-                    email_address);
-            });
+                params,
+                (result, details_list) -> {
+                    handleStartPurchaseResponse(
+                            result,
+                            details_list,
+                            product_id,
+                            account_id);
+                });
     }
 
-    private void handleStartPurchaseResponse(BillingResult billing_result, List<ProductDetails> product_details_list, String product_id, String email_address) {
+    private void handleStartPurchaseResponse(BillingResult billing_result, List<ProductDetails> product_details_list,
+            String product_id, String account_id) {
         int response_code = billing_result.getResponseCode();
-        
+
         if (response_code != BillingResponseCode.OK) {
             String msg = "Failed to query product: ";
             msg += billing_result.getDebugMessage();
@@ -440,8 +442,7 @@ public class BillingPlugin extends Plugin {
         }
 
         ProductDetails details = product_details_list.get(0);
-        List<SubscriptionOfferDetails> offers = 
-            details.getSubscriptionOfferDetails();
+        List<SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
 
         if (offers == null || offers.isEmpty()) {
             String msg = "No subscription offers available for: " + product_id;
@@ -450,30 +451,25 @@ public class BillingPlugin extends Plugin {
         }
 
         SubscriptionOfferDetails offer = offers.get(0);
-        launchBillingFlow(details, offer, email_address);
+        launchBillingFlow(details, offer, account_id);
     }
 
-    private void launchBillingFlow(ProductDetails details, SubscriptionOfferDetails offer, String email_address) {
+    private void launchBillingFlow(ProductDetails details, SubscriptionOfferDetails offer, String account_id) {
         String offer_token = offer.getOfferToken();
-        
-        BillingFlowParams.ProductDetailsParams params = 
-            BillingFlowParams.ProductDetailsParams.newBuilder()
+
+        BillingFlowParams.ProductDetailsParams params = BillingFlowParams.ProductDetailsParams.newBuilder()
                 .setProductDetails(details)
                 .setOfferToken(offer_token)
                 .build();
 
-        List<BillingFlowParams.ProductDetailsParams> params_list = 
-            new ArrayList<>();
+        List<BillingFlowParams.ProductDetailsParams> params_list = new ArrayList<>();
         params_list.add(params);
 
         BillingFlowParams.Builder builder = BillingFlowParams.newBuilder();
         builder.setProductDetailsParamsList(params_list);
 
-        if (!Utils.isEmpty(email_address)) {
-            String hashed = Utils.hashAccountId(email_address);
-            if (!Utils.isEmpty(hashed)) {
-                builder.setObfuscatedAccountId(hashed);
-            }
+        if (!Utils.isEmpty(account_id)) {
+            builder.setObfuscatedAccountId(account_id);
         }
 
         BillingFlowParams flow_params = builder.build();
@@ -485,8 +481,7 @@ public class BillingPlugin extends Plugin {
             return;
         }
 
-        BillingResult result = 
-            billing_client.launchBillingFlow(activity, flow_params);
+        BillingResult result = billing_client.launchBillingFlow(activity, flow_params);
         int code = result.getResponseCode();
 
         if (code == BillingResponseCode.OK) {
@@ -503,7 +498,7 @@ public class BillingPlugin extends Plugin {
         if (pending_purchase_call == null) {
             return;
         }
-        
+
         rejectWithError(pending_purchase_call, error_code, message);
         clearPendingPurchaseCall();
     }
@@ -516,14 +511,8 @@ public class BillingPlugin extends Plugin {
             return;
         }
 
-        String email_address = call.getString("email_address");
-        if (Utils.isEmpty(email_address)) {
-            resolveEmptyPurchases(call);
-            return;
-        }
-
-        String hashed_account_id = Utils.hashAccountId(email_address);
-        if (Utils.isEmpty(hashed_account_id)) {
+        String account_id = call.getString("account_id");
+        if (Utils.isEmpty(account_id)) {
             resolveEmptyPurchases(call);
             return;
         }
@@ -533,14 +522,14 @@ public class BillingPlugin extends Plugin {
         QueryPurchasesParams params = builder.build();
 
         billing_client.queryPurchasesAsync(
-            params,
-            (result, purchases) -> {
-                handleQueryPurchasesResponse(
-                    call,
-                    result,
-                    purchases,
-                    hashed_account_id);
-            });
+                params,
+                (result, purchases) -> {
+                    handleQueryPurchasesResponse(
+                            call,
+                            result,
+                            purchases,
+                            account_id);
+                });
     }
 
     private void resolveEmptyPurchases(PluginCall call) {
@@ -549,9 +538,10 @@ public class BillingPlugin extends Plugin {
         call.resolve(result);
     }
 
-    private void handleQueryPurchasesResponse(PluginCall call, BillingResult billing_result, List<Purchase> purchases, String hashed_account_id) {
+    private void handleQueryPurchasesResponse(PluginCall call, BillingResult billing_result, List<Purchase> purchases,
+            String hashed_account_id) {
         int response_code = billing_result.getResponseCode();
-        
+
         if (response_code != BillingResponseCode.OK) {
             String msg = "Query purchases failed: ";
             msg += billing_result.getDebugMessage();
@@ -579,17 +569,17 @@ public class BillingPlugin extends Plugin {
         QueryProductDetailsParams params = builder.build();
 
         billing_client.queryProductDetailsAsync(
-            params,
-            (details_result, details_list) -> {
-                resolvePurchasesWithDetails(
-                    call,
-                    filtered,
-                    details_result,
-                    details_list);
-            });
+                params,
+                (details_result, details_list) -> {
+                    resolvePurchasesWithDetails(
+                            call,
+                            filtered,
+                            details_result,
+                            details_list);
+                });
     }
 
-    private List<Purchase> filterPurchasesByAccount(List<Purchase> purchases, String hashed_account_id) {
+    private List<Purchase> filterPurchasesByAccount(List<Purchase> purchases, String account_id) {
         List<Purchase> filtered = new ArrayList<>();
 
         if (purchases == null) {
@@ -597,18 +587,17 @@ public class BillingPlugin extends Plugin {
         }
 
         for (Purchase purchase : purchases) {
-            AccountIdentifiers identifiers = 
-                purchase.getAccountIdentifiers();
-            
+            AccountIdentifiers identifiers = purchase.getAccountIdentifiers();
+
             if (identifiers == null) {
                 continue;
             }
 
             String purchase_account_id = identifiers.getObfuscatedAccountId();
-            if (!hashed_account_id.equals(purchase_account_id)) {
+            if (!account_id.equals(purchase_account_id)) {
                 continue;
             }
-            
+
             filtered.add(purchase);
         }
 
@@ -620,7 +609,7 @@ public class BillingPlugin extends Plugin {
 
         for (Purchase purchase : purchases) {
             List<String> products = purchase.getProducts();
-            
+
             if (products == null || products.isEmpty()) {
                 continue;
             }
@@ -633,19 +622,16 @@ public class BillingPlugin extends Plugin {
         return product_list;
     }
 
-    private void resolvePurchasesWithDetails(PluginCall call, List<Purchase> purchases, BillingResult details_result, List<ProductDetails> details_list) {
+    private void resolvePurchasesWithDetails(PluginCall call, List<Purchase> purchases, BillingResult details_result,
+            List<ProductDetails> details_list) {
         JSArray purchases_array = new JSArray();
 
         for (Purchase purchase : purchases) {
-            JSObject purchase_obj = buildPurchaseObject(
-                purchase,
-                details_result,
-                details_list);
-
+            JSObject purchase_obj = buildPurchaseObject(purchase, details_result, details_list);
             if (purchase_obj == null) {
                 continue;
             }
-            
+
             purchases_array.put(purchase_obj);
         }
 
@@ -654,7 +640,8 @@ public class BillingPlugin extends Plugin {
         call.resolve(result);
     }
 
-    private JSObject buildPurchaseObject(Purchase purchase, BillingResult details_result, List<ProductDetails> details_list) {
+    private JSObject buildPurchaseObject(Purchase purchase, BillingResult details_result,
+            List<ProductDetails> details_list) {
         List<String> products = purchase.getProducts();
         if (products == null || products.isEmpty()) {
             return null;
@@ -689,7 +676,7 @@ public class BillingPlugin extends Plugin {
 
         for (ProductDetails details : details_list) {
             String details_product_id = details.getProductId();
-            
+
             if (!details_product_id.equals(product_id)) {
                 continue;
             }
@@ -700,23 +687,23 @@ public class BillingPlugin extends Plugin {
             obj.put("description", description);
 
             List<SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-            
+
             if (offers == null || offers.isEmpty()) {
-                return null;
+                return obj;
             }
 
             SubscriptionOfferDetails offer = offers.get(0);
             List<PricingPhase> phases = offer.getPricingPhases().getPricingPhaseList();
-            
+
             if (phases == null || phases.isEmpty()) {
-                return null;
+                return obj;
             }
 
             PricingPhase phase = phases.get(0);
             String price = phase.getFormattedPrice();
             long price_micros = phase.getPriceAmountMicros();
             String currency = phase.getPriceCurrencyCode();
-            
+
             obj.put("price", price);
             obj.put("price_currency_code", currency);
 
@@ -735,7 +722,7 @@ public class BillingPlugin extends Plugin {
         }
 
         String purchase_token = call.getString("purchase_token");
-        
+
         if (Utils.isEmpty(purchase_token)) {
             String msg = "Missing purchase_token parameter";
             rejectWithError(call, "MISSING_PARAM", msg);
@@ -748,7 +735,7 @@ public class BillingPlugin extends Plugin {
 
         billing_client.acknowledgePurchase(params, result -> {
             int code = result.getResponseCode();
-            
+
             if (code == BillingResponseCode.OK) {
                 call.resolve();
                 return;
@@ -764,7 +751,7 @@ public class BillingPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         clearPendingPurchaseCall();
-        
+
         if (billing_client != null && billing_client.isReady()) {
             billing_client.endConnection();
         }

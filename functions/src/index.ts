@@ -6,7 +6,6 @@ import { google } from "googleapis";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { type App } from "firebase-admin/app";
 import { type DecodedIdToken } from "firebase-admin/auth";
-import * as crypto from "crypto";
 
 const app = getFirebaseStorage();
 
@@ -53,7 +52,7 @@ function getFirebaseStorage(): App {
   try {
     app = admin.app("doenitdb");
   } catch (error) {
-    functions.logger.info("Initializing secondary Firebase app", error);
+    functions.logger.info("Initializing Firebase app", error);
     const init = {
       projectId: "doenit2",
       storageBucket: "doenit2.firebasestorage.app",
@@ -64,32 +63,12 @@ function getFirebaseStorage(): App {
   return app;
 }
 
-/**
- * Hashes a string using SHA-256 and returns the first 64 characters.
- * Used for obfuscating account IDs in Google Play billing.
- * Matches the implementation in BillingUtils.java
- */
-function hashAccountId(input: string): string | null {
-  if (!input) {
-    return null;
-  }
-
-  try {
-    const hash = crypto.createHash("sha256").update(input).digest("hex");
-    // Truncate to 64 characters (Google's max for obfuscatedAccountId)
-    return hash.substring(0, Math.min(64, hash.length));
-  } catch (error) {
-    functions.logger.error("Failed to hash account ID", error);
-    return null;
-  }
-}
-
 // Helper function to verify Google Play purchase
 async function verifyGooglePlayPurchase(
   packageName: string,
   product_id: string,
   purchaseToken: string,
-  userEmail: string
+  user_id: string
 ) {
   try {
     // Initialize Google Auth with service account
@@ -123,8 +102,7 @@ async function verifyGooglePlayPurchase(
 
     // Check if the obfuscatedAccountId matches the user's email
     const obfuscatedAccountId = purchase?.obfuscatedExternalAccountId;
-    const hashedUserEmail = hashAccountId(userEmail);
-    const emailMatches = !obfuscatedAccountId || obfuscatedAccountId === hashedUserEmail;
+    const emailMatches = !obfuscatedAccountId || obfuscatedAccountId === user_id;
 
     // Check if subscription is cancelled but still active (not yet expired)
     const isCancelled = !!purchase?.cancelReason;
@@ -381,7 +359,7 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
           package_name,
           product_id,
           purchase_token,
-          user.email_address || decoded_token.email || ""
+          user.uid
         );
         functions.logger.info("Google Play verification result:", verificationResult);
         if (!verificationResult.isValid) {
