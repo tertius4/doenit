@@ -357,25 +357,6 @@ class UserState {
     });
   }
 
-  private async updateEdgeToEdgeColour() {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const { EdgeToEdge } = await import("@capawesome/capacitor-android-edge-to-edge-support");
-    const info = await Device.getInfo();
-    if (+info.osVersion < 15) {
-      await EdgeToEdge.disable();
-      return;
-    }
-
-    const theme_bg_colours = {
-      dark: "#2b2f31",
-      light: "#F5F5F5",
-    };
-
-    const bg_colour = theme_bg_colours[this.#theme];
-    await EdgeToEdge.setBackgroundColor({ color: bg_colour });
-  }
-
   private updateAppTheme(theme: Theme) {
     // Stel tema in die HTML-class
     const root = document.documentElement;
@@ -384,7 +365,6 @@ class UserState {
     document.documentElement.setAttribute("data-theme", theme);
 
     Widget.updateTheme(theme);
-    this.updateEdgeToEdgeColour();
   }
 
   async requestNotificationsPermission() {

@@ -1,0 +1,3 @@
+[submodule "src/lib/tools/user"]
+	path = src/lib/tools/user
+	url = git@github.com:tertius4/user.git

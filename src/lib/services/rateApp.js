@@ -25,13 +25,14 @@ class RateAppService {
         last_dismissed_date: null,
       };
     }
+    return Cached.rateUs.value;
   }
 
   async showRatingPrompt() {
-    if (!Cached.rateUs.value) return;
+    const tracking = this.init();
+    if (!tracking) return;
 
     try {
-      const tracking = Cached.rateUs.value;
       if (!tracking.last_dismissed_date) {
         tracking.last_dismissed_date = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
         Cached.rateUs.value = tracking;

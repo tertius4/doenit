@@ -40,3 +40,72 @@
 -assumenosideeffects class io.capawesome.capacitorjs.plugins.firebase.authentication.handlers.FacebookAuthProviderHandler {
     *;
 }
+
+# Capacitor core and plugins
+-keep class com.getcapacitor.** { *; }
+-keepclassmembers class * {
+    @com.getcapacitor.annotation.CapacitorPlugin *;
+}
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * {
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.PluginMethod public <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+}
+
+# Google Auth plugin
+-keep class com.codetrixstudio.capacitor.** { *; }
+
+# Google Play Services & Google Sign-In
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.gms.**
+
+# AndroidX Browser
+-keep class androidx.browser.** { *; }
+-dontwarn androidx.browser.**
+
+# Keep all AndroidX classes
+-keep class androidx.** { *; }
+-dontwarn androidx.**
+
+# Keep attributes for debugging
+-keepattributes SourceFile,LineNumberTable
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes Exceptions
+
+# Capacitor Filesystem plugin
+-keep class com.capacitorjs.plugins.filesystem.** { *; }
+-keepclassmembers class com.capacitorjs.plugins.filesystem.** { *; }
+
+# Keep HttpURLConnection related classes
+-keep class com.getcapacitor.plugin.util.** { *; }
+-dontwarn com.getcapacitor.plugin.util.**
+
+# Keep JSObject and related classes
+-keep class com.getcapacitor.JSObject { *; }
+-keep class com.getcapacitor.PluginCall { *; }
+-keep class com.getcapacitor.Bridge { *; }
+
+# Keep all Capacitor bridge classes
+-keep class com.getcapacitor.** { *; }
+-keepclassmembers class com.getcapacitor.** { *; }
+
+# Firebase Kotlin extensions
+-keep class com.google.firebase.ktx.** { *; }
+-dontwarn com.google.firebase.ktx.**
+-keep class com.google.firebase.analytics.ktx.** { *; }
+-dontwarn com.google.firebase.analytics.ktx.**
+-keep class com.google.firebase.messaging.ktx.** { *; }
+-dontwarn com.google.firebase.messaging.ktx.**
+-keep class com.google.firebase.auth.ktx.** { *; }
+-dontwarn com.google.firebase.auth.ktx.**
+
+# Keep all Firebase classes
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# Kotlin metadata
+-keepattributes RuntimeVisibleAnnotations
+-keep class kotlin.Metadata { *; }
+-keep class kotlin.** { *; }
+-dontwarn kotlin.**

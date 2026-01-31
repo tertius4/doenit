@@ -1,4 +1,5 @@
 <script>
+  import Icon from "$lib/components/element/Icon.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import { ArrowLeft, ArrowRight } from "$lib/icon";
   import { t } from "$lib/services/language.svelte";
@@ -58,7 +59,7 @@
     class="px-4 py-2 bg-surface rounded-lg"
     aria-label={t("previous_day")}
   >
-    <ArrowLeft class="text-xl" />
+    <Icon name="arrow-left" class="w-4 h-4" />
   </button>
 
   <div class="flex-1 text-center">
@@ -72,6 +73,6 @@
     class="px-4 py-2 bg-surface rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
     aria-label={t("next_day")}
   >
-    <ArrowRight class="text-xl" />
+    <Icon name="arrow-right" class="w-4 h-4" />
   </button>
 </header>

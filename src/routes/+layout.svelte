@@ -1,5 +1,6 @@
 <script>
   import { CategoriesContext, setCategoriesContext } from "$lib/contexts/categories.svelte";
+  import { user as newUser } from "$lib/core/user.svelte";
   import { pushNotificationService } from "$lib/services/pushNotifications.svelte";
   import { UsersContext, setUsersContext } from "$lib/contexts/users.svelte";
   import { setTasksContext, TasksContext } from "$lib/contexts/tasks.svelte";
@@ -26,6 +27,7 @@
   import "../app.css";
   import LanguageSelector from "$lib/components/LanguageSelector.svelte";
   import { BillingContext, setBillingContext } from "$lib/contexts/billing.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   let { children } = $props();
 
@@ -93,7 +95,7 @@
           (online_users) => DB.User.sync(online_users, usersContext.users),
           {
             filters: [{ field: "email_address", operator: "in", value: user_email_addresses }],
-          }
+          },
         );
       } catch (error) {
         const error_message = error instanceof Error ? error.message : String(error);
@@ -312,7 +314,7 @@
 <div class="text-md h-dvh relative flex flex-col text-normal bg-page **:select-none **:transition-all **:duration-300">
   <Heading />
 
-  <main class="max-w-[1000px] scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
+  <main class="max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
     {@render children()}
   </main>
 

@@ -19,23 +19,6 @@
   /** @type {Props & { [key: string]: any }} */
   let { is_open = $bindable(true), children, close_button = true, onclose, ...rest } = $props();
 
-  $effect(() => {
-    is_open;
-
-    untrack(async () => {
-      if (!Capacitor.isNativePlatform()) return;
-
-      const info = await Device.getInfo();
-      if (+info.osVersion <= 14) return;
-
-      // TODO Get the colour of the white over black/50 and (dark theme).
-      const { EdgeToEdge } = await import("@capawesome/capacitor-android-edge-to-edge-support");
-      EdgeToEdge.setBackgroundColor({
-        color: user.theme === "dark" ? "#2b2f31" : "#F5F5F5",
-      });
-    });
-  });
-
   onMount(() => {
     const token = backHandler.register(() => {
       if (is_open) {

@@ -1,6 +1,7 @@
 <script>
   import { navigating, page } from "$app/state";
-  import { Loading, Back } from "$lib/icon";
+  import { Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   const { onclick, ...rest } = $props();
 
@@ -14,7 +15,7 @@
       {#if navigating.to}
         <Loading />
       {:else if !is_home}
-        <Back class="text-2xl" />
+        <Icon name="arrow-left" />
       {/if}
     </div>
   </button>
