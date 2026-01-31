@@ -7,7 +7,7 @@
   import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
   import { user } from "$lib/base/user.svelte";
   import { Alert } from "$lib/core/alert";
-  import { Info } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import GetDoenitPlus from "$lib/components/GetDoenitPlus.svelte";
 
   const has_backup = $derived(Backup.last_backup_at !== t("never"));
@@ -78,7 +78,7 @@
         }}
       >
         <div class="flex gap-1 items-center">
-          <Info class="text-lg" />
+          <Icon name="info" class="text-lg" />
           <p class="leading-none font-semibold">{t("warning")}:</p>
         </div>
         <p class="leading-none">{t("backup_photos_warning")}</p>

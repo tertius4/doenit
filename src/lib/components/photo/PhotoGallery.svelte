@@ -3,7 +3,7 @@
   import { Photos } from "$lib/services/photos.svelte";
   import { t } from "$lib/services/language.svelte";
   import { CameraSource } from "@capacitor/camera";
-  import { Camera, Gallery, Trash, X } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { slide } from "svelte/transition";
   import { getContext, onMount } from "svelte";
   import Modal from "../modal/Modal.svelte";
@@ -124,7 +124,7 @@
       disabled={is_loading}
       class="absolute z-2 bottom-4 left-4 flex justify-center bg-card items-center aspect-square rounded-full h-13 w-13 p-3 disabled:opacity-50"
     >
-      <Camera />
+      <Icon name="camera" />
     </button>
   {/if}
 
@@ -148,7 +148,7 @@
             class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center"
             aria-label={t("delete_photo")}
           >
-            <X class="w-4 h-4" />
+            <Icon name="times" class="w-4 h-4" />
           </button>
         </div>
       {/each}
@@ -174,7 +174,7 @@
       disabled={is_loading}
       class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
     >
-      <Gallery />
+      <Icon name="gallery" />
       <span>{t("gallery")}</span>
     </button>
     <button
@@ -183,7 +183,7 @@
       disabled={is_loading}
       class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
     >
-      <Camera />
+      <Icon name="camera" />
       <span>{t("take_photo")}</span>
     </button>
   </div>
@@ -224,7 +224,7 @@
 <Modal bind:is_open={is_deleting_photo}>
   <h2 class="font-bold text-lg">{t("delete_photo")}</h2>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={removePhoto}>
-    <Trash class="h-full" size={18} />
+    <Icon name="trash" class="h-full" />
     <span>{t("delete")}</span>
   </button>
 </Modal>

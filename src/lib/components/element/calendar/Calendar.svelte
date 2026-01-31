@@ -1,9 +1,7 @@
 <script>
   import { slide } from "svelte/transition";
   import CalendarMonth from "./CalendarMonth.svelte";
-  import ChevronLeft from "$lib/icon/ChevronLeft.svelte";
-  import ChevronRight from "$lib/icon/ChevronRight.svelte";
-  import DownChevron from "$lib/icon/DownChevron.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { untrack } from "svelte";
   import { DateUtil } from "$lib/core/date_util";
@@ -152,7 +150,7 @@
       onclick={previousMonth}
       type="button"
     >
-      <ChevronLeft class="w-5 h-5" />
+      <Icon name="chevron-left" class="w-5 h-5" />
     </button>
 
     <div class="flex items-center flex-1 justify-between">
@@ -167,7 +165,7 @@
         type="button"
       >
         {current_month_name}
-        <DownChevron class="w-4 h-4 {is_month_picker_open ? 'rotate-180' : ''}" />
+        <Icon name="chevron-down" class="w-4 h-4 {is_month_picker_open ? 'rotate-180' : ''}" />
       </button>
 
       {#if DateUtil.format(current_month, "MM-YYYY") !== DateUtil.format(goToToday(), "MM-YYYY")}
@@ -189,7 +187,7 @@
       onclick={nextMonth}
       type="button"
     >
-      <ChevronRight class="w-5 h-5" />
+      <Icon name="chevron-right" class="w-5 h-5" />
     </button>
   </div>
 
@@ -224,7 +222,7 @@
             type="button"
           >
             {current_month.getFullYear()}
-            <DownChevron class="w-4 h-4 transition-transform duration-200 {is_year_picker_open ? 'rotate-180' : ''}" />
+            <Icon name="chevron-down" class="w-4 h-4 transition-transform duration-200 {is_year_picker_open ? 'rotate-180' : ''}" />
           </button>
         </div>
       </div>

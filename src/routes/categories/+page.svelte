@@ -1,13 +1,12 @@
 <script>
   import InputText from "$lib/components/element/input/InputText.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
-  import { getUsersContext } from "$lib/contexts/users.svelte";
   import { backHandler } from "$lib/BackHandler.svelte";
   import { t } from "$lib/services/language.svelte";
   import CardCategory from "./CardCategory.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { goto } from "$app/navigation";
-  import { Plus } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { onMount, untrack } from "svelte";
   import { DB } from "$lib/DB";
   import { getTasksContext } from "$lib/contexts/tasks.svelte";
@@ -80,7 +79,7 @@
       />
 
       <button class="h-full rounded-lg bg-card border border-default px-4 py-2 font-medium focus:outline-none">
-        <Plus />
+        <Icon name="plus" />
       </button>
     </form>
   </div>

@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
   import Modal from "../modal/Modal.svelte";
   import { slide } from "svelte/transition";
-  import { Check } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { SvelteSet } from "svelte/reactivity";
   import ButtonClear from "../element/button/ButtonClear.svelte";
   import { t } from "$lib/services/language.svelte";
@@ -153,6 +153,10 @@
     temp_specific_days.clear();
   }
 
+  /**
+   * 
+   * @param {number} index
+   */
   function toggleDay(index) {
     if (temp_specific_days.has(index)) {
       temp_specific_days.delete(index);
@@ -234,7 +238,7 @@
       type="button"
       onclick={save}
     >
-      <Check size={18} />
+      <Icon name="check" />
       <span>{t("confirm")}</span>
     </button>
   </footer>

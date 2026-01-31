@@ -1,8 +1,7 @@
 <script>
-  import { DownChevron, Lock } from "$lib/icon";
   import { slide } from "svelte/transition";
   import { t } from "$lib/services/language.svelte";
-  import Loading from "$lib/icon/Loading.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   /**
    * @typedef {Object} Props
@@ -45,9 +44,9 @@
   >
     <div class="flex items-center gap-2">
       {#if loading}
-        <Loading class="text-lg" />
+        <Icon name="loading" class="animate-spin text-lg" />
       {:else if disabled}
-        <Lock class="text-lg" />
+        <Icon name="lock" class="text-lg" />
       {/if}
       <span class="font-semibold text-lg">
         {label}
@@ -60,7 +59,7 @@
     </div>
 
     {#if !disabled || loading}
-      <DownChevron class="text-xl {show ? 'rotate-180' : ''}" />
+      <Icon name="down-chevron" class="text-xl {show ? 'rotate-180' : ''}" />
     {/if}
   </button>
 

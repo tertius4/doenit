@@ -4,7 +4,7 @@
   import { fade } from "svelte/transition";
   import { Selected } from "$lib/selected.svelte";
   import Modal from "./modal/Modal.svelte";
-  import { Trash } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { page } from "$app/state";
   import { DB } from "$lib/DB";
 
@@ -48,7 +48,7 @@
       onclick={() => (is_deleting = true)}
       type="button"
     >
-      <Trash class="text-xl m-auto" />
+      <Icon name="trash" class="text-xl m-auto" />
     </button>
   {/if}
 </div>
@@ -63,7 +63,7 @@
     type="submit"
     onclick={deleteAll}
   >
-    <Trash class="h-full" size={18} />
+    <Icon name="trash" class="h-full" />
     <span>{t("delete")}</span>
   </button>
 </Modal>

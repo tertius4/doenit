@@ -1,6 +1,6 @@
 <script>
   import Modal from "$lib/components/modal/Modal.svelte";
-  import { Info, Loading, Restore, Trash } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import { slide } from "svelte/transition";
@@ -53,9 +53,9 @@
   onclick={() => handleOpen()}
 >
   {#if is_restoring}
-    <Loading class="text-3xl mx-1 my-auto" />
+    <Icon name="loading" class="animate-spin text-3xl mx-1 my-auto" />
   {:else}
-    <Restore class="text-3xl mx-1 my-auto" />
+    <Icon name="restore" class="text-3xl mx-1 my-auto" />
   {/if}
 
   <p class="font-medium">
@@ -78,7 +78,7 @@
     <div transition:slide class="text-sm bg-error/10 border border-error rounded-lg p-3 space-y-2 mt-4">
       <span class="text-sm flex flex-col gap-1">
         <span class="flex items-center gap-2">
-          <Trash class="text-error text-xl" />
+          <Icon name="trash" class="text-error text-xl" />
           <p class="font-semibold text-lg text-error">{t("warning")}</p>
         </span>
 
@@ -92,7 +92,7 @@
       transition:slide
       onclick={handleClick}
     >
-      <Restore class="text-xl" />
+      <Icon name="restore" class="text-xl" />
       {t("confirm_restore")}
     </button>
   {/if}

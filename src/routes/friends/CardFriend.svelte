@@ -3,7 +3,7 @@
   import CardFriend from "$lib/components/element/card/CardFriend.svelte";
   import Modal from "$lib/components/modal/Modal.svelte";
   import { Alert } from "$lib/core/alert";
-  import { Leave } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { user as current_user } from "$lib/base/user.svelte";
   import { t } from "$lib/services/language.svelte";
 
@@ -51,7 +51,7 @@
       </Button>
     {:else}
       <Button class="bg-card" onclick={() => handleLeaveUser(user)}>
-        <Leave class="h-full" />
+        <Icon name="leave" class="h-full" />
         <span>{t('leave_friend')}</span>
       </Button>
       <span>{t('note_still_sharing_categories')}</span>

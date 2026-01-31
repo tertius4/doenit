@@ -1,5 +1,5 @@
 <script>
-  import { Times } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { tick, untrack } from "svelte";
   import { language } from "$lib/services/language.svelte";
 
@@ -91,7 +91,7 @@
           is_focused = false;
         }}
       >
-        <Times size={18} />
+        <Icon name="times" />
       </button>
     {/if}
   </div>

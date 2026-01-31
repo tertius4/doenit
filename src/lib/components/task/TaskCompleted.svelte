@@ -5,7 +5,7 @@
   import ItemName from "./ItemName.svelte";
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import TaskDueDate from "./TaskDueDate.svelte";
-  import { Categories, Sync } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import TaskContainer from "./TaskContainer.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import { DB } from "$lib/DB";
@@ -78,7 +78,7 @@
           "bg-surface": !is_selected,
         }}
       >
-        <Categories class="w-sm h-sm" />
+        <Icon name="categories" class="w-sm h-sm" />
         <span>{category.name}</span>
       </div>
     {/if}
@@ -86,7 +86,7 @@
 
   {#if task.completed > 1}
     <div class="absolute top-1 right-2 flex gap-1 opacity-50 font-semibold">
-      <Sync class="w-sm h-sm my-auto" />
+      <Icon name="sync" class="w-sm h-sm my-auto" />
       <span>×</span>
       <span>{task.completed}</span>
     </div>

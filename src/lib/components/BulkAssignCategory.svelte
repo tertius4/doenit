@@ -3,7 +3,7 @@
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { getUsersContext } from "$lib/contexts/users.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Categories, Plus } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import Modal from "./modal/Modal.svelte";
   import { Selected } from "$lib/selected.svelte";
   import { user } from "$lib/base/user.svelte";
@@ -69,7 +69,7 @@
     class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
   >
     <span>{t("bulk_assign_category")}</span>
-    <Categories />
+    <Icon name="categories" />
   </button>
 
   <Modal bind:is_open>
@@ -139,7 +139,7 @@
           is_open = false;
         }}
       >
-        <Plus />
+        <Icon name="plus" />
         <span class="block font-medium my-2">{t("add_category")}</span>
       </button>
     </div>

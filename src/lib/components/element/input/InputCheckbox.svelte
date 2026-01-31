@@ -1,7 +1,7 @@
 <script>
   import { LongPress } from "$lib/services/long_press.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Check } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   let {
     tick_animation = $bindable(false),
@@ -40,7 +40,7 @@
     }}
   >
     {#if is_checked}
-      <Check class="text-alt text-lg" />
+      <Icon name="check" class="text-alt text-lg" />
     {/if}
   </div>
 </button>

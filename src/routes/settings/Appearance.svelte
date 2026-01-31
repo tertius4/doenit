@@ -1,7 +1,7 @@
 <script>
   import ButtonLanguage from "$lib/components/element/button/ButtonLanguage.svelte";
   import ButtonTextSize from "$lib/components/element/button/ButtonTextSize.svelte";
-  import { Moon, Sun } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t, language } from "$lib/services/language.svelte";
   import Accordion from "$lib/components/element/Accordion.svelte";
   import { text } from "$lib/services/text.svelte";
@@ -35,7 +35,7 @@
     >
       <div class="relative w-full">
         <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
-          <Sun variant={user.theme === "light" ? "filled" : "outline"} />
+          <Icon name="sun" />
           <span class="font-medium">{t("light_theme")}</span>
         </div>
       </div>
@@ -43,7 +43,7 @@
       <div class="relative w-full">
         <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
           <span class="font-medium">{t("dark_theme")}</span>
-          <Moon variant={user.theme === "dark" ? "filled" : "outline"} />
+          <Icon name="moon" />
         </div>
       </div>
 

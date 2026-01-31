@@ -5,7 +5,7 @@
   import { slide } from "svelte/transition";
   import { DateUtil } from "$lib/core/date_util";
   import Button from "./element/button/Button.svelte";
-  import { Check } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { onMount, untrack } from "svelte";
   import { t } from "$lib/services/language.svelte";
   import ButtonClear from "./element/button/ButtonClear.svelte";
@@ -164,7 +164,7 @@
       enable_range = false;
     }}
   >
-    <Check />
+    <Icon name="check" />
     <span>{t("confirm")}</span>
   </Button>
 </Modal>

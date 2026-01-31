@@ -12,7 +12,7 @@
   import DatePicker from "./DatePicker.svelte";
   import { slide } from "svelte/transition";
   import { user } from "$lib/base/user.svelte";
-  import { Important } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { tick } from "svelte";
   import UserPicker from "./UserPicker.svelte";
   import { Selected } from "$lib/selected.svelte";
@@ -90,7 +90,7 @@
 
   <div>
     <div class="grid grid-cols-[40px_auto_128px] py-2 border-y border-default">
-      <Important class="m-auto" />
+      <Icon name="important" class="m-auto" />
       <div class="flex flex-col">
         <span class="font-semibold">{t("is_this_important")}</span>
         <span class="italic">{t("this_will_appear_higher")}</span>
@@ -106,7 +106,7 @@
           task.important = !task.important;
         }}
       >
-        <Important />
+        <Icon name="important" />
         <span>{t("important")}</span>
       </Button>
     </div>

@@ -2,7 +2,7 @@
   import InputText from "../element/input/InputText.svelte";
   import { t } from "$lib/services/language.svelte";
   import Modal from "./Modal.svelte";
-  import { Plus } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { DB } from "$lib/DB";
 
   /**
@@ -57,7 +57,7 @@
   />
 
   <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto mt-4" type="submit">
-    <Plus size={18} />
+    <Icon name="plus" />
     <span>{t("create")}</span>
   </button>
 </Modal>

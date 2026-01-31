@@ -1,6 +1,6 @@
 <script>
   import { getUsersContext } from "$lib/contexts/users.svelte";
-  import { Check } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { SvelteSet } from "svelte/reactivity";
   import CardFriend from "../../routes/categories/CardFriend.svelte";
   import Modal from "./modal/Modal.svelte";
@@ -132,7 +132,7 @@
   {/if}
 
   <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-lg ml-auto" type="submit">
-    <Check class="h-full" size={18} />
+    <Icon name="check" class="h-full" />
     <span>{t("save")}</span>
   </button>
 </Modal>

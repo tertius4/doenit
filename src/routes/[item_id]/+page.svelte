@@ -10,7 +10,7 @@
   import { Alert } from "$lib/core/alert.js";
   import { goto } from "$app/navigation";
   import { setContext } from "svelte";
-  import { Trash } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { DB } from "$lib/DB.js";
 
   const { data } = $props();
@@ -130,7 +130,7 @@
   }}
   aria-label={t("close")}
 >
-  <Trash class="text-2xl text-error" />
+  <Icon name="trash" class="text-2xl text-error" />
 </button>
 
 <SaveChanges original={data.task} changed={task} onsave={updateTask} />
@@ -154,7 +154,7 @@
   <h2 class="font-bold text-lg">{t("delete_task")}</h2>
   <p>{t("delete_task_confirmation")}</p>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={deleteTask}>
-    <Trash class="h-full" size={18} />
+    <Icon name="trash" class="h-full" />
     <span>{t("delete")}</span>
   </button>
 </Modal>

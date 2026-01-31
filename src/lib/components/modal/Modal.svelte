@@ -1,13 +1,10 @@
 <script>
   import { backHandler } from "$lib/BackHandler.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Device } from "@capacitor/device";
   import { quadInOut } from "svelte/easing";
   import { onMount, untrack } from "svelte";
   import { fade } from "svelte/transition";
-  import { user } from "$lib/base/user.svelte";
-  import { Times } from "$lib/icon";
-  import { Capacitor } from "@capacitor/core";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   /**
    * @typedef {Object} Props
@@ -67,7 +64,7 @@
     <form
       {...rest}
       class={[
-        "relative shadow-lg max-h-[90dvh] w-[500px] max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4",
+        "relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4",
         rest.class || "",
       ]}
       onsubmit={(event) => {
@@ -84,7 +81,7 @@
           title={t("close")}
           onclick={handleClose}
         >
-          <Times class="text-lg" />
+          <Icon name="times" class="text-lg" />
         </button>
       {/if}
       {@render children()}

@@ -1,7 +1,7 @@
 <script>
   import { t } from "$lib/services/language.svelte";
   import { RateApp } from "$lib/services/rateApp.js";
-  import { Star, Mail } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { Device } from "@capacitor/device";
 
   // Hou Weergawe in lyn met:
@@ -39,7 +39,7 @@
         onclick={handleRateApp}
         class="w-full justify-center h-12 bg-card border-default border rounded-md flex items-center gap-2"
       >
-        <Star class="text-xl" />
+        <Icon name="star" class="text-xl" />
         {t("rate_doenit")}
       </button>
     </div>
@@ -54,7 +54,7 @@
         onclick={handleSendEmail}
         class="w-full justify-center h-12 bg-card border-default border rounded-md items-center flex gap-2"
       >
-        <Mail class="text-xl" />
+        <Icon name="mail" class="text-xl" />
         {t("send_email")}
       </button>
     </div>

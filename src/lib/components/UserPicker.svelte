@@ -3,7 +3,7 @@
   import ButtonClear from "./element/button/ButtonClear.svelte";
   import { getUsersContext } from "$lib/contexts/users.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { DownChevron } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import Modal from "./modal/Modal.svelte";
   import { wait } from "$lib";
   import CardFriend from "../../routes/categories/CardFriend.svelte";
@@ -56,7 +56,7 @@
         <ButtonClear onclick={() => (user = undefined)} class="absolute right-0 top-0 bottom-0" />
       {:else}
         <div class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0">
-          <DownChevron class="text-muted pointer-events-none" />
+          <Icon name="down-chevron" class="text-muted pointer-events-none" />
         </div>
       {/if}
     </div>

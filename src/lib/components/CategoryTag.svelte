@@ -1,6 +1,6 @@
 <script>
   import { user } from "$lib/base/user.svelte";
-  import { Categories } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { Selected } from "$lib/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
   import EditCategory from "./EditCategory.svelte";
@@ -39,7 +39,7 @@
 </script>
 
 <Tag class={!!items_count ? "pr-1!" : ""} {is_selected} onclick={() => toggle(category)} onlongpress={handleLongPress}>
-  <Categories />
+  <Icon name="categories" class="w-4 h-4" />
   <span>{category.name || t("DEFAULT_NAME")}</span>
   {#if items_count}
     <div class="h-fit bg-surface rounded-full py-0.5 px-1.5 aspect-square flex items-center justify-center">

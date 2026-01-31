@@ -1,5 +1,5 @@
 <script>
-  import { Search } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   /**
    * @typedef {Object} Props
@@ -27,5 +27,5 @@
     style="transform: translate({show ? 0 : 100}%, 0%);"
   ></div>
 
-  <Search class="text-3xl" />
+  <Icon name="search" class="text-3xl" />
 </button>

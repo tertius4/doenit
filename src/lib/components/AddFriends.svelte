@@ -3,10 +3,9 @@
   import InputText from "./element/input/InputText.svelte";
   import { slide } from "svelte/transition";
   import Button from "./element/button/Button.svelte";
-  import { Plus, UserPlus, Share } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { isValidEmail, normalize } from "$lib";
   import { user } from "$lib/base/user.svelte";
-  import Loading from "$lib/icon/Loading.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { DB } from "$lib/DB";
   import { Alert } from "$lib/core/alert";
@@ -145,7 +144,7 @@
     disabled={open}
     onclick={() => (open = true)}
   >
-    <UserPlus class="text-xl" />
+    <Icon name="user-plus" class="text-xl" />
   </button>
 {/if}
 
@@ -154,7 +153,7 @@
     <div class="flex justify-between items-center">
       <span class="font-medium">{t("connect_with_friend")}</span>
       <button type="button" onclick={handleClose} aria-label={t("close")} class="p-2">
-        <Plus class="rotate-45 text-lg" />
+        <Icon name="plus" class="rotate-45 text-lg" />
       </button>
     </div>
 
@@ -200,7 +199,7 @@
         </div>
 
         <Button class="bg-primary border-none text-alt" type="button" onclick={shareApp}>
-          <Share class="text-lg mr-1" />
+          <Icon name="share" class="text-lg mr-1" />
           <span class="font-semibold">{t("share_app")}</span>
         </Button>
       </div>
@@ -213,10 +212,10 @@
       disabled={is_loading || user_not_found}
     >
       {#if is_loading}
-        <Loading />
+        <Icon name="loading" class="animate-spin text-lg mr-1" />
         <span class="font-semibold">{t("sending")}</span>
       {:else}
-        <UserPlus class="text-lg mr-1" />
+        <Icon name="user-plus" class="text-lg mr-1" />
         <span class="font-semibold">{t("send_invite")}</span>
       {/if}
     </Button>

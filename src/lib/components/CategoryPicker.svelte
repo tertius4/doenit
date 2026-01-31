@@ -1,7 +1,7 @@
 <script>
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { DownChevron, Plus } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import Modal from "./modal/Modal.svelte";
   import { wait } from "$lib";
   import ButtonClear from "./element/button/ButtonClear.svelte";
@@ -66,7 +66,7 @@
     <div
       class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
     >
-      <DownChevron class=" text-muted pointer-events-none" />
+      <Icon name="down-chevron" class="text-muted pointer-events-none" />
     </div>
   {/if}
 </div>
@@ -136,7 +136,7 @@
         is_open = false;
       }}
     >
-      <Plus />
+      <Icon name="plus" />
       <span class="block font-medium my-2">{t("add_category")}</span>
     </button>
   </div>

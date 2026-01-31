@@ -1,12 +1,11 @@
 <script>
   import { slide } from "svelte/transition";
   import { notifications } from "$lib/services/notification.svelte";
-  import { XCircle, Clock, Loading } from "$lib/icon";
   import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
   import InputTime from "$lib/components/element/input/InputTime.svelte";
   import { t } from "$lib/services/language.svelte";
   import Accordion from "$lib/components/element/Accordion.svelte";
-  import Check from "$lib/icon/Check.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { user } from "$lib/base/user.svelte";
   import { untrack } from "svelte";
 
@@ -84,7 +83,7 @@
       {#if notifications.status !== "granted"}
         <div class="flex items-center gap-3 p-3 rounded-lg bg-t-secondary/5 border border-t-secondary/10">
           {#if notifications.status === "denied"}
-            <XCircle size={20} class="text-red-600 dark:text-red-400" />
+            <Icon name="x-circle" class="text-red-600 dark:text-red-400" />
             <div class="flex-1">
               <div class="flex items-center justify-between">
                 <span class="text-sm text-red-600 dark:text-red-400">{t("notification_denied")}</span>
@@ -98,7 +97,7 @@
               </div>
             </div>
           {:else}
-            <Clock size={20} class="text-yellow-600 dark:text-yellow-400" />
+            <Icon name="clock" class="text-yellow-600 dark:text-yellow-400" />
             <div class="flex-1">
               <div class="flex items-center justify-between">
                 <span class="text-sm text-yellow-600 dark:text-yellow-400">{t("notification_pending")}</span>
@@ -119,7 +118,7 @@
         <!-- Time picker with better layout -->
         <div>
           <span class="flex items-center gap-2 text-sm font-medium mb-2">
-            <Clock size={16} />
+            <Icon name="clock" class="w-5 h-5" />
             {t("reminder_time")}
           </span>
           <div class="h-12 relative">
@@ -128,7 +127,7 @@
             <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
               {#if saving}
                 <div in:slide={{ duration: 200 }}>
-                  <Loading />
+                  <Icon name="loading" class="animate-spin" />
                 </div>
               {:else if saved}
                 <div
@@ -136,7 +135,7 @@
                   out:slide={{ duration: 200 }}
                   class="border-2 rounded-full border-success aspect-square h-fit p-1"
                 >
-                  <Check stroke-width={4} class="text-success text-sm" />
+                  <Icon name="check" class="text-success text-sm" />
                 </div>
               {/if}
             </div>

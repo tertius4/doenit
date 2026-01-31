@@ -2,7 +2,7 @@
   import Modal from "$lib/components/modal/Modal.svelte";
   import { Alert } from "$lib/core/alert";
   import { user } from "$lib/base/user.svelte";
-  import { Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   let is_open = $state(false);
@@ -45,7 +45,7 @@
 
       <!-- Position center -->
       <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+        <Icon name="loading" class="animate-spin text-4xl mx-auto mb-2 opacity-50" />
         <p>{t("loading")}</p>
       </div>
     </div>
@@ -65,7 +65,7 @@
       onclick={handleSignIn}
     >
       {#if is_loading}
-        <Loading class="mr-3" />
+        <Icon name="loading" class="mr-3 animate-spin" />
         {t("loading")}
       {:else}
         <img src="google.svg" alt="Google" class="h-5 w-5 mr-3" />

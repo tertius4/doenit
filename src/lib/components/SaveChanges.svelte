@@ -5,7 +5,7 @@
   import { backHandler } from "$lib/BackHandler.svelte";
   import { onMount } from "svelte";
   import Modal from "./modal/Modal.svelte";
-  import { Save, Trash } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { Logger } from "$lib/core/logger";
 
   /**
@@ -31,12 +31,9 @@
         if (typeof original_value !== "object" || original_value === null) {
           const has_changes = original_value !== current_value;
           if (has_changes) {
-            Logger.debug(
-              `Change detected - Key: ${key}, Original: ${original_value}, Current: ${current_value}`
-            );
+            Logger.debug(`Change detected - Key: ${key}, Original: ${original_value}, Current: ${current_value}`);
           }
           return has_changes;
-          if (has_changes) return true;
         }
 
         // For objects/arrays, do a shallow comparison or use JSON for deep comparison.
@@ -67,7 +64,7 @@
         await goto(`/`);
       }}
     >
-      <Trash />
+      <Icon name="trash" />
       <span>{t("discard")}</span>
     </button>
     <button
@@ -78,7 +75,7 @@
         await onsave(changed);
       }}
     >
-      <Save />
+      <Icon name="save" />
       <span>{t("save")}</span>
     </button>
   </footer>

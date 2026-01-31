@@ -1,7 +1,7 @@
 <script>
   import InputTime from "$lib/components/element/input/InputTime.svelte";
   import InputDate from "$lib/components/element/input/InputDate.svelte";
-  import { ArrowLeft, Check } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { slide } from "svelte/transition";
   import { untrack } from "svelte";
   import ButtonClear from "./element/button/ButtonClear.svelte";
@@ -123,7 +123,7 @@
           {/if}
 
           {#if start_date && end_date}
-            <ArrowLeft />
+            <Icon name="arrow-left" />
           {/if}
 
           <span>{displayDate(end_date)} {end_time || ""}</span>
@@ -223,7 +223,7 @@
           onclick={done}
           class="w-24 flex items-center justify-center h-12 bg-primary text-alt rounded-lg"
         >
-          <Check />
+          <Icon name="check" />
         </button>
       </div>
     </div>

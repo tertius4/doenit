@@ -3,7 +3,7 @@
   import { getUsersContext } from "$lib/contexts/users.svelte";
   import { CardInvite } from "$lib/components/element/card";
   import { backHandler } from "$lib/BackHandler.svelte";
-  import { Offline, Check, Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import CardFriend from "./CardFriend.svelte";
   import { user } from "$lib/base/user.svelte";
@@ -97,8 +97,8 @@
         promises.map((p) =>
           p.catch((e) => {
             throw e;
-          })
-        )
+          }),
+        ),
       );
     } catch (error) {
       Alert.error("Fout met uitnodiging aanvaar: " + error);
@@ -142,12 +142,12 @@
     <!-- A nice offline message or UI can be placed here -->
     <div class="text-center py-8">
       <!-- Offline icon here -->
-      <Offline class="text-4xl mx-auto mb-2 opacity-50" />
+      <Icon name="offline" class="text-4xl mx-auto mb-2 opacity-50" />
       <p>{t("offline")}</p>
     </div>
   {:else}
     <div class="text-center py-8">
-      <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+      <Icon name="loading" class="animate-spin text-4xl mx-auto mb-2 opacity-50" />
       <p>{t("loading")}</p>
     </div>
   {/if}
@@ -169,7 +169,7 @@
       {/if}
     {:else}
       <div class="text-center py-8">
-        <Check class="text-4xl mx-auto mb-2 opacity-50" />
+        <Icon name="check" class="text-4xl mx-auto mb-2 opacity-50" />
         <p>{t("no_friends_yet")}</p>
         <p class="text-sm mt-1">{t("accepted_friends_appear_here")}</p>
       </div>
@@ -177,7 +177,7 @@
   </div>
 {:else if typeof navigator !== "undefined" && !navigator.onLine}
   <div class="text-center py-8">
-    <Loading class="text-4xl mx-auto mb-2 opacity-50" />
+    <Icon name="loading" class="animate-spin text-4xl mx-auto mb-2 opacity-50" />
     <p>{t("offline")}</p>
   </div>
 {/if}

@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/services/language.svelte";
   import { user } from "$lib/base/user.svelte";
-  import { Crown, Loading, Star } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { Alert } from "$lib/core/alert";
   import { Browser } from "@capacitor/browser";
   import { Capacitor } from "@capacitor/core";
@@ -73,7 +73,7 @@
   <!-- Header -->
   <div class="text-center mb-8">
     <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-      <Crown class="text-4xl text-primary" />
+      <Icon name="crown" class="text-4xl text-primary" />
     </div>
     <h1 class="text-3xl font-bold mb-2">{t("subscriptions")}</h1>
     <p class="text-base opacity-70">{t("manage_your_subscriptions")}</p>
@@ -81,7 +81,7 @@
 
   {#if is_loading && !user.products.length}
     <div class="flex justify-center items-center py-12">
-      <Loading class="text-4xl text-primary animate-spin" />
+      <Icon name="loading" class="text-4xl text-primary animate-spin" />
     </div>
   {:else}
     {#if !!user.products.length}
@@ -93,7 +93,7 @@
                 <div class="flex items-start justify-between mb-4">
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
-                      <Star class="text-2xl flex-shrink-0" />
+                      <Icon name="star" class="text-2xl shrink-0" />
                       <h3 class="text-2xl font-bold">
                         {product.title || product.product_id}
                       </h3>
@@ -135,7 +135,7 @@
               <div class="bg-surface rounded-xl border border-default shadow-sm overflow-hidden p-4">
                 <div class="flex items-center gap-3 mb-4">
                   <div class="bg-primary/10 rounded-full p-3">
-                    <Crown class="text-2xl text-primary" />
+                    <Icon name="crown" class="text-2xl text-primary" />
                   </div>
                   <h3 class="text-xl font-bold flex-1">
                     {product.title}
@@ -163,7 +163,7 @@
                   >
                     {#if is_loading}
                       <div class="flex items-center justify-center gap-2">
-                        <Loading class="animate-spin" />
+                        <Icon name="loading" class="animate-spin" />
                         {t("loading")}
                       </div>
                     {:else}
@@ -186,7 +186,7 @@
     {#if !user.products.length && !is_loading}
       <div class="text-center py-12">
         <div class="inline-flex items-center justify-center w-20 h-20 bg-surface rounded-full mb-4">
-          <Crown class="text-4xl opacity-30" />
+          <Icon name="crown" class="text-4xl opacity-30" />
         </div>
         <h3 class="text-xl font-semibold mb-2">{t("no_products_available")}</h3>
         <p class="text-sm opacity-70">{t("check_back_later")}</p>

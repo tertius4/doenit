@@ -1,6 +1,6 @@
 <script>
   import { DateUtil } from "$lib/core/date_util";
-  import { Check, Times } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { slide } from "svelte/transition";
 
@@ -48,7 +48,7 @@
     disabled={processing}
     title={t("accept_invite")}
   >
-    <Check class="text-lg" />
+    <Icon name="check" class="text-lg" />
   </button>
 
   <div class="flex items-start justify-between w-full p-2">
@@ -80,6 +80,6 @@
     disabled={processing}
     title={t("decline_invite")}
   >
-    <Times class="text-xl" />
+    <Icon name="times" class="text-xl" />
   </button>
 </div>

@@ -1,7 +1,7 @@
 <script>
   import Modal from "$lib/components/modal/Modal.svelte";
   import { t } from "$lib/services/language.svelte";
-  import { Check, DownloadCloud, Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import Backup from "$lib/services/backup.svelte";
 
   /**
@@ -38,9 +38,9 @@
   onclick={() => (is_open = true)}
 >
   {#if is_backing_up}
-    <Loading class="text-3xl mx-1 my-auto" />
+    <Icon name="loading" class="text-3xl mx-1 my-auto" />
   {:else}
-    <DownloadCloud class="text-3xl mx-1 my-auto" />
+    <Icon name="download-cloud" class="text-3xl mx-1 my-auto" />
   {/if}
   <div>
     <p class="font-medium">{is_backing_up ? t("backup_in_progress") : t("backup_now")}</p>
@@ -61,7 +61,7 @@
       class="text-md items-center justify-center text-alt px-4 py-2 flex gap-1 bg-primary rounded-lg"
       onclick={handleClick}
     >
-      <Check />
+      <Icon name="check" />
       <span>{t("backup")}</span>
     </button>
   </div>

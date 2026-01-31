@@ -1,5 +1,5 @@
 <script>
-  import { Camera, Categories, Clock, Important, Sync, Users } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import InputCheckbox from "../element/input/InputCheckbox.svelte";
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import TaskContainer from "./TaskContainer.svelte";
@@ -12,7 +12,7 @@
 
   /**
    * @typedef {Object} Props
-   * @property {import("svelte/reactivity").SvelteDate} current_time
+   * @property {Date} current_time
    * @property {Task} task
    * @property {(_: Task) => *} [onselect]
    * @property {() => *} [onclick]
@@ -101,7 +101,7 @@
     {#if task.start_date}
       <Pill {is_ongoing} {is_past} {is_selected} class="rounded-full">
         <span class="flex gap-1 items-center">
-          <Clock class="w-sm h-sm flex-shrink-0" />
+          <Icon name="clock" class="w-sm h-sm shrink-0" />
           {displayDateTime({
             due_date: DateUtil.parseWithTimeBoundary(task.due_date),
             start_date: DateUtil.parseWithTimeBoundary(task.start_date),
@@ -109,14 +109,14 @@
         </span>
 
         {#if !!task.repeat_interval}
-          <Sync class="w-xs h-xs" />
+          <Icon name="sync" class="w-xs h-xs shrink-0" />
         {/if}
       </Pill>
     {/if}
 
     {#if category}
       <Pill {is_ongoing} {is_past} {is_selected} class="rounded">
-        <Categories class="w-sm h-sm flex-shrink-0" />
+        <Icon name="categories" class="w-sm h-sm shrink-0" />
         <span class="truncate">{category.name}</span>
       </Pill>
     {/if}
@@ -124,7 +124,7 @@
     {#if user}
       <Pill {is_ongoing} {is_past} {is_selected} class="rounded-full">
         <img
-          class="w-sm h-sm rounded-full flex-shrink-0"
+          class="w-sm h-sm rounded-full shrink-0"
           src={user.avatar}
           alt={user.name}
           referrerpolicy="no-referrer"
@@ -136,9 +136,9 @@
 
   <div class="absolute top-1.5 right-1.5 flex gap-1">
     {#if !task.archived}
-      <Important class={!task.important && "hidden"} />
+      <Icon name="important" class={!task.important ? "hidden" : ""} />
       {#if !!task.photo_ids?.length}
-        <Camera class="w-sm h-sm flex-shrink-0" />
+        <Icon name="camera" class="w-sm h-sm shrink-0" />
       {/if}
     {/if}
   </div>

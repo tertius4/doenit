@@ -1,8 +1,7 @@
 <script>
   import { user } from "$lib/base/user.svelte";
   import { DB } from "$lib/DB";
-  import Edit from "$lib/icon/Edit.svelte";
-  import Trash from "$lib/icon/Trash.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { SvelteSet } from "svelte/reactivity";
   import { fly, slide } from "svelte/transition";
@@ -66,10 +65,10 @@
 </script>
 
 <div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg">
-  <div class="grid grid-cols-[52px_1fr_48px] items-center justify-between">
+  <div class="grid grid-cols-[48px_1fr_48px] items-center justify-between">
     <button class="h-full w-full flex justify-center items-center" onclick={() => openEditModal()}>
       <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
-        <Edit />
+        <Icon name="edit" class="w-5 h-5" />
       </div>
     </button>
 
@@ -81,7 +80,7 @@
     </div>
 
     <button class="h-full text-error flex items-center justify-center" onclick={() => deleteCategory()}>
-      <Trash />
+      <Icon name="trash" class="w-5 h-5" />
     </button>
   </div>
 

@@ -1,6 +1,6 @@
 <script>
   import { Selected } from "$lib/selected.svelte";
-  import { Check, Info, Star } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import Tag from "./Tag.svelte";
   import Modal from "./modal/Modal.svelte";
   import FavouriteCategorySetup from "./FavouriteCategorySetup.svelte";
@@ -23,11 +23,11 @@
         const category_id = task.category_id || categoriesContext.default_category?.id;
         if (!category_id) return;
         if (task.archived) return;
-  
+
         if (!acc[category_id]) {
           acc[category_id] = 0;
         }
-  
+
         acc[category_id]++;
       });
       return acc;
@@ -37,7 +37,7 @@
   const is_favourite_selected = $derived(
     !!user.favourite_category_ids.length &&
       user.favourite_category_ids.every((id) => Selected.categories.has(id)) &&
-      user.favourite_category_ids.length === Selected.categories.size
+      user.favourite_category_ids.length === Selected.categories.size,
   );
 
   function selectFavourite() {
@@ -68,7 +68,7 @@
   <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
     {#if !!categoriesContext.categories.length}
       <Tag round is_selected={is_favourite_selected} onclick={selectFavourite}>
-        <Star />
+        <Icon name="star" class="w-4 h-4" />
       </Tag>
     {/if}
 
@@ -102,13 +102,13 @@
       }}
     >
       <div class="flex gap-1 items-center">
-        <Info class="text-lg flex-shrink-0" />
+        <Icon name="info" class="text-lg shrink-0" />
         <p class="leading-tight">{t("goto_app_settings")}</p>
       </div>
     </div>
 
     <Button class="bg-card" onclick={() => (show_favourite_modal = false)}>
-      <Check />
+      <Icon name="check" />
       {t("confirm")}
     </Button>
   </div>

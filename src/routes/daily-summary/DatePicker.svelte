@@ -1,7 +1,6 @@
 <script>
-  import Icon from "$lib/components/element/Icon.svelte";
   import { DateUtil } from "$lib/core/date_util";
-  import { ArrowLeft, ArrowRight } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   /**

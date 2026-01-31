@@ -1,5 +1,5 @@
 <script>
-  import { More } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   const { name, completed = false, tick_animation, description = "" } = $props();
@@ -12,6 +12,6 @@
 >
   <span class="my-1" class:line-through={tick_animation || completed}>{name || t("no_description")}</span>
   {#if description && description.trim()}
-    <More />
+    <Icon name="more" />
   {/if}
 </div>

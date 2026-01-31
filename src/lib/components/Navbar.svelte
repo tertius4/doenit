@@ -1,7 +1,7 @@
 <script>
   import { page } from "$app/state";
   import { backHandler } from "$lib/BackHandler.svelte";
-  import { ChartBar, Categories, Home, Check, Settings, Users } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
@@ -13,11 +13,11 @@
   const { onclose } = $props();
 
   const NAVIGATION_TIMES = $derived([
-    { Icon: Home, label: t("home"), href: "/", show: true },
-    { Icon: Check, label: t("completed_tasks"), href: "/complete" },
-    { Icon: Categories, label: t("categories"), href: "/categories" },
-    { Icon: Users, label: t("friends"), href: "/friends" },
-    { Icon: ChartBar, label: t("daily_summary"), href: "/daily-summary" },
+    { icon: "home", label: t("home"), href: "/", show: true },
+    { icon: "check", label: t("completed_tasks"), href: "/complete" },
+    { icon: "categories", label: t("categories"), href: "/categories" },
+    { icon: "users", label: t("friends"), href: "/friends" },
+    { icon: "chart-bar", label: t("daily_summary"), href: "/daily-summary" },
   ]);
 
   onMount(() => {
@@ -43,7 +43,7 @@
   <div class="w-full h-full relative flex flex-col items-center justify-center">
     <h2 class="text-lg font-semibold">{t("menu")}</h2>
     <ul class="mt-4 space-y-0">
-      {#each NAVIGATION_TIMES as { Icon, label, href, show }}
+      {#each NAVIGATION_TIMES as { icon, label, href, show }}
         {#if show === undefined || show}
           {@const is_active = page.url.pathname === href}
           <li>
@@ -54,7 +54,7 @@
               class:bg-card={is_active}
               class:font-semibold={is_active}
             >
-              <Icon class="text-xl my-auto" />
+              <Icon name={icon} class="w-5 h-5 my-auto" />
               <p class="my-auto line-clamp-1">{label}</p>
             </a>
           </li>
@@ -62,8 +62,8 @@
       {/each}
     </ul>
 
-    <a href="/settings" draggable={false} class="absolute bottom-0 right-0 p-6 text-2xl">
-      <Settings />
+    <a href="/settings" draggable={false} class="absolute bottom-0 right-0 p-6">
+      <Icon name="settings" class="w-5 h-5" />
     </a>
   </div>
 </aside>

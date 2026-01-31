@@ -1,5 +1,5 @@
 <script>
-  import { Clock, Sync } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   /** @typedef {Object} Props
    * @property {boolean} is_complete
@@ -23,11 +23,11 @@
   }}
 >
   <span class="flex gap-1 items-center">
-    <Clock class="w-sm h-sm flex-shrink-0" />
+    <Icon name="clock" class="w-sm h-sm shrink-0" />
     {@render children?.()}
   </span>
 
   {#if is_repeating && !is_complete}
-    <Sync class="w-xs h-xs" />
+    <Icon name="sync" class="w-xs h-xs" />
   {/if}
 </div>

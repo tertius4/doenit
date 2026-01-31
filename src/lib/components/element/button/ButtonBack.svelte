@@ -1,6 +1,5 @@
 <script>
   import { navigating, page } from "$app/state";
-  import { Loading } from "$lib/icon";
   import Icon from "$lib/components/element/Icon.svelte";
 
   const { onclick, ...rest } = $props();
@@ -13,7 +12,7 @@
   <button type="button" aria-label="Go back button" class="font-semibold h-full aspect-square p-1 max-h-12" {onclick}>
     <div {...rest} class={["flex justify-center items-center rounded-full aspect-square h-full", rest.class]}>
       {#if navigating.to}
-        <Loading />
+        <Icon name="loading" class="animate-spin text-lg" />
       {:else if !is_home}
         <Icon name="arrow-left" />
       {/if}

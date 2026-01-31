@@ -7,7 +7,7 @@
   import Accordion from "$lib/components/element/Accordion.svelte";
   import { user } from "$lib/base/user.svelte";
   import { untrack } from "svelte";
-  import { Check, Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
 
   let saving = $state(false);
   let saved = $state(false);
@@ -79,7 +79,7 @@
           <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
             {#if saving}
               <div in:slide={{ duration: 200 }}>
-                <Loading />
+                <Icon name="loading" class="animate-spin" />
               </div>
             {:else if saved}
               <div
@@ -87,7 +87,7 @@
                 out:slide={{ duration: 200 }}
                 class="border-2 rounded-full border-success aspect-square h-fit p-1"
               >
-                <Check stroke-width={4} class="text-success text-sm" />
+                <Icon name="check" class="text-success text-sm" />
               </div>
             {/if}
           </div>

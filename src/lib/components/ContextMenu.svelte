@@ -1,6 +1,6 @@
 <script>
   import BulkAssignCategory from "./BulkAssignCategory.svelte";
-  import ShareIcon from "$lib/icon/Share.svelte";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { slide } from "svelte/transition";
   import { Selected } from "$lib/selected.svelte";
   import { Share } from "@capacitor/share";
@@ -56,7 +56,7 @@
     class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
   >
     <span>{t("share")} {multiple ? t("tasks") : t("task")}</span>
-    <ShareIcon class="text-lg text-normal" />
+    <Icon name="share" class="text-lg text-normal" />
   </button>
 
   <BulkAssignCategory

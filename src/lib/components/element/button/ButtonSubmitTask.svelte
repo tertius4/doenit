@@ -1,6 +1,6 @@
 <script>
   import { navigating } from "$app/state";
-  import { Check, Loading } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   /**
@@ -19,8 +19,8 @@
   disabled={loading || !!navigating.to}
 >
   {#if loading || navigating.to}
-    <Loading class="text-2xl" />
+    <Icon name="loading" class="text-2xl" />
   {:else}
-    <Check class="text-2xl" />
+    <Icon name="check" class="text-2xl" />
   {/if}
 </button>

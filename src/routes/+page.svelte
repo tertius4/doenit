@@ -10,7 +10,7 @@
   import { getContext, onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { goto } from "$app/navigation";
-  import { Plus } from "$lib/icon";
+  import Icon from "$lib/components/element/Icon.svelte";
   import { DB } from "$lib/DB";
 
   Selected.tasks.clear();
@@ -174,7 +174,7 @@
         class="rounded-lg bg-card px-12 py-6 flex justify-center items-center gap-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         onclick={() => goto("/create")}
       >
-        <Plus />
+        <Icon name="plus" />
         <span class="text-lg">{t("create_new_task")}</span>
       </button>
     </div>
