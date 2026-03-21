@@ -1,6 +1,6 @@
 import { PUBLIC_GOOGLE_AUTH } from "$env/static/public";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
-import { User } from "$lib/tools/src/index";
+// import { User } from "$lib/tools/src/index";
 import { Preferences } from "@capacitor/preferences";
 import { getApp, initializeApp } from "firebase/app";
 import { doc, setDoc, getFirestore, type Firestore, getDoc } from "firebase/firestore";
@@ -25,7 +25,7 @@ type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-class UserClass extends User {
+class UserClass /* extends User */ {
   #app: Firestore;
   #favourite_category_ids: UserData["favourite_category_ids"] = $state([]);
   #language_code: UserData["language_code"] = $state(null);
@@ -40,12 +40,12 @@ class UserClass extends User {
   readonly is_backup_enabled = $derived(this.is_plus_user);
 
   constructor(config: UserConfig) {
-    super(config.client_id);
+    // super(config.client_id);
     this.#app = config.app;
   }
 
   async initialize(): Promise<void> {
-    this.is_initialized = false;
+    // this.is_initialized = false;
     const result = await Preferences.get({ key: "userData" });
     if (!result.value) return;
 
@@ -59,7 +59,7 @@ class UserClass extends User {
     this.#daily_summary = user_data.daily_summary;
     this.#products = user_data.products;
 
-    this.is_initialized = true;
+    // this.is_initialized = true;
   }
 
   private async syncWithPreferences(): Promise<void> {
