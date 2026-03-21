@@ -1,25 +1,24 @@
 <script>
-  import { longpress } from "$logic/long-press"
+  import { longpress } from "$logic/long-press";
   import { t } from "$lib/services/language.svelte";
   import Icon from "$display/comps/Icon.svelte";
 
-  let {
-    tick_animation = $bindable(false),
-    is_selected = $bindable(false),
-    onselect = async () => {},
-    onlongpress = () => {},
-    ...rest
-  } = $props();
+  /**
+   * @typedef {Object} Props
+   * @property {boolean} checked
+   * @property {(checked: boolean) => (void | Promise<void>)} [onchange]
+   * @property {(checked: boolean) => (void | Promise<void>)} [onlongpress]
+   */
 
-  const is_checked = $derived(is_selected || tick_animation);
+  /** @type {Props & Record<string, any>} */
+  const { checked, onchange = async (checked) => {}, onlongpress = (checked) => {}, ...rest } = $props();
 
   /**
    * Handles the click event on the checkbox.
    * @param {Event} event
    */
   async function onclick(event) {
-    tick_animation = !tick_animation;
-    onselect(event);
+    onchange(!checked);
   }
 </script>
 
@@ -28,19 +27,20 @@
   use:longpress
   type="button"
   aria-label={t("check")}
+  title={t("check")}
   {onlongpress}
   {onclick}
-  class="absolute flex items-center justify-center {rest.class}"
+  class={["relative cursor-pointer rounded overflow-hidden h-6 w-6", rest.class || ""]}
 >
   <div
     class={{
-      "rounded border h-6 w-6 flex items-center justify-center": true,
-      "border-primary shadow-none bg-primary": is_checked,
-      "bg-white shadow-inner shadow-black border-default": !is_checked,
+      "absolute inset-0 pointer-events-none border flex items-center justify-center": true,
+      "border-primary bg-primary/70": checked,
+      "shadow-inner bg-white shadow-black border border-default": !checked,
     }}
   >
-    {#if is_checked}
-      <Icon name="check" class="text-alt text-lg" />
+    {#if checked}
+      <Icon name="check" class="text-alt" />
     {/if}
   </div>
 </button>

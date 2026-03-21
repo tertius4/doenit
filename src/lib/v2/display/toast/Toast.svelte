@@ -28,18 +28,18 @@
 
   /** @type {Record<string, string>} */
   const background_tint_chart = {
-    success: "opacity-20 bg-green-500",
-    error: "opacity-20 bg-red-500",
-    info: "opacity-20 bg-blue-500",
-    warning: "opacity-20 bg-yellow-500",
+    success: "opacity-20 bg-success-500",
+    error: "opacity-20 bg-error-500",
+    info: "opacity-20 bg-primary-500",
+    warning: "opacity-20 bg-warning-500",
   };
 
   /** @type {Record<string, string>} */
   const border_chart = {
-    success: "border-green-500",
-    error: "border-red-500",
-    info: "border-blue-500",
-    warning: "border-yellow-500",
+    success: "border-success-500",
+    error: "border-error-500",
+    info: "border-primary-500",
+    warning: "border-warning-500",
   };
 
   const bg_tint_classes = $derived(background_tint_chart[toast.type]);

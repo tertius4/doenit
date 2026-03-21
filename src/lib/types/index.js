@@ -194,4 +194,12 @@
  * @typedef {Object} Logic.MainPageTask
  * @prop {string} id
  * @prop {string} name
+ * @prop {{ type: "round" | "square", label: string, pre_icon?: string, post_icon?: string }[]} pills
+ * @prop {{ name: string }[]} top_right_icons
+ * @prop {boolean} is_ongoing
+ * @prop {boolean} is_past
+ * @prop {boolean} is_selected
+ * @prop {() => void} onclick
+ * @prop {() => void} onlongpress
+ *
  */
