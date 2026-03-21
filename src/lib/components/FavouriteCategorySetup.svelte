@@ -1,11 +1,10 @@
 <script>
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
-  import { Cached } from "$lib/core/cache.svelte";
   import { SvelteSet } from "svelte/reactivity";
-  import Tag from "$lib/components/Tag.svelte";
+  import Tag from "$display/comps/button/Tag.svelte";
   import { onMount, untrack } from "svelte";
   import { Selected } from "$lib/selected.svelte";
-  import { user } from "$lib/base/user.svelte";
+  import { user } from "$lib/core/user.svelte";
 
   const categoriesContext = getCategoriesContext();
 

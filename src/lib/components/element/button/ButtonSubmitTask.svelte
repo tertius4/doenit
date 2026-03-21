@@ -1,6 +1,6 @@
 <script>
   import { navigating } from "$app/state";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   /**

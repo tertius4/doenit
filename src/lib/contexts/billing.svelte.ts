@@ -1,8 +1,9 @@
 import { PUBLIC_APP_ID, PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
-import { Alert } from "$lib/core/alert";
+import { alert } from "$lib/core/alert";
 import { Capacitor } from "@capacitor/core";
 import { createContext } from "svelte";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
+import { getToken } from "$lib";
 
 /**
  * For the Google Play Billing products.
@@ -30,9 +31,9 @@ export class BillingContext {
 
   async subscribe(product_id: string) {
     try {
-      if (!user.uid) throw new Error("Gebruiker nie aangemeld nie");
+      if (!user.id) throw new Error("Gebruiker nie aangemeld nie");
       const result = await BillingService.startPurchase({
-        account_id: user.uid,
+        account_id: user.id,
         product_id: product_id,
       });
 
@@ -49,7 +50,7 @@ export class BillingContext {
     } catch (error: any) {
       const error_message = error instanceof Error ? error.message : String(error);
       if (error_message !== "User cancelled") {
-        alert(`Kon nie inteken nie: ${error_message}`);
+        alert.error(`Kon nie inteken nie: ${error_message}`);
       }
     }
   }
@@ -58,7 +59,7 @@ export class BillingContext {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-      if (!user.uid) throw new Error("Gebruiker nie aangemeld nie");
+      if (!user.id) throw new Error("Gebruiker nie aangemeld nie");
       if (!this.#is_initialized) {
         await BillingService.initialize();
         this.#is_initialized = true;
@@ -84,7 +85,7 @@ export class BillingContext {
       }
 
       const { purchases } = await BillingService.queryPurchases({
-        account_id: user.uid,
+        account_id: user.id,
       });
       for (const purchase of purchases) {
         purchase.title = purchase.title.replace(/\(.*\)$/, "");
@@ -136,7 +137,7 @@ export class BillingContext {
       user.products = products;
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`Kon nie betaaldiens-initialisering voltooi nie: ${error_message}`);
+      alert.error(`Kon nie betaaldiens-initialisering voltooi nie: ${error_message}`);
     }
   }
 }
@@ -144,10 +145,11 @@ export class BillingContext {
 export const [getBillingContext, setBillingContext] = createContext<BillingContext>();
 
 async function verifyPurchaseWithBackend(
-  purchase: Purchase
+  purchase: Purchase,
 ): Promise<{ isValid: boolean; details: SubscriptionDetails | null }> {
   try {
-    const id_token = user.getToken ? await user.getToken() : null;
+
+    const id_token = await getToken()
     if (!id_token) return { isValid: false, details: null };
 
     const package_name = PUBLIC_APP_ID ?? "doenit.app";
@@ -193,7 +195,7 @@ async function verifyPurchaseWithBackend(
     if (error_message === "User not found") return { isValid: false, details: null };
     if (error_message === "Failed to fetch") return { isValid: false, details: null };
 
-    alert(`Kon nie aankoop met backend verifieer nie: ${error_message}`);
+    alert.error(`Kon nie aankoop met backend verifieer nie: ${error_message}`);
     return { isValid: false, details: null };
   }
 }

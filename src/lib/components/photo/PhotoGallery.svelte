@@ -1,12 +1,12 @@
 <script>
-  import { backHandler } from "$lib/BackHandler.svelte";
+  import { backHandler } from "$logic/navigation";
   import { Photos } from "$lib/services/photos.svelte";
   import { t } from "$lib/services/language.svelte";
   import { CameraSource } from "@capacitor/camera";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { slide } from "svelte/transition";
-  import { getContext, onMount } from "svelte";
-  import Modal from "../modal/Modal.svelte";
+  import { onMount } from "svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
 
   /**
    * @typedef {Object} Props
@@ -15,8 +15,6 @@
 
   /** @type {Props} */
   let { photo_ids = $bindable([]) } = $props();
-
-  const deleted_photo_ids = getContext("deleted_photo_ids");
 
   let is_prompting = $state(false);
   let is_fullscreen = $state(false);
@@ -98,8 +96,6 @@
     photo_ids = photo_ids?.filter((id) => id !== selected_photo?.id) || [];
     photos = photos.filter((p) => p.id !== selected_photo?.id);
 
-    // Delete the file
-    deleted_photo_ids.add(selected_photo.id);
     selected_photo = null;
 
     is_deleting_photo = false;
@@ -222,7 +218,7 @@
 {/if}
 
 <Modal bind:is_open={is_deleting_photo}>
-  <h2 class="font-bold text-lg">{t("delete_photo")}</h2>
+  <ModalHeader>{t("delete_photo")}</ModalHeader>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={removePhoto}>
     <Icon name="trash" class="h-full" />
     <span>{t("delete")}</span>

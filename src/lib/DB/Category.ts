@@ -1,9 +1,11 @@
-import type { RxCollection } from "$lib/chunk/rxdb";
-import { user } from "$lib/base/user.svelte";
+import type { RxCollection } from "$logic/chunk/rxdb";
+import { user } from "$lib/core/user.svelte";
 import { Table } from "./_Table";
 import { OnlineDB } from "$lib/OnlineDB";
 import { DB } from "$lib/DB";
 import { Secure } from "$lib/core/secure";
+import { t } from "$lib/services/language.svelte";
+import { getDeviceId } from "$lib";
 
 export class CategoryTable extends Table<Category> {
   constructor(collection: RxCollection<Category>) {
@@ -11,7 +13,10 @@ export class CategoryTable extends Table<Category> {
   }
 
   async create(
-    category: Omit<Category, "id" | "created_at" | "archived" | "updated_at"> & { id?: string }
+    category: Omit<Category, "id" | "created_at" | "archived" | "updated_at" | "device_id"> & {
+      id?: string;
+      device_id?: string;
+    },
   ): Promise<Category> {
     if (!category) throw new Error("Category is required");
 
@@ -28,6 +33,8 @@ export class CategoryTable extends Table<Category> {
       category.users = [];
     }
 
+    console.trace("Creating category:", category.is_default ? t("DEFAULT_NAME") : category.name);
+    category.device_id = await getDeviceId();
     return super.create(category);
   }
 
@@ -89,7 +96,7 @@ export class CategoryTable extends Table<Category> {
           data: encrypted_data || "",
         });
       });
-      
+
       await Promise.all(promises);
     } else {
       if (is_shared) {

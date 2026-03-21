@@ -1,8 +1,9 @@
 import { createContext } from "svelte";
 import { DB } from "$lib/DB";
 import { SvelteMap } from "svelte/reactivity";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
+import { getToken } from "$lib";
 
 export class UsersContext {
   users = $state<User[]>([]);
@@ -21,7 +22,7 @@ export class UsersContext {
           this.map.set(user.email_address, user);
         }
       },
-      { sort: [{ name: "asc" }] }
+      { sort: [{ name: "asc" }] },
     );
   }
 
@@ -34,10 +35,10 @@ export class UsersContext {
       return existing_user;
     }
 
-    const fcm_token = user.getToken ? await user.getToken() : null;
+    const fcm_token = await getToken();
     const result = await OnlineDB.User.create({
       name: user.name || "Me",
-      uid: user.uid || "",
+      uid: user.id || "",
       language_code: user.language_code!,
       fcm_token,
       email_address: user.email_address || "",

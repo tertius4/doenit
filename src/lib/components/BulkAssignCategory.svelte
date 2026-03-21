@@ -3,10 +3,10 @@
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { getUsersContext } from "$lib/contexts/users.svelte";
   import { t } from "$lib/services/language.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
-  import Modal from "./modal/Modal.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
   import { Selected } from "$lib/selected.svelte";
-  import { user } from "$lib/base/user.svelte";
+  import { user } from "$lib/core/user.svelte";
   import { waitAtLeast } from "$lib";
   import { DB } from "$lib/DB";
   import UserTag from "./element/UserTag.svelte";
@@ -73,7 +73,7 @@
   </button>
 
   <Modal bind:is_open>
-    <h1 class="font-bold mb-4 leading-[120%]">{t("choose_category")}</h1>
+    <ModalHeader>{t("choose_category")}</ModalHeader>
     <div class="mb-4 space-y-0.5">
       {#each categories as category, i}
         {@const is_shared = !!category?.users.length && user.is_friends_enabled}

@@ -1,5 +1,5 @@
 <script>
-  import ButtonClear from "../button/ButtonClear.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
   import { language } from "$lib/services/language.svelte";
   import { tick, untrack } from "svelte";
 

@@ -1,5 +1,5 @@
 <script>
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
 
   const { name, completed = false, tick_animation, description = "" } = $props();

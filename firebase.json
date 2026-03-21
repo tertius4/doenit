@@ -21,6 +21,17 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://apis.google.com https://accounts.google.com https://www.gstatic.com; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://www.gstatic.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; style-src 'self' 'unsafe-inline'"
+          }
+        ]
+      }
+    ],
     "rewrites": [
       {
         "source": "**",

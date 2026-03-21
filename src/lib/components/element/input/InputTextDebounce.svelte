@@ -1,6 +1,6 @@
 <script>
   import { untrack } from "svelte";
-  import ButtonClear from "../button/ButtonClear.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
 
   let { value = $bindable(), focus_on_mount = false, debounce = 0, can_clear = false, ...rest } = $props();
 

@@ -12,7 +12,20 @@ const config = {
     experimental: {
       remoteFunctions: true,
     },
+    alias: {
+      $logic: "./src/lib/v2/logic",
+      $display: "./src/lib/v2/display",
+      $domain: "./src/lib/v2/domain",
+      $services: "./src/lib/v2/services",
+    },
   },
+
+  compilerOptions: {
+    experimental: {
+      async: true,
+    },
+  },
+
   vitePlugin: {
     inspector: false,
   },

@@ -1,10 +1,10 @@
 import { createContext } from "svelte";
 import { DB } from "$lib/DB";
 import { SvelteMap } from "svelte/reactivity";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
 import type { Unsubscribe } from "firebase/auth";
-import { Alert } from "$lib/core/alert";
+import { alert } from "$lib/core/alert";
 
 export class CategoriesContext {
   categories = $state<Category[]>([]);
@@ -22,10 +22,19 @@ export class CategoriesContext {
         // Sort categories by users count ascending.
         result.sort((a, b) => (a.users?.length || 0) - (b.users?.length || 0));
         let categories = [];
+        this.default_category = result.find((cat) => cat.is_default) || this.default_category;
+        if (!this.default_category) {
+          DB.Category.create({
+            name: "",
+            is_default: true,
+            users: [],
+          }).then((default_cat) => {
+            this.default_category = default_cat;
+          });
+        }
         for (const cat of result) {
           cat.users ??= [];
           if (cat.is_default) {
-            this.default_category = cat;
             continue;
           }
 
@@ -39,18 +48,8 @@ export class CategoriesContext {
           this.map.set(category.id, category);
         }
       },
-      { sort: [{ name: "asc" }] }
+      { sort: [{ name: "asc" }] },
     );
-
-    if (!this.default_category) {
-      DB.Category.create({
-        name: "",
-        is_default: true,
-        users: [],
-      }).then((default_cat) => {
-        this.default_category = default_cat;
-      });
-    }
   }
 
   onlineInit() {
@@ -74,7 +73,7 @@ export class CategoriesContext {
                   users: online_category.users,
                 }).catch((err) => {
                   // Ignore errors otherwise
-                })
+                }),
               );
               continue;
             } else {
@@ -96,7 +95,7 @@ export class CategoriesContext {
                   users: category.users,
                 }).catch((err) => {
                   // Ignore errors otherwise
-                })
+                }),
               );
 
               if (online_category.users.length === 1 && online_category.users[0] === user.email_address) {
@@ -104,7 +103,7 @@ export class CategoriesContext {
                 promises.push(
                   OnlineDB.Category.delete(online_category.id).catch(() => {
                     // Ignore errors otherwise
-                  })
+                  }),
                 );
 
                 // Also delete all online tasks assigned to this category
@@ -118,14 +117,14 @@ export class CategoriesContext {
                         delete_promises.push(
                           OnlineDB.Task.delete(task.id).catch(() => {
                             // Ignore errors otherwise
-                          })
+                          }),
                         );
                       }
                       return Promise.all(delete_promises);
                     })
                     .catch(() => {
                       // Ignore errors otherwise
-                    })
+                    }),
                 );
               }
             }
@@ -135,11 +134,11 @@ export class CategoriesContext {
         },
         {
           filters: [{ field: "users", operator: "array-contains", value: user.email_address }],
-        }
+        },
       );
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`Fout met aanmelding vir aanlyn kategorieë: ${error_message}`);
+      alert.error(`Fout met aanmelding vir aanlyn kategorieë: ${error_message}`);
     }
   }
 

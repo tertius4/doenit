@@ -3,12 +3,10 @@
  * This file handles the admin of showing notifications, but no app specific logic should be here.
  */
 import { getMessaging, type Messaging } from "firebase/messaging";
-import { LocalNotifications } from "@capacitor/local-notifications";
-import { initializeApp } from "$lib/chunk/firebase-app";
-import { APP_NAME, FIREBASE_CONFIG } from "$lib";
-import { Alert } from "$lib/core/alert";
+import { initializeApp } from "$logic/chunk/firebase-app";
+import { APP_NAME, FIREBASE_CONFIG, getToken } from "$lib";
+import { alert } from "$lib/core/alert";
 import { PUBLIC_FIREBASE_FUNCTIONS_URL } from "$env/static/public";
-import { user } from "$lib/base/user.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
 
 // TODO: Candidate for core or base
@@ -26,7 +24,7 @@ export class Notify {
         Notify.Push.is_initialized = true;
       } catch (error) {
         const error_message = error instanceof Error ? error.message : String(error);
-        Alert.error(`Kon nie Push Notification initaliseer nie: ${error_message}`);
+        alert.error(`Kon nie Push Notification initaliseer nie: ${error_message}`);
       }
     }
 
@@ -44,7 +42,7 @@ export class Notify {
       }
 
       try {
-        const token = user.getToken ? await user.getToken() : null;
+        const token = await getToken();
         if (!token) throw new Error("User not authenticated");
 
         const users = await OnlineDB.User.getAll({
@@ -76,7 +74,7 @@ export class Notify {
         }
       } catch (error) {
         const error_message = error instanceof Error ? error.message : String(error);
-        Alert.error(`Stuur van Push Notification het gefaal: ${error_message}`);
+        alert.error(`Stuur van Push Notification het gefaal: ${error_message}`);
       }
     }
 
@@ -96,7 +94,7 @@ export class Notify {
       }
 
       try {
-        const token = user.getToken ? await user.getToken() : null;
+        const token = await getToken();
         if (!token) throw new Error("User not authenticated");
 
         const unique_email_addresses = Array.from(new Set(email_address));
@@ -129,7 +127,7 @@ export class Notify {
         }
       } catch (error) {
         const error_message = error instanceof Error ? error.message : String(error);
-        Alert.error(`Stuur van Push Notification Template het gefaal: ${error_message}`);
+        alert.error(`Stuur van Push Notification Template het gefaal: ${error_message}`);
       }
     }
   };

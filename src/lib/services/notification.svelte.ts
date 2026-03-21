@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { DB } from "$lib/DB";
 import { sortTasksByDueDate, wait } from "$lib";
 import { App } from "@capacitor/app";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { DateUtil } from "$lib/core/date_util";
 
 class Notification {

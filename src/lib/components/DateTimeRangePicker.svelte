@@ -1,10 +1,10 @@
 <script>
   import InputTime from "$lib/components/element/input/InputTime.svelte";
   import InputDate from "$lib/components/element/input/InputDate.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { slide } from "svelte/transition";
   import { untrack } from "svelte";
-  import ButtonClear from "./element/button/ButtonClear.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
   import { t, language } from "$lib/services/language.svelte";
 
   let { start, end, onchange, error_message = $bindable() } = $props();

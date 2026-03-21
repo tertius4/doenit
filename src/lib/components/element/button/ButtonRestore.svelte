@@ -1,6 +1,6 @@
 <script>
-  import Modal from "$lib/components/modal/Modal.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
+  import Icon from "$display/comps/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import { slide } from "svelte/transition";
@@ -63,17 +63,14 @@
   </p>
 </button>
 
-<Modal bind:is_open onclose={() => (is_open = false)}>
+<Modal bind:is_open onclose={() => (is_open = false)} class="space-y-4">
   {#if selected_backup}
-    <!-- TODO: Translation -->
-    <div class="mb-4">
-      <h2 class="text-lg font-semibold">{t("restore_data")}</h2>
-      <p class="text-muted">
-        {t("latest_backup_made_on", {
-          timestamp: DateUtil.format(new Date(selected_backup.timestamp), "DD MMM YYYY, HH:mm"),
-        })}
-      </p>
-    </div>
+    <ModalHeader>{t("restore_data")}</ModalHeader>
+    <p class="text-muted">
+      {t("latest_backup_made_on", {
+        timestamp: DateUtil.format(new Date(selected_backup.timestamp), "DD MMM YYYY, HH:mm"),
+      })}
+    </p>
 
     <div transition:slide class="text-sm bg-error/10 border border-error rounded-lg p-3 space-y-2 mt-4">
       <span class="text-sm flex flex-col gap-1">

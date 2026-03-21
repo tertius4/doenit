@@ -1,7 +1,7 @@
 <script>
   import { goto } from "$app/navigation";
   import { t } from "$lib/services/language.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
 
   const { ...rest } = $props();
 

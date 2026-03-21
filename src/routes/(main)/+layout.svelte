@@ -1,0 +1,31 @@
+<script>
+  import Footer from "$display/features/footer/Footer.svelte";
+  import Heading from "$display/features/header/Heading.svelte";
+  import { context } from "$logic/context.svelte";
+  import { Value } from "$lib/utils.svelte";
+  import { setContext } from "svelte";
+  import "../../app.css";
+
+  const search_text = new Value("");
+  setContext("search_text", search_text);
+
+  const { children } = $props();
+
+  $effect(() => {
+    document.documentElement.setAttribute("data-theme", context.settings.theme);
+  });
+</script>
+
+<div
+  class="min-h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
+>
+  <div>
+    <Heading />
+  </div>
+
+  <main class="max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
+    {@render children()}
+  </main>
+
+  <Footer />
+</div>

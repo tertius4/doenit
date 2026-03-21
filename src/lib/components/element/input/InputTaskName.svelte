@@ -1,11 +1,10 @@
 <script>
   import { t } from "$lib/services/language.svelte";
-  import ButtonClear from "../button/ButtonClear.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
 
   /**
    * @typedef {Object} Props
    * @property {string} value
-   * @property {boolean} [show]
    * @property {(e: Event) => Promise<void>} [onsubmit]
    * @property {Readonly<boolean>} [invalid]
    * @property {Readonly<boolean>} [focus_on_mount]
@@ -13,7 +12,7 @@
    */
 
   /** @type {Props & Record<string, any>} */
-  let { value = $bindable(), onsubmit, show, invalid, focus_on_mount = false, can_clear = false, ...rest } = $props();
+  let { value = $bindable(), onsubmit, invalid, focus_on_mount = false, can_clear = false, ...rest } = $props();
 
   /** @type {HTMLTextAreaElement | null} */
   let textarea = null;

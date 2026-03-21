@@ -1,10 +1,10 @@
 <script>
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
-  import { backHandler } from "$lib/BackHandler.svelte";
+  import { backHandler } from "$logic/navigation";
   import CategoryButton from "./CategoryButton.svelte";
   import { t } from "$lib/services/language.svelte";
   import { selectedCategories } from "$lib/cached";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { Selected } from "$lib/selected.svelte";
   import { onMount, untrack } from "svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
@@ -42,7 +42,7 @@
 <Drawer is_open={is_filter_open} onclose={() => (is_filter_open = false)}>
   <div class="grow flex flex-col relative h-full">
     <div class="absolute top-0 z-10 w-full flex gap-2 items-center justify-center rounded-t-2xl">
-      <Icon name="categories" />
+      <Icon name="categories" size={24} />
       <span class="font-medium">{t("categories")}</span>
     </div>
 

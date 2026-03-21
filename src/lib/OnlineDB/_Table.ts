@@ -1,4 +1,4 @@
-import { getApp, initializeApp, type Unsubscribe } from "$lib/chunk/firebase-app";
+import { getApp, initializeApp, type Unsubscribe } from "$logic/chunk/firebase-app";
 import {
   addDoc,
   collection,
@@ -16,10 +16,10 @@ import {
   where,
   writeBatch,
   type WhereFilterOp,
-} from "$lib/chunk/firebase-firestore";
+} from "$logic/chunk/firebase-firestore";
 import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 import { DateUtil } from "$lib/core/date_util";
-import { Alert } from "$lib/core/alert";
+import { alert } from "$lib/core/alert";
 
 interface QueryOptions {
   filters?: (
@@ -78,7 +78,7 @@ export class Table<T extends BackupManifest | User | OnlineTask | OnlineCategory
 
       return snapshot.docs.map((d) => ({ ...d.data(), id: d.id })) as T[];
     } catch (e) {
-      alert(`Het gefaal om dokuments te kry van ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
+      alert.error(`Het gefaal om dokuments te kry van ${this.name}: ${(e as Error).stack || "Unknown error occurred"}`);
       return [];
     }
   }

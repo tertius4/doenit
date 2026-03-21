@@ -1,9 +1,9 @@
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { Alert } from "$lib/core/alert";
+import { alert } from "$lib/core/alert";
 import { OnlineDB } from "$lib/OnlineDB";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { t } from "./language.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { DB } from "$lib/DB";
@@ -19,7 +19,7 @@ class PushNotificationService {
       // Request FCM permission
       const permission = await FirebaseMessaging.requestPermissions();
       if (permission.receive !== "granted") {
-        Alert.error(t("push_notification_permission_not_granted"));
+        alert.error(t("push_notification_permission_not_granted"));
         return;
       }
 
@@ -43,15 +43,15 @@ class PushNotificationService {
       if (error_message.endsWith("the client is offline.")) return;
       if (error_message.endsWith("Missing or insufficient permissions.")) return;
 
-      Alert.error(`${t("error_initializing_push_notifications")}: ${error_message}`);
+      alert.error(`${t("error_initializing_push_notifications")}: ${error_message}`);
     }
   }
 
   private async syncUserData(token: string) {
     if (!user.is_plus_user) return; // Sinkroniseer slegs vir Plus gebruikers om privaatheid te beskerm
-    if (!user.uid) return;
+    if (!user.id) return;
 
-    let me = await OnlineDB.User.read(user.uid);
+    let me = await OnlineDB.User.read(user.id);
     if (!me) {
       me = await OnlineDB.User.getAll({
         filters: [{ field: "email_address", operator: "==", value: user.email_address }],
@@ -66,15 +66,15 @@ class PushNotificationService {
       // Kyk vir enige veranderinge - Hierdie is al gebruiks inligting wat gestoor word.
       if (!is_updated && me.avatar !== user.avatar) is_updated = true;
       if (!is_updated && me.name !== user.name) is_updated = true;
-      if (!is_updated && me.uid !== user.uid) is_updated = true;
+      if (!is_updated && me.id !== user.id) is_updated = true;
       if (!is_updated && me.email_address !== user.email_address) is_updated = true;
       if (!is_updated && me.fcm_token !== token) is_updated = true;
       if (!is_updated && me.language_code !== user.language_code) is_updated = true;
 
       if (!is_updated) return;
-      await OnlineDB.User.updateById(me.uid, {
+      await OnlineDB.User.updateById(me.id, {
         fcm_token: token,
-        uid: user.uid,
+        id: user.id,
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,
@@ -83,7 +83,7 @@ class PushNotificationService {
     } else {
       await OnlineDB.User.create({
         fcm_token: token,
-        uid: user.uid,
+        id: user.id,
         avatar: user.avatar,
         name: user.name,
         email_address: user.email_address,
@@ -207,12 +207,12 @@ class PushNotificationService {
       // Show local notification with formatted content
       await LocalNotifications.schedule({ notifications: [formatted_notification] });
     } catch (error) {
-      Alert.error(`${t("error_showing_invite_notification")}: ${error}`);
+      alert.error(`${t("error_showing_invite_notification")}: ${error}`);
     }
   }
 
   private getTitle(type: string): string {
-    const is_english = Cached.language.value === "en";
+    const is_english = user.language_code === "en";
     switch (type) {
       case "friend_request":
         if (is_english) {

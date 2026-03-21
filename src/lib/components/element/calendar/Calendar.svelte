@@ -1,7 +1,7 @@
 <script>
   import { slide } from "svelte/transition";
   import CalendarMonth from "./CalendarMonth.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { t } from "$lib/services/language.svelte";
   import { untrack } from "svelte";
   import { DateUtil } from "$lib/core/date_util";

@@ -1,8 +1,8 @@
-import type { RxCollection } from "$lib/chunk/rxdb";
+import type { RxCollection } from "$logic/chunk/rxdb";
 import { Table } from "./_Table";
 import { OnlineDB } from "$lib/OnlineDB";
-import { user } from "$lib/base/user.svelte";
-import { Alert } from "$lib/core/alert";
+import { user } from "$lib/core/user.svelte";
+import { alert } from "$lib/core/alert";
 import { DB } from "$lib/DB";
 
 export class UserTable extends Table<User> {
@@ -45,7 +45,7 @@ export class UserTable extends Table<User> {
         ],
       }),
     ];
-    await Promise.all(promises.map((p) => p.catch((e) => alert(e.stack))));
+    await Promise.all(promises.map((p) => p.catch((e) => alert.error(e.stack))));
 
     // Hierdie moet gebeur na die ander invites geskrap is.
     const leavePromises = email_addresses.map((email) =>
@@ -54,7 +54,7 @@ export class UserTable extends Table<User> {
         from_email_address: my_email_address,
         to_email_address: email,
         status: "left",
-      })
+      }),
     );
     await Promise.all(leavePromises);
   }
@@ -65,7 +65,7 @@ export class UserTable extends Table<User> {
         acc[online_user.email_address] = online_user;
         return acc;
       },
-      {} as Record<string, OnlineUser>
+      {} as Record<string, OnlineUser>,
     );
 
     const promises: Promise<void>[] = [];
@@ -86,7 +86,7 @@ export class UserTable extends Table<User> {
       await DB.User.update(user.id, {
         avatar: online_user.avatar,
         name: online_user.name,
-      }).catch((e) => Alert.error(`Fout met sinchronisering van gebruiker ${user.email_address}: ${e.message}`));
+      }).catch((e) => alert.error(`Fout met sinchronisering van gebruiker ${user.email_address}: ${e.message}`));
     }
 
     await Promise.all(promises);

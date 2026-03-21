@@ -3,12 +3,12 @@
   import InputText from "./element/input/InputText.svelte";
   import { slide } from "svelte/transition";
   import Button from "./element/button/Button.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { isValidEmail, normalize } from "$lib";
-  import { user } from "$lib/base/user.svelte";
+  import { user } from "$lib/core/user.svelte";
   import { OnlineDB } from "$lib/OnlineDB";
   import { DB } from "$lib/DB";
-  import { Alert } from "$lib/core/alert";
+  import { alert } from "$lib/core/alert";
   import { Notify } from "$lib/services/notifications/notifications";
   import Drawer from "./element/Drawer.svelte";
   import { Share as CapacitorShare } from "@capacitor/share";
@@ -79,7 +79,7 @@
       });
 
       if (!result.success) {
-        Alert.error(result.error_message);
+        alert.error(result.error_message);
       }
 
       is_loading = false;

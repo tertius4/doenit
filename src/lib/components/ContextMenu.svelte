@@ -1,6 +1,6 @@
 <script>
   import BulkAssignCategory from "./BulkAssignCategory.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { slide } from "svelte/transition";
   import { Selected } from "$lib/selected.svelte";
   import { Share } from "@capacitor/share";

@@ -1,12 +1,18 @@
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [basicSsl(), tailwindcss(), sveltekit()],
   server: {
+    host: '0.0.0.0',
+    port: 2002,
     fs: {
       allow: [".."],
+    },
+    headers: {
+      "Content-Security-Policy": "base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://apis.google.com https://accounts.google.com https://www.gstatic.com; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://www.gstatic.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; style-src 'self' 'unsafe-inline'",
     },
   },
   build: {
@@ -27,11 +33,12 @@ export default defineConfig({
         manualChunks: {
           // Separate chunk for translations
           translations: ["./src/lib/services/language/translations.js"],
-          "firebase-app": ["./src/lib/chunk/firebase-app.ts"],
-          "firebase-firestore": ["./src/lib/chunk/firebase-firestore.ts"],
-          rxdb: ["./src/lib/chunk/rxdb.ts"],
-          "rxdb-helper": ["./src/lib/chunk/rxdb_helper.ts"],
+          "firebase-app": ["./src/lib/v2/app/chunk/firebase-app.ts"],
+          "firebase-firestore": ["./src/lib/v2/app/chunk/firebase-firestore.ts"],
+          rxdb: ["./src/lib/v2/app/chunk/rxdb.ts"],
+          "rxdb-helper": ["./src/lib/v2/app/chunk/rxdb_helper.ts"],
         },
+        
       },
     },
   },

@@ -1,4 +1,5 @@
 import { Preferences } from "@capacitor/preferences";
+import { alert } from "$lib/core/alert";
 
 class CacheHandler<T> {
   private key: string;
@@ -35,9 +36,9 @@ class CacheHandler<T> {
       }
     } catch (error) {
       if (Cached.language.value === "en") {
-        alert(`Error initializing cache for key "${this.key}": ${(error as Error).message}`);
+        alert.error(`Error initializing cache for key "${this.key}": ${(error as Error).message}`);
       } else {
-        alert(`Fout met laai van kas vir sleutel "${this.key}": ${(error as Error).message}`);
+        alert.error(`Fout met laai van kas vir sleutel "${this.key}": ${(error as Error).message}`);
       }
     }
   }
@@ -50,9 +51,9 @@ class CacheHandler<T> {
       });
     } catch (error) {
       if (Cached.language.value === "en") {
-        alert(`Error setting cache for key "${this.key}": ${(error as Error).message}`);
+        alert.error(`Error setting cache for key "${this.key}": ${(error as Error).message}`);
       } else {
-        alert(`Fout met stel van kas vir sleutel "${this.key}": ${(error as Error).message}`);
+        alert.error(`Fout met stel van kas vir sleutel "${this.key}": ${(error as Error).message}`);
       }
     }
   }
@@ -62,9 +63,9 @@ class CacheHandler<T> {
       Preferences.remove({ key: this.key });
     } catch (error) {
       if (Cached.language.value === "en") {
-        alert(`Error removing cache for key "${this.key}": ${(error as Error).message}`);
+        alert.error(`Error removing cache for key "${this.key}": ${(error as Error).message}`);
       } else {
-        alert(`Fout met verwydering van kas vir sleutel "${this.key}": ${(error as Error).message}`);
+        alert.error(`Fout met verwydering van kas vir sleutel "${this.key}": ${(error as Error).message}`);
       }
     }
   }

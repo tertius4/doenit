@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { Logger } from "$lib/core/logger";
+import { alert } from "$lib/core/alert";
 
 export interface TaskWidgetPlugin {
   updateTasks({ tasks, categories }: { tasks: Task[]; categories: Category[] }): Promise<{ success: boolean }>;
@@ -19,7 +20,7 @@ export class Widget {
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       Logger.error("Widget updateLanguage failed", error);
-      alert(`Kon nie widget se 'updateLanguage' bywerk nie: ${error_message}`);
+      alert.error(`Kon nie widget se 'updateLanguage' bywerk nie: ${error_message}`);
     }
   }
 
@@ -32,7 +33,7 @@ export class Widget {
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       Logger.error("Widget updateTheme failed", error);
-      alert(`Kon nie widget se 'updateTheme' bywerk nie: ${error_message}`);
+      alert.error(`Kon nie widget se 'updateTheme' bywerk nie: ${error_message}`);
     }
   }
 
@@ -48,7 +49,7 @@ export class Widget {
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
       Logger.error("Widget updateTasks failed", error);
-      alert(`Kon nie widget se 'updateTasks' bywerk nie: ${error_message}`);
+      alert.error(`Kon nie widget se 'updateTasks' bywerk nie: ${error_message}`);
     }
   }
 }

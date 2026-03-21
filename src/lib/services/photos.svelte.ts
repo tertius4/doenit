@@ -1,7 +1,7 @@
 import { Camera, CameraResultType, CameraSource, type Photo } from "@capacitor/camera";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
-import { Alert } from "$lib/core/alert";
+import { alert } from "$lib/core/alert";
 import { t } from "$lib/services/language.svelte";
 import { DateUtil } from "$lib/core/date_util";
 
@@ -42,7 +42,7 @@ class PhotoService {
 
     try {
       if (!Capacitor.isNativePlatform()) {
-        Alert.show({ message: t("photos_not_supported_web"), type: "info" });
+        alert.info(t("photos_not_supported_web"));
         return null;
       }
 
@@ -61,7 +61,7 @@ class PhotoService {
         return null;
       }
 
-      Alert.error(t("error_adding_photo") + " " + error.message);
+      alert.error(t("error_adding_photo") + " " + error.message);
       return null;
     }
   }

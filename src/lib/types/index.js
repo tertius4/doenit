@@ -1,52 +1,4 @@
 /**
- * @typedef {Object} Task
- * @property {string} id - Primary key (UUID).
- * @property {boolean} archived - Indicates if the task is archived.
- * @property {string} created_at - Timestamp when the task was created.
- * @property {string} updated_at - Timestamp when the task was last updated.
- * @property {string | null} completed_at - Timestamp when the task was last completed, or null if never completed.
- *
- * @property {string} name - Name of the task.
- * @property {number} completed - The number of times the task has been completed (for repeatable tasks).
- * @property {string | null} due_date - Due date of the task (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD"), or null.
- * @property {string | null} start_date - Start date of the task (format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DD"), or null.
- * @property {string} repeat_interval - Interval for repeating the task.
- * @property {(0 | 1 | 2 | 3 | 4 | 5 | 6)[]} repeat_specific_days - Array of days of the week (0-6, where 0 is Sunday) for repeating the task.
- * @property {number} repeat_interval_number - Number representing the repeat interval.
- * @property {boolean} important - Indicates if the task is marked as important.
- * @property {string} [category_id] - Optional category ID associated with the task.
- * @property {string} [assigned_user_email] - Optional user email assigned to the task.
- * @property {string[]} [photo_ids] - Array of photo IDs (filenames) attached to this task.
- */
-
-/**
- * Represents a category for tasks.
- * @typedef {Object} Category
- * @property {string} id - Primary key (UUID).
- * @property {boolean} archived - Indicates if the category is archived.
- * @property {string} created_at - Timestamp when the category was created.
- * @property {string} updated_at - Timestamp when the category was last updated.
- *
- * @property {boolean} [is_default] - Indicates if this is the default category.
- * @property {string} name - Name of the category.
- * @property {string[]} users
- */
-
-/**
- * Represents a connection with another user.
- * @typedef {Object} User
- * @property {string} uid - Firebase User ID.
- * @property {string} id - Primary key (UUID).
- * @property {string} name - Name of the user.
- * @property {string} [avatar] - URL to the user's avatar image.
- * @property {boolean} [is_pending] - Indicates if the connection is pending.
- * @property {string} email_address - Email address of the user.
- * @property {boolean} [is_plus_user] - Indicates if the user has a Plus subscription.
- * @property {string} created_at - Timestamp when the user was created.
- * @property {string} updated_at - Timestamp when the user was last updated.
- */
-
-/**
  * Online Document used to index backups.
  * @typedef {Object} BackupManifest
  * @property {string} id - Primary key (UUID).
@@ -186,15 +138,17 @@
  * @property {'top' | 'bottom'} [position] - Position where the toast appears on screen.
  */
 
+// ======== DEPRECATED TYPES BELOW ========
 /**
  * @template T
- * @typedef {{ success: true, data: T } | { success: false, error_message: string, data?: * }} Result<T>
+ * @typedef {{ success: true, data: T } | { success: false, error_message: string, data?: * }} ResultOld<T>
  */
 
 /** @typedef {'af' | 'en'} Language */
 /** @typedef {'dark' | 'light'} Theme */
 /** @typedef {{ success: true } | { success: false, error_message: string }} SimpleResult */
 /** @typedef {16 | 18 | 20 } TextSize */
+// ========================================
 
 /**
  * @template T
@@ -216,14 +170,28 @@
  * @property {DailySummary} [summary_record] - The daily summary record.
  */
 
-// /**
-//  * Represents a room for shared tasks.
-//  * @typedef {Object} Room
-//  * @property {boolean} archived - Indicates if the room is archived.
-//  * @property {string} id - Primary key (UUID).
-//  * @property {string} name - Name of the room.
-//  * @property {boolean} [pending]
-//  * @property {{ email: string, pending?: boolean }[]} users - Array of user emails in the room.
-//  * @property {string} updated_at - Timestamp when the room was last updated.
-//  * @property {string} created_at - Timestamp when the room was created.
-//  */
+/**
+ * @namespace Logic
+ */
+
+/**
+ * @typedef {Object} Logic.CategoryListItem
+ * @property {boolean} has_title
+ * @property {number} task_count
+ * @property {string} id
+ * @property {string} name
+ * @property {string[]} users
+ */
+
+/**
+ * @typedef {Object} Logic.CategoryAssignTask
+ * @prop {string} id
+ * @prop {string} name
+ * @prop {boolean} show_shared_title
+ */
+
+/**
+ * @typedef {Object} Logic.MainPageTask
+ * @prop {string} id
+ * @prop {string} name
+ */

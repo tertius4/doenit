@@ -1,4 +1,4 @@
-import type { RxCollection } from "$lib/chunk/rxdb";
+import type { RxCollection } from "$logic/chunk/rxdb";
 import { DateUtil } from "$lib/core/date_util";
 import { Table } from "./_Table";
 

@@ -44,6 +44,7 @@ const config: CapacitorConfig = {
       releaseType: "AAB",
       signingType: "jarsigner",
     },
+    adjustMarginsForEdgeToEdge: "auto"
   },
 };
 

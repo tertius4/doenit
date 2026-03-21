@@ -3,9 +3,9 @@
   import { onMount } from "svelte";
   import { Selected } from "$lib/selected.svelte";
   import ItemName from "./ItemName.svelte";
-  import InputCheckbox from "../element/input/InputCheckbox.svelte";
+  import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
   import TaskDueDate from "./TaskDueDate.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import TaskContainer from "./TaskContainer.svelte";
   import { DateUtil } from "$lib/core/date_util";
   import { DB } from "$lib/DB";

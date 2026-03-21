@@ -1,7 +1,7 @@
 <script>
-  import Modal from "$lib/components/modal/Modal.svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
   import { t } from "$lib/services/language.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import Backup from "$lib/services/backup.svelte";
 
   /**
@@ -49,7 +49,7 @@
 </button>
 
 <Modal class="p-6" bind:is_open onclose={() => (is_open = false)}>
-  <h2 class="text-lg font-semibold mb-4">{t("backup_question")}</h2>
+  <ModalHeader>{t("backup_question")}</ModalHeader>
   {#if Backup.last_backup_at}
     <p class="text-sm mb-4">
       {t("last_backup")}: {Backup.last_backup_at}

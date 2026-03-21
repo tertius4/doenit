@@ -7,7 +7,8 @@ export class TasksContext {
 
   setTasks(tasks: Task[]) {
     this.tasks = tasks;
-    this.map.clear();
+    // TODO: Should update this later to only update changed tasks for better performance
+    this.map.clear(); 
     for (const task of tasks) {
       this.map.set(task.id, task);
     }

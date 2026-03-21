@@ -40,6 +40,3 @@ project(':capacitor-push-notifications').projectDir = new File('../node_modules/
 
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/share/android')
-
-include ':codetrix-studio-capacitor-google-auth'
-project(':codetrix-studio-capacitor-google-auth').projectDir = new File('../packages/capacitor-google-auth/android')

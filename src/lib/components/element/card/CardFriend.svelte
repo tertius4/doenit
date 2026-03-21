@@ -1,6 +1,6 @@
 <script>
   import { t } from "$lib/services/language.svelte";
-  import { user as current_user } from "$lib/base/user.svelte";
+  import { user as current_user } from "$lib/core/user.svelte";
 
   /**
    * @typedef {Object} Props

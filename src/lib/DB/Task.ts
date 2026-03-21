@@ -1,7 +1,7 @@
-import type { RxCollection } from "$lib/chunk/rxdb";
+import type { RxCollection } from "$logic/chunk/rxdb";
 import { DateUtil } from "$lib/core/date_util";
 import { Secure } from "$lib/core/secure";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 
 import { SyncService } from "$lib/services/syncService";
 import { Photos } from "$lib/services/photos.svelte";
@@ -10,17 +10,16 @@ import { t } from "$lib/services/language.svelte";
 import { Table } from "./_Table";
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
+import { alert } from "$lib/core/alert";
 
 export class TaskTable extends Table<Task> {
   constructor(collection: RxCollection<Task>) {
     super(collection);
   }
 
-  async create(
-    task: Omit<Task, "id" | "created_at" | "updated_at"> & { id?: string; updated_at?: string; created_at?: string }
-  ): Promise<Task> {
+  async create(task: Task | TaskData): Promise<Task> {
     if (!task) throw Error(t("no_task_found"));
-    if (!task.name?.trim()) throw Error(t("what_must_be_done"));
+    if (!task.name?.trim()) throw Error(t("task_title_required"));
 
     if (!!task.start_date && !!task.due_date && task.start_date > task.due_date) {
       throw Error(t("start_date_before_end"));
@@ -65,22 +64,8 @@ export class TaskTable extends Table<Task> {
   }
 
   async update(id: string, task: Task): Promise<Task | null> {
-    if (!task) throw Error(t("no_task_found"));
-    if (!task.name?.trim()) throw Error(t("what_must_be_done"));
-
-    if (!!task.start_date && !!task.due_date && task.start_date > task.due_date) {
-      throw Error(t("start_date_before_end"));
-    }
-
-    task.name = task.name.trim();
-
     if (task.archived && !task.completed) {
       task.archived = false;
-    }
-
-    if (!!task.completed && !task.repeat_interval) {
-      if (!task.completed_at) task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
-      if (!task.archived) task.archived = true;
     }
 
     const db_task = await super.update(id, task);
@@ -188,7 +173,7 @@ export class TaskTable extends Table<Task> {
       }
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      alert(`[sync] Fout gedurende sinkronisasie: ${error_message}`);
+      alert.error(`[sync] Fout gedurende sinkronisasie: ${error_message}`);
     }
   }
 
@@ -216,7 +201,7 @@ export class TaskTable extends Table<Task> {
           category_id: db_task.category_id || "",
           data: encrypted_data || "",
         },
-        db_task
+        db_task,
       );
     } catch (error: any) {
       // Mark task for later sync when online
@@ -244,7 +229,7 @@ export class TaskTable extends Table<Task> {
       if (online_task_encrypted) {
         const online_task = (await Secure.decryptAndDecompress(
           online_task_encrypted.data,
-          online_task_encrypted.category_id
+          online_task_encrypted.category_id,
         )) as Task;
         if (online_task.completed < db_task.completed) {
           await OnlineDB.Task.completeWithNotification(
@@ -255,7 +240,7 @@ export class TaskTable extends Table<Task> {
               category_id: db_task.category_id || "",
               data: encrypted_data || "",
             },
-            db_task
+            db_task,
           );
         } else {
           await OnlineDB.Task.updateWithNotification(
@@ -266,7 +251,7 @@ export class TaskTable extends Table<Task> {
               category_id: db_task.category_id || "",
               data: encrypted_data || "",
             },
-            db_task
+            db_task,
           );
         }
       } else {
@@ -276,7 +261,7 @@ export class TaskTable extends Table<Task> {
             category_id: db_task.category_id || "",
             data: encrypted_data || "",
           },
-          db_task
+          db_task,
         );
       }
     } catch (error: any) {
@@ -369,7 +354,7 @@ function getNextDueDate(task: Task) {
       date: new Date(task.due_date),
       num: task.repeat_interval_number,
       specific_days: task.repeat_specific_days,
-    })
+    }),
   );
 
   return DateUtil.format(new_day, has_time ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD");
@@ -385,7 +370,7 @@ function getNextStartDate(task: Task) {
       date: new Date(task.start_date),
       num: task.repeat_interval_number,
       specific_days: task.repeat_specific_days,
-    })
+    }),
   );
 
   return DateUtil.format(new_day, has_time ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD");

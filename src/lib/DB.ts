@@ -1,5 +1,5 @@
-import { addRxPlugin, createRxDatabase } from "$lib/chunk/rxdb";
-import { getRxStorageDexie, RxDBMigrationSchemaPlugin } from "$lib/chunk/rxdb_helper";
+import { addRxPlugin, createRxDatabase } from "$logic/chunk/rxdb";
+import { getRxStorageDexie, RxDBMigrationSchemaPlugin } from "$logic/chunk/rxdb_helper";
 import { CategoryTable } from "./DB/Category";
 import { TaskTable } from "./DB/Task";
 import { InviteTable } from "./DB/Invite.svelte";

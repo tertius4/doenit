@@ -5,7 +5,11 @@
 import { t } from "./services/language.svelte";
 import * as env from "$env/static/public";
 import { DateUtil } from "./core/date_util.js";
-import { user } from "./base/user.svelte";
+import { user } from "./core/user.svelte";
+import { getAuth, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { getApp } from "firebase/app";
+import { Device } from "@capacitor/device";
+import { logApiExecutionTime } from "./v2/logic/index.remote";
 
 export const AFRIKAANS = Symbol("af");
 export const ENGLISH = Symbol("en");
@@ -252,6 +256,7 @@ export function displayDateTime({ due_date, start_date }) {
   return `${startStr}${startTime ? " " + startTime : ""} - ${dueStr}`;
 }
 
+/** @param {Date | string | number} date */
 export function displayDateShort(date) {
   if (!date) return "";
 
@@ -475,7 +480,7 @@ export function sortTasksByDueDate(tasks) {
  */
 function getTaskDateRank(
   task,
-  { today, tomorrowEnd, dayAfterTomorrowEnd, thisWeekEnd, currentMonth, currentYear, nextMonth, nextMonthYear }
+  { today, tomorrowEnd, dayAfterTomorrowEnd, thisWeekEnd, currentMonth, currentYear, nextMonth, nextMonthYear },
 ) {
   if (!task.start_date) return 9; // no_date
 
@@ -550,4 +555,61 @@ export async function retry(fn, retries = 3, delay = 1000, operation_name = "ope
   }
 
   throw new Error(`${operation_name} failed after ${retries} attempts`);
+}
+
+export async function getToken() {
+  const credential = GoogleAuthProvider.credential(user.id_token);
+  const auth = getAuth(getApp(APP_NAME));
+  const user_credential = await signInWithCredential(auth, credential);
+
+  // Sync user data after successful sign-in
+  const firebase_user = user_credential.user;
+  const id_token = await firebase_user.getIdToken();
+
+  return id_token;
+}
+
+/**
+ * @returns {Promise<string>}
+ */
+export async function getDeviceId() {
+  const id = await Device.getId();
+  return id.identifier;
+}
+
+/**
+ * Wraps an asynchronous function to log its execution time.
+ * @template {(...args: any[]) => any} T - The function to wrap.
+ * @param {T} fn
+ * @returns {(...args: Parameters<T>) => Promise<ReturnType<T>>}
+ */
+export function apiLogger(fn) {
+  return async (...args) => {
+    try {
+      const start_time = Date.now();
+      const result = await fn(...args);
+      const elapsed = Date.now() - start_time;
+      logApiExecutionTime({ fn_name: fn.name, elapsed, args });
+      return result;
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : String(error);
+      console.error(`Error in ${fn.name}: ${error_message}`);
+    }
+  };
+}
+
+/**
+ * Wraps an asynchronous function to log its execution time.
+ * @template {(...args: any[]) => any} T - The function to wrap.
+ * @param {T} fn
+ * @returns {(...args: Parameters<T>) => ReturnType<T>}
+ */
+export function syncApiLogger(fn) {
+  return (...args) => {
+    const start_time = Date.now();
+    const result = fn(...args);
+    const elapsed = Date.now() - start_time;
+    logApiExecutionTime({ fn_name: fn.name, elapsed, args });
+    return result;
+  };
 }

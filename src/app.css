@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+
 /* Dynamic text sizes that can be changed at runtime */
 :root {
   --base-size: 1rem;
@@ -161,7 +169,7 @@
   /* Brand / State colors */
   --color-primary: hsl(220, 90%, 55%);
   --color-success: hsl(150, 70%, 40%);
-  --color-warning: hsl(40, 90%, 55%);
+  --color-warning: hsl(32, 90%, 45%);
   --color-error: hsl(0, 75%, 50%);
 }
 

@@ -1,7 +1,7 @@
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
 import { Secure } from "$lib/core/secure";
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { Logger } from "$lib/core/logger";
 
@@ -61,7 +61,7 @@ export class SyncService {
           acc[id] = null;
           return acc;
         },
-        {} as Record<string, (typeof tasks)[number] | null>
+        {} as Record<string, (typeof tasks)[number] | null>,
       );
 
       // Populate hash with actual tasks
@@ -78,7 +78,7 @@ export class SyncService {
           acc[task.task_id] = task;
           return acc;
         },
-        {} as Record<string, (typeof online_tasks)[number]>
+        {} as Record<string, (typeof online_tasks)[number]>,
       );
 
       for (const id of pending_task_ids) {
@@ -111,7 +111,7 @@ export class SyncService {
                 category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
-              task
+              task,
             );
           } else {
             await OnlineDB.Task.createWithNotification(
@@ -120,7 +120,7 @@ export class SyncService {
                 category_id: task.category_id || "",
                 data: encrypted_data || "",
               },
-              task
+              task,
             );
           }
 

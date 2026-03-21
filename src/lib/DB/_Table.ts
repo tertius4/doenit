@@ -1,5 +1,7 @@
 import { DateUtil } from "$lib/core/date_util";
-import type { MangoQuery, RxCollection } from "$lib/chunk/rxdb";
+import type { MangoQuery, RxCollection } from "$logic/chunk/rxdb";
+import { type Observable } from "rxjs";
+import { alert } from "$lib/core/alert";
 
 export class Table<T extends Task | Category | User | DailySummary> {
   collection: RxCollection<T>;
@@ -66,7 +68,7 @@ export class Table<T extends Task | Category | User | DailySummary> {
     if (typeof id !== "string") throw new Error(`Cannot fetch ${this.collection.name} with id: ${id}`);
 
     const doc = await this.collection.findOne(id).exec();
-    if (!doc) throw new Error(`[DB]: ${this.collection.name} with id ${id} not found`);
+    if (!doc) throw new Error(`NOT_FOUND`);
 
     return doc.toJSON() as T;
   }
@@ -109,7 +111,7 @@ export class Table<T extends Task | Category | User | DailySummary> {
 
       await this.collection.find({ selector: { id: { $in: ids } } }).remove();
     } catch (e) {
-      alert(`Fout met verwydering van item ${this.collection.name}: ` + e);
+      alert.error(`Fout met verwydering van item ${this.collection.name}: ` + e);
     }
   }
 
@@ -147,5 +149,9 @@ export class Table<T extends Task | Category | User | DailySummary> {
       const jsonDocs = docs.map((d) => d.toJSON() as T);
       callback(jsonDocs);
     });
+  }
+
+  stream(filter: MangoQuery<T> = {}): Observable<T[]> {
+    return this.collection.find(filter).$
   }
 }

@@ -1,6 +1,6 @@
 import { PUBLIC_GOOGLE_PLAY_STORE_URL } from "$env/static/public";
 import { InAppReview } from "@capacitor-community/in-app-review";
-import { Alert } from "$lib/core/alert.js";
+import { alert } from "$lib/core/alert.js";
 import { t } from "$lib/services/language.svelte";
 import { DateUtil } from "$lib/core/date_util";
 import { Cached } from "$lib/core/cache.svelte";
@@ -62,7 +62,7 @@ class RateAppService {
         window.open(PUBLIC_GOOGLE_PLAY_STORE_URL, "_blank");
       }
     } catch (e) {
-      Alert.error(t("rate_app_error"));
+      alert.error(t("rate_app_error"));
     }
   }
 }

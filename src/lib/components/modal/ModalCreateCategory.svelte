@@ -1,9 +1,10 @@
 <script>
   import InputText from "../element/input/InputText.svelte";
   import { t } from "$lib/services/language.svelte";
-  import Modal from "./Modal.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
+  import Icon from "$display/comps/Icon.svelte";
   import { DB } from "$lib/DB";
+  import Api from "$logic/api";
 
   /**
    * @typedef {Object} Props
@@ -13,7 +14,9 @@
    */
 
   /** @type {Props} */
-  let { open = $bindable(false), oncreate, onclose } = $props();
+  let { open = $bindable(false), ...props } = $props();
+  // svelte-ignore state_referenced_locally
+  const { oncreate, onclose } = props;
 
   let new_category_name = $state("");
   let error_message = $state("");
@@ -24,6 +27,11 @@
       return;
     }
 
+    Api.cats.create({
+      name: new_category_name.trim(),
+      is_default: false,
+      users: [],
+    });
     open = false;
     const category = await DB.Category.create({
       name: new_category_name.trim(),
@@ -44,7 +52,7 @@
 </script>
 
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={addCategory}>
-  <h2 class="text-lg font-semibold mb-4 leading-none">{t("create_new_category")}</h2>
+  <ModalHeader>{t("create_new_category")}</ModalHeader>
   <InputText
     bind:value={new_category_name}
     focus_on_mount

@@ -1,14 +1,14 @@
 <script>
-  import Modal from "./modal/Modal.svelte";
+  import Modal, { ModalHeader } from "$display/comps/modal";
   import Calendar from "./element/calendar/Calendar.svelte";
   import Slider from "./Slider.svelte";
   import { slide } from "svelte/transition";
   import { DateUtil } from "$lib/core/date_util";
   import Button from "./element/button/Button.svelte";
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import { onMount, untrack } from "svelte";
   import { t } from "$lib/services/language.svelte";
-  import ButtonClear from "./element/button/ButtonClear.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
 
   /**
    * @typedef {Object} Props
@@ -120,7 +120,7 @@
 </div>
 
 <Modal bind:is_open onclose={() => (enable_range = false)} close_button={false}>
-  <h1 class="mx-auto w-fit font-semibold py-2 text-lg">{t("datepicker_choose_start_and_end_date")}</h1>
+  <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
   <div class="mb-2">
     <Calendar is_range_enabled={enable_range} bind:start_date bind:end_date ondateselected={handleSelection} />
   </div>

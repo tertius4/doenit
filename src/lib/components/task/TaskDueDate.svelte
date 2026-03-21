@@ -1,5 +1,5 @@
 <script>
-  import Icon from "$lib/components/element/Icon.svelte";
+  import Icon from "$display/comps/Icon.svelte";
 
   /** @typedef {Object} Props
    * @property {boolean} is_complete

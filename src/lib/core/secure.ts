@@ -1,5 +1,6 @@
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { PUBLIC_ENCRYPTION_KEY } from "$env/static/public";
+import { alert } from "$lib/core/alert";
 
 export class Secure {
   /**
@@ -13,26 +14,29 @@ export class Secure {
     }
 
     let keySource: string;
-    
+
     if (category_id) {
       // For shared tasks: Use category_id so all collaborators can decrypt
       keySource = category_id;
     } else {
       // For personal data (backups): Use user's UID
-      const uid = user.uid;
-      if (!uid) {
+      const id = user.id;
+      if (!id) {
         throw new Error("User not authenticated - cannot derive encryption key");
       }
-      keySource = uid;
+      keySource = id;
     }
 
     // Derive a consistent 32-character key from the source
     const encoder = new TextEncoder();
     const data = encoder.encode(keySource);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const keyString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-    
+    const keyString = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .substring(0, 32);
+
     return keyString;
   }
   static async compressAndEncrypt(data: Record<string, any>, category_id?: string): Promise<string | undefined> {
@@ -70,7 +74,7 @@ export class Secure {
       return result;
     } catch (error) {
       const error_message = error instanceof Error ? error.message : String(error);
-      alert(`Kon nie data kompreseer en enkripteer nie: ${error_message}`);
+      alert.error(`Kon nie data kompreseer en enkripteer nie: ${error_message}`);
     }
   }
 
@@ -78,17 +82,17 @@ export class Secure {
     // Try new format first (with version marker)
     try {
       const combined = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-      
+
       // Check for v2 version marker
       const hasV2Marker = combined.length > 2 && combined[0] === 0x76 && combined[1] === 0x32;
-      
+
       if (hasV2Marker) {
         // New format: version marker (2 bytes) + IV (12 bytes) + encrypted data
         const iv = combined.slice(2, 14);
         const encrypted = combined.slice(14);
         const key = await Secure.deriveKey(category_id, false);
         const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, encrypted);
-        
+
         const decoder = new TextDecoder();
         const compressedBase64 = decoder.decode(decrypted);
         const compressed = Uint8Array.from(atob(compressedBase64), (c) => c.charCodeAt(0));
@@ -103,7 +107,7 @@ export class Secure {
     // Try legacy format (no version marker, using PUBLIC_ENCRYPTION_KEY)
     try {
       const combined = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-      
+
       // Legacy format: IV (12 bytes) + encrypted data
       const iv = combined.slice(0, 12);
       const encrypted = combined.slice(12);
@@ -118,7 +122,7 @@ export class Secure {
       return JSON.parse(decompressed);
     } catch (legacyError) {
       const error_message = legacyError instanceof Error ? legacyError.message : String(legacyError);
-      alert(`Fout tydens dekripsie en dekompressie: ${error_message}`);
+      alert.error(`Fout tydens dekripsie en dekompressie: ${error_message}`);
       return undefined;
     }
   }

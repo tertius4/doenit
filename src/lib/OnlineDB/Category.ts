@@ -1,4 +1,4 @@
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { Table } from "./_Table";
 
 export class CategoryTable extends Table<OnlineCategory> {

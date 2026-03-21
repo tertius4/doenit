@@ -1,6 +1,6 @@
 <script>
-  import Icon from "$lib/components/element/Icon.svelte";
-  import InputCheckbox from "../element/input/InputCheckbox.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
   import { COMPLETE_TASK_DELAY_MS, displayDateTime } from "$lib";
   import TaskContainer from "./TaskContainer.svelte";
   import { Selected } from "$lib/selected.svelte";

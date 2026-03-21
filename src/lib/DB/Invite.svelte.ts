@@ -1,4 +1,5 @@
-import { user } from "$lib/base/user.svelte";
+import { alert } from "$lib/core/alert";
+import { user } from "$lib/core/user.svelte";
 import { DB } from "$lib/DB";
 import { OnlineDB } from "$lib/OnlineDB";
 
@@ -81,13 +82,13 @@ export class InviteTable {
           promises.map((p) =>
             p.catch((e) => {
               throw e;
-            })
-          )
+            }),
+          ),
         );
         promises.length = 0;
       }
     } catch (error) {
-      alert("Fout met verwerking van uitnodigingslys: " + error);
+      alert.error("Fout met verwerking van uitnodigingslys: " + error);
     }
   }
 

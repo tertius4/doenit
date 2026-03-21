@@ -1,4 +1,5 @@
 import { Preferences } from "@capacitor/preferences";
+import { browser } from "$app/environment";
 
 class Cached<T> {
   private key: string;
@@ -8,6 +9,7 @@ class Cached<T> {
   }
 
   async get(): Promise<T | null> {
+    if (!browser) return null;
     const { value } = await Preferences.get({ key: this.key });
 
     if (value === "undefined" || value == null) {
@@ -18,6 +20,7 @@ class Cached<T> {
   }
 
   async set(data: T): Promise<void> {
+    if (!browser) return;
     await Preferences.set({
       key: this.key,
       value: JSON.stringify(data),
@@ -25,6 +28,7 @@ class Cached<T> {
   }
 
   async remove(): Promise<void> {
+    if (!browser) return;
     await Preferences.remove({ key: this.key });
   }
 }

@@ -48,7 +48,7 @@
     const diff = currentY - startY;
     pendingTranslate = diff > 0 ? diff : 0;
     if (!rafId) rafId = requestAnimationFrame(applyPendingTransform);
-    e.preventDefault();
+    // e.preventDefault();
   }
 
   /** End drag */
@@ -135,6 +135,9 @@
         ontouchstart={handleTouchStart}
         ontouchmove={handleTouchMove}
         ontouchend={handleTouchEnd}
+        role="button"
+        tabindex="0"
+        aria-label="Drag to close drawer"
       >
         <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
       </div>

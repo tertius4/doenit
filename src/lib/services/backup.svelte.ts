@@ -2,8 +2,8 @@ import { cached_automatic_backup, cached_last_backup } from "$lib/cached";
 import { t } from "$lib/services/language.svelte";
 import Files from "$lib/services/files.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
-import { user } from "$lib/base/user.svelte";
-import { Alert } from "$lib/core/alert";
+import { user } from "$lib/core/user.svelte";
+import { alert } from "$lib/core/alert";
 import { DateUtil } from "$lib/core/date_util";
 import { DB } from "$lib/DB";
 
@@ -69,7 +69,7 @@ class BackupClass {
         // If no changes since last backup, just update the last_backup_at
         this.last_backup_at = DateUtil.format(new Date(), "ddd, DD MMM YYYY, HH:mm");
       } else {
-        Alert.error(`${t("error_checking_last_backup")} ${error_message}`);
+        alert.error(`${t("error_checking_last_backup")} ${error_message}`);
       }
     }
     this.is_loading = false;
@@ -87,7 +87,7 @@ class BackupClass {
 
   private async getLastBackupTime(): Promise<string | null> {
     try {
-      const user_id = user.uid;
+      const user_id = user.id;
       if (!user_id) return null;
 
       const [backup] = await OnlineDB.BackupManifest.getAll({
@@ -104,7 +104,7 @@ class BackupClass {
       await cached_last_backup.set(backup.timestamp);
       return backup.timestamp;
     } catch (error) {
-      Alert.error(t("error_fetching_last_backup_time") + " " + error);
+      alert.error(t("error_fetching_last_backup_time") + " " + error);
       return null;
     }
   }
@@ -113,7 +113,7 @@ class BackupClass {
     try {
       this.is_loading = true;
 
-      const user_id = user.uid;
+      const user_id = user.id;
       if (!user_id) throw Error(t("user_not_logged_in"));
 
       const tasks = await DB.Task.getAll({
@@ -221,14 +221,14 @@ class BackupClass {
     } catch (error) {
       this.is_loading = false;
       const error_message = error instanceof Error ? error.message : String(error);
-      Alert.error(`Restore failed at current step: ${error_message}`);
+      alert.error(`Restore failed at current step: ${error_message}`);
       return { success: false, error_message };
     }
   }
 
-  async getBackup(): Promise<Result<BackupManifest>> {
+  async getBackup(): Promise<ResultOld<BackupManifest>> {
     try {
-      const user_id = user.uid;
+      const user_id = user.id;
       if (!user_id) return { success: false, error_message: t("user_not_logged_in") };
 
       const backup_manifests = await OnlineDB.BackupManifest.getAll({
@@ -319,7 +319,7 @@ class BackupClass {
    * and enable sharing with collaborators
    */
   private async deriveKey(): Promise<CryptoKey> {
-    const uid = user.uid;
+    const uid = user.id;
     if (!uid) {
       throw new Error(t("user_not_logged_in"));
     }

@@ -1,4 +1,4 @@
-import { user } from "$lib/base/user.svelte";
+import { user } from "$lib/core/user.svelte";
 import { DB } from "$lib/DB";
 import { Notify } from "$lib/services/notifications/notifications";
 import { Table } from "./_Table";
