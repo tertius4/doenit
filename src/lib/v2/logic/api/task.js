@@ -13,7 +13,7 @@ export const getNewTask = syncApiLogger(getNewTaskHandler);
 export const getTaskById = apiLogger(getTaskByIdHandler);
 export const createTask = apiLogger(createTaskHandler);
 export const deleteTask = apiLogger(deleteTaskHandler);
-export const completeTask = apiLogger(completeTaskHandler);
+export const complete = apiLogger(completeTaskHandler);
 export const uncomplete = apiLogger(uncompleteTaskHandler);
 export const getTasksByIds = apiLogger(getTasksByIdsHandler);
 export const getShareTaskText = apiLogger(getShareTaskTextHandler);
@@ -211,11 +211,17 @@ async function completeTaskHandler(task_id) {
 
 /**
  *
- * @param {DB.Task} task
+ * @param {string} id
  * @returns {AsyncResult}
  */
-async function uncompleteTaskHandler(task) {
+async function uncompleteTaskHandler(id) {
   try {
+    const task_result = await DB.task.findById(id);
+    if (!task_result.ok || !task_result.value) {
+      return { ok: false, error: t("task_not_found") };
+    }
+
+    const task = task_result.value;
     task.completed = 0;
     task.archived = false;
     task.completed_at = null;
@@ -277,7 +283,7 @@ async function deleteAllHandler({ ids }) {
   try {
     const result = await DB.task.findMany({ selector: { id: { $in: ids } } });
     if (!result.ok) return result;
-    
+
     const tasks = result.value;
     const tasks_to_delete = [];
     const tasks_to_update = [];

@@ -224,6 +224,28 @@ body {
     background-color: var(--color-bg-2);
   }
 
+  /* Hover variants */
+  .hover\:bg-page:hover {
+    background-color: var(--color-bg-0);
+  }
+  .hover\:bg-surface:hover {
+    background-color: var(--color-bg-1);
+  }
+  .hover\:bg-card:hover {
+    background-color: var(--color-bg-2);
+  }
+
+  /* Focus variants */
+  .focus\:bg-page:focus {
+    background-color: var(--color-bg-0);
+  }
+  .focus\:bg-surface:focus {
+    background-color: var(--color-bg-1);
+  }
+  .focus\:bg-card:focus {
+    background-color: var(--color-bg-2);
+  }
+
   /* Text utilities */
   .text-strong {
     color: var(--color-text-0);

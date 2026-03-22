@@ -12,7 +12,7 @@
   const { children } = $props();
 
   $effect(() => {
-    document.documentElement.setAttribute("data-theme", context.settings.theme);
+    document.documentElement.setAttribute("data-theme", context.settings.theme || "dark");
   });
 </script>
 

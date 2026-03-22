@@ -13,8 +13,6 @@
   /** @type {Logic.CategoryListItem[]} */
   let category_list = $state([]);
 
-  const default_category = $derived(await Api.cats.getDefault());
-
   let is_adding = $state(false);
   let is_filter_open = $state(false);
 
@@ -41,7 +39,7 @@
 
     <div class="pt-6 pb-12 h-full">
       <div class="max-h-[calc(90vh-48px-24px-28px)] overflow-y-auto">
-        <ButtonCategory id={default_category.id} name={t("DEFAULT_NAME")} />
+        <ButtonCategory id="default" name={t("DEFAULT_NAME")} />
 
         {#each category_list as { id, name } (id)}
           <ButtonCategory {id} {name} />

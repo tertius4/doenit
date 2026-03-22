@@ -45,19 +45,12 @@ async function saveCategoryHandler({ id, name }: Partial<DB.Category>): AsyncRes
   }
 }
 
-/**
- * @param name
- * @param users
- * @returns
- */
-async function updateCategoryHandler(id: string, update: { name: string; users: string[] }): AsyncResult {
+async function updateCategoryHandler(id: string, update: { name: string }): AsyncResult {
   try {
     if (!id) throw Error(t("category_not_found"));
     if (!update.name?.trim()) throw Error(t("enter_category_name"));
 
-    await DB.category.update(id, {
-      name: update.name.trim(),
-    });
+    await DB.category.update(id, { name: update.name });
 
     return { ok: true };
   } catch (err) {

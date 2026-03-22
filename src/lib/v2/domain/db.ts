@@ -9,6 +9,7 @@ import * as schema from "./schema";
 import * as tables from "./tables";
 
 class DBClass {
+  private is_initialized = false;
   private _category: tables.category | undefined;
   private _user: tables.user | undefined;
   private _task: tables.task | undefined;
@@ -17,6 +18,8 @@ class DBClass {
   private _session: tables.session | undefined;
 
   async init() {
+    if (this.is_initialized) return;
+
     const db = await initDB();
 
     this._task = new tables.task(db.collections.task);
@@ -25,6 +28,7 @@ class DBClass {
     this._permissions = new tables.permissions(db.collections.permission);
     this._settings = new tables.settings(db.collections.settings);
     this._session = new tables.session(db.collections.session);
+    this.is_initialized = true;
   }
 
   get task() {

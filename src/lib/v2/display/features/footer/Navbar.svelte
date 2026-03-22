@@ -42,17 +42,19 @@
 <aside transition:fly={{ x: -100 }} class="fixed top-0 left-0 max-w-[90vw] w-64 h-full bg-page shadow-r-lg z-50">
   <div class="w-full h-full relative flex flex-col items-center justify-center">
     <h2 class="text-lg font-semibold">{t("menu")}</h2>
-    <ul class="mt-4 space-y-0">
-      {#each NAVIGATION_TIMES as { icon, label, href, show }}
+    <ul class="mt-4 space-y-0.5">
+      {#each NAVIGATION_TIMES as { icon, label, href, show } (href)}
         {#if show === undefined || show}
           {@const is_active = page.url.pathname === href}
           <li>
             <a
               {href}
               draggable="false"
-              class="grid grid-cols-[32px_1fr] gap-1 py-4 px-8 rounded-lg hover:bg-surface transition-colors"
-              class:bg-card={is_active}
-              class:font-semibold={is_active}
+              class={{
+                "rounded-lg transition-colors cursor-pointer grid grid-cols-[32px_1fr] gap-1 py-4 px-8 outline-none": true,
+                "bg-card": is_active,
+                "font-semibold hover:bg-surface focus:bg-surface": !is_active,
+              }}
             >
               <Icon name={icon} class="w-5 h-5 my-auto" />
               <p class="my-auto line-clamp-1">{label}</p>
@@ -62,7 +64,15 @@
       {/each}
     </ul>
 
-    <a href="/settings" draggable={false} class="absolute bottom-0 right-0 p-6">
+    <a
+      href="/settings"
+      draggable={false}
+      class={{
+        "absolute bottom-0 right-0 p-6": true,
+        "bg-card": page.url.pathname === "/settings",
+        "hover:bg-surface focus:bg-surface": page.url.pathname !== "/settings",
+      }}
+    >
       <Icon name="settings" class="w-5 h-5" />
     </a>
   </div>

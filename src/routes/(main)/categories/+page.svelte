@@ -9,18 +9,18 @@
   import { onMount } from "svelte";
   import Api from "$logic/api";
   import { alert } from "$lib/core/alert";
+  import { fade } from "svelte/transition";
 
   let error_message = $state("");
   let is_editing = $state(false);
 
   /** @type {Logic.CategoryListItem[]} */
-  let category_list = $state([]);
+  let categories = $state([]);
   let new_name = $state("");
 
   const tasks_count_map = $derived(await Api.cats.mapTasksCountToCategories());
-  const default_category = $derived(await Api.cats.getDefault());
 
-  onMount(View.categories.categoryList(category_list));
+  onMount(View.categories.categoryList(categories));
   onMount(() => {
     const token = backHandler.register(() => goto(`/`), -1);
     BACK_BUTTON_FUNCTION.value = token;
@@ -50,27 +50,22 @@
       }}
     />
 
-    <button
-      class:hidden={!new_name}
-      class="absolute right-2 bg-surface border-r-3 border-b-3 border-muted rounded p-2 flex items-center justify-center h-8 aspect-square"
-    >
-      <p class="font-semibold font-mono text-sm">ENTER</p>
-    </button>
+    {#if !!new_name}
+      <button
+        transition:fade
+        type="submit"
+        class="absolute right-2 bg-surface border-r-3 border-b-3 border-muted rounded p-2 flex items-center justify-center h-8 aspect-square"
+      >
+        <p class="font-semibold font-mono text-sm">ENTER</p>
+      </button>
+    {/if}
   </form>
 
   <div class="flex flex-col space-y-2">
-    <CardCategory
-      category={{ id: default_category.id, name: t("DEFAULT_NAME"), users: [] }}
-      disabled
-      task_count={tasks_count_map.get(default_category.id) || 0}
-    />
+    <CardCategory id="default" name={t("DEFAULT_NAME")} disabled task_count={tasks_count_map.get("default") || 0} />
 
-    {#each category_list as category (category.id)}
-      {#if category.has_title}
-        <h2 class="font-semibold">{t("shared_categories")}</h2>
-      {/if}
-
-      <CardCategory {category} task_count={category.task_count} />
+    {#each categories as { id, name, task_count } (id)}
+      <CardCategory {id} {name} {task_count} />
     {/each}
   </div>
 </div>

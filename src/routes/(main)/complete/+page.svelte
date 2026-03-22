@@ -1,5 +1,5 @@
 <script>
-  import TaskCompleted from "$lib/components/task/TaskCompleted.svelte";
+  import TaskCompleted from "$display/features/task-list/TaskCompleted.svelte";
   import { BACK_BUTTON_FUNCTION, normalize } from "$lib";
   import { backHandler } from "$logic/navigation";
   import { t } from "$lib/services/language.svelte";
@@ -15,11 +15,11 @@
   const search_text = getContext("search_text");
   const normalized_search = $derived(normalize(search_text.value?.trim() ?? ""));
 
-  /** @type {Task[]} */
-  let all_tasks = $state([]);
-  const tasks = $derived(filterTasks(all_tasks, search_text.value));
+  /** @type {Logic.DonePageTask[]} */
+  let completed_tasks = $state([]);
+  const tasks = $derived(filterTasks(completed_tasks, search_text.value));
 
-  onMount(View.tasks.taskList(all_tasks));
+  onMount(View.done_page.taskList(completed_tasks));
   onMount(() => {
     const token = backHandler.register(async () => goto(`/`), -1);
     BACK_BUTTON_FUNCTION.value = token;
@@ -28,7 +28,7 @@
 
   /**
    * Handles long press on a task to toggle its selection state.
-   * @param {Task} task
+   * @param {Logic.DonePageTask} task
    */
   function handleLongPress(task) {
     Haptics.vibrate({ duration: 100 });
@@ -40,8 +40,8 @@
   }
 
   /**
-   * Handles long press on a task to toggle its selection state.
-   * @param {Task} task
+   * Handles click on a task to toggle its selection state or navigate to the task.
+   * @param {Logic.DonePageTask} task
    */
   async function handleClick(task) {
     if (!Selected.tasks.size) return goto(`/${task.id}`);
@@ -55,9 +55,9 @@
   }
 
   /**
-   * @param {Task[]} tasks
+   * @param {Logic.DonePageTask[]} tasks
    * @param {string} search_text
-   * @returns {Task[]}
+   * @returns {Logic.DonePageTask[]}
    */
   function filterTasks(tasks, search_text) {
     return tasks.filter((task) => {
@@ -72,19 +72,20 @@
   {#each tasks as task (task.id)}
     <TaskCompleted
       {task}
+      is_selected={Selected.tasks.has(task.id)}
       onclick={() => handleClick(task)}
-      onselect={() => Api.tasks.uncomplete(task)}
+      oncheck={() => Api.task.uncomplete(task.id)}
       onlongpress={() => handleLongPress(task)}
     />
   {:else}
-    {#if normalized_search.length}
-      <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg">{t("no_tasks_found_for_search")}</div>
-      </div>
-    {:else}
-      <div class="flex flex-col items-center gap-4 py-12">
-        <div class="text-lg">{t("no_completed_tasks")}</div>
-      </div>
-    {/if}
+    <div class="flex flex-col items-center gap-4 py-12">
+      <span class="text-lg">
+        {#if normalized_search.length}
+          {t("no_tasks_found_for_search")}
+        {:else}
+          {t("no_completed_tasks")}
+        {/if}
+      </span>
+    </div>
   {/each}
 </div>

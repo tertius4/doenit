@@ -176,18 +176,15 @@
 
 /**
  * @typedef {Object} Logic.CategoryListItem
- * @property {boolean} has_title
  * @property {number} task_count
  * @property {string} id
  * @property {string} name
- * @property {string[]} users
  */
 
 /**
  * @typedef {Object} Logic.CategoryAssignTask
  * @prop {string} id
  * @prop {string} name
- * @prop {boolean} show_shared_title
  */
 
 /**
@@ -195,11 +192,15 @@
  * @prop {string} id
  * @prop {string} name
  * @prop {{ type: "round" | "square", label: string, pre_icon?: string, post_icon?: string }[]} pills
- * @prop {{ name: string }[]} top_right_icons
+ * @prop {{ name: string }[]} [top_right_icons]
  * @prop {boolean} is_ongoing
  * @prop {boolean} is_past
- * @prop {boolean} is_selected
- * @prop {() => void} onclick
- * @prop {() => void} onlongpress
- *
+ */
+
+/**
+ * @typedef {Object} Logic.DonePageTask
+ * @prop {string} id
+ * @prop {string} name
+ * @prop {{ type: "round" | "square", label: string, pre_icon?: string, post_icon?: string }[]} pills
+ * @prop {number} completed_count
  */

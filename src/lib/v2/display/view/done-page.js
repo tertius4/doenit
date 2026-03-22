@@ -2,8 +2,7 @@ import DB from "$domain/db";
 import { map } from "rxjs";
 
 /**
- *
- * @param {Logic.MainPageTask[]} list
+ * @param {Logic.DonePageTask[]} list
  * @returns {() => void}
  */
 export function taskList(list) {
@@ -18,13 +17,13 @@ export function taskList(list) {
 }
 
 /**
- * @returns {Promise<import("rxjs").Observable<Logic.MainPageTask[]>>}
+ * @returns {Promise<import("rxjs").Observable<Logic.DonePageTask[]>>}
  */
 async function subscribeTaskList() {
   // return [{
 
   // }]
-  // /** @type {(task: DB.Task ) => Logic.MainPageTask} */
+  // /** @type {(task: DB.Task ) => Logic.DonePageTask} */
   // const formatTask = (task) => ({
   //   id: task.id,
 
@@ -38,23 +37,18 @@ async function subscribeTaskList() {
         map((tasks) => [
           {
             id: "1",
-            is_ongoing: true,
-            is_past: false,
-            onclick: () => {},
-            onlongpress: () => {},
+            completed_count: 5,
+            is_selected: false,
             name: "Task 1",
             pills: [
               { type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" },
               { type: "square", label: "Onderhoud", pre_icon: "categories" },
             ],
-            top_right_icons: [{ name: "important" }, { name: "camera" }],
           },
           {
             id: "2",
-            is_ongoing: false,
-            is_past: true,
-            onclick: () => {},
-            onlongpress: () => {},
+            completed_count: 1,
+            is_selected: false,
             name: "Task 2",
             pills: [{ type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" }],
           },
