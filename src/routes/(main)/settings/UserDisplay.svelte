@@ -3,7 +3,7 @@
   import { alert } from "$lib/core/alert";
   import { user } from "$lib/core/user.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   let is_open = $state(false);
   let is_loading = $state(false);

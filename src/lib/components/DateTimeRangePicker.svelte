@@ -4,8 +4,9 @@
   import Icon from "$display/comps/Icon.svelte";
   import { slide } from "svelte/transition";
   import { untrack } from "svelte";
-  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
-  import { t, language } from "$lib/services/language.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
+  import t from "$display/translate";
+  import { context } from "$logic/context.svelte";
 
   let { start, end, onchange, error_message = $bindable() } = $props();
 
@@ -87,7 +88,8 @@
   function displayDate(date) {
     if (!date) return "";
 
-    return new Date(date).toLocaleDateString(language.value === "af" ? "af-ZA" : "en-US", {
+    const is_en = context.settings.language === "en";
+    return new Date(date).toLocaleDateString(is_en ? "en-US" : "af-ZA", {
       year: "numeric",
       month: "short",
       day: "numeric",

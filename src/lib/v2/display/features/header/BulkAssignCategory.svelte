@@ -2,7 +2,7 @@
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
   import { getCategoriesContext } from "$lib/contexts/categories.svelte";
   import { getUsersContext } from "$lib/contexts/users.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
   import { Selected } from "$lib/selected.svelte";

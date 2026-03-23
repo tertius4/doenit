@@ -1,7 +1,7 @@
 <script>
   import ButtonClear from "$display/comps/button/ButtonClear.svelte";
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
   import SliderInterval from "./SliderInterval.svelte";

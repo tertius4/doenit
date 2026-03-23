@@ -1,6 +1,6 @@
 <script>
   import InputText from "$lib/components/element/input/InputText.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import ModalHeader from "./ModalHeader.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "./Modal.svelte";

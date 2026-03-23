@@ -4,7 +4,7 @@ import { Table } from "./_Table";
 import { OnlineDB } from "$lib/OnlineDB";
 import { DB } from "$lib/DB";
 import { Secure } from "$lib/core/secure";
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { getDeviceId } from "$lib";
 
 export class CategoryTable extends Table<Category> {

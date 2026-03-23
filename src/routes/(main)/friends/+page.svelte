@@ -4,7 +4,7 @@
   import { CardInvite } from "$lib/components/element/card";
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import CardFriend from "./CardFriend.svelte";
   import { user } from "$lib/core/user.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";

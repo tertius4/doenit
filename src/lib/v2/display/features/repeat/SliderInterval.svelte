@@ -1,6 +1,6 @@
 <script>
   import Slider from "$lib/components/Slider.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { untrack } from "svelte";
 
   /**

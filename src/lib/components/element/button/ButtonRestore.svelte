@@ -1,7 +1,7 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { DateUtil } from "$lib/core/date_util";
   import { slide } from "svelte/transition";
 

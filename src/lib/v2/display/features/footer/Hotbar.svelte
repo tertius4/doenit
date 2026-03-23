@@ -4,7 +4,7 @@
   import Tag from "$display/comps/button/Tag.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
   import FavouriteCategorySetup from "../../../../components/FavouriteCategorySetup.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Button from "../../../../components/element/button/Button.svelte";
   import { user } from "$lib/core/user.svelte";
   import TagCategory from "./TagCategory.svelte";

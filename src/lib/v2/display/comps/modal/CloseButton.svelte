@@ -1,6 +1,6 @@
 <script>
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   const { onclose, ...rest } = $props();
 

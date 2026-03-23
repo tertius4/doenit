@@ -2,7 +2,6 @@
  * This file may only import files, that does not import any other files in src.
  */
 
-import { t } from "./services/language.svelte";
 import * as env from "$env/static/public";
 import { DateUtil } from "./core/date_util.js";
 import { user } from "./core/user.svelte";
@@ -10,6 +9,7 @@ import { getAuth, GoogleAuthProvider, signInWithCredential } from "firebase/auth
 import { getApp } from "firebase/app";
 import { Device } from "@capacitor/device";
 import { logApiExecutionTime } from "./v2/logic/index.remote";
+import t from "$display/translate.js";
 
 export const AFRIKAANS = Symbol("af");
 export const ENGLISH = Symbol("en");

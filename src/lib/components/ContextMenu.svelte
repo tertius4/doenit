@@ -5,7 +5,7 @@
   import { Selected } from "$lib/selected.svelte";
   import { Share } from "@capacitor/share";
   import { DB } from "$lib/DB";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   let { show = $bindable() } = $props();
 

@@ -4,10 +4,10 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { alert } from "$lib/core/alert";
 import { OnlineDB } from "$lib/OnlineDB";
 import { user } from "$lib/core/user.svelte";
-import { t } from "./language.svelte";
 import { Cached } from "$lib/core/cache.svelte";
 import { DB } from "$lib/DB";
 import { Logger } from "$lib/core/logger";
+import t from "$display/translate";
 
 class PushNotificationService {
   private token: string | null = null;

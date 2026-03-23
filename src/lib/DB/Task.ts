@@ -5,7 +5,7 @@ import { user } from "$lib/core/user.svelte";
 
 import { SyncService } from "$lib/services/syncService";
 import { Photos } from "$lib/services/photos.svelte";
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 
 import { Table } from "./_Table";
 import { DB } from "$lib/DB";

@@ -7,7 +7,7 @@
 
   const task = $state(getTask());
 
-  /** @returns {TaskData} */
+  /** @returns {Domain.Task} */
   function getTask() {
     const category_id = Selected.categories.size === 1 ? Selected.categories.values().next().value : undefined;
 
@@ -15,7 +15,7 @@
   }
 
   /**
-   * @param {Task | TaskData} task
+   * @param {Domain.Task} task
    * @returns {AsyncResult}
    */
   async function handleCreate(task) {

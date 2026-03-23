@@ -3,7 +3,7 @@
   import { tempMediaManager } from "$logic/temp-media";
   import Icon from "$display/comps/Icon.svelte";
   import { backHandler } from "$logic/navigation";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { alert } from "$lib/core/alert";
   import { goto } from "$app/navigation";

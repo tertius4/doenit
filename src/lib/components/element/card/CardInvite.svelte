@@ -1,7 +1,7 @@
 <script>
   import { DateUtil } from "$lib/core/date_util";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { slide } from "svelte/transition";
 
   /**

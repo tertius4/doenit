@@ -2,7 +2,7 @@ import { Camera, CameraResultType, CameraSource, type Photo } from "@capacitor/c
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import { alert } from "$lib/core/alert";
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { DateUtil } from "$lib/core/date_util";
 
 class PhotoService {

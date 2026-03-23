@@ -3,7 +3,7 @@
   import TaskComponent from "$lib/components/task/Task.svelte";
   import { getTasksContext } from "$lib/contexts/tasks.svelte";
   import { displayPrettyDate, normalize } from "$lib";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { Selected } from "$lib/selected.svelte";
   import { SvelteDate } from "svelte/reactivity";
   import { Haptics } from "@capacitor/haptics";

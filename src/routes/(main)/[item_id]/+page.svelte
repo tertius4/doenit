@@ -3,7 +3,7 @@
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
   import { ButtonDelete } from "$display/features/edit_task";
   import EditTask from "$lib/components/EditTask.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { alert } from "$lib/core/alert.js";
   import Api from "$logic/api";
   import { goto } from "$app/navigation";

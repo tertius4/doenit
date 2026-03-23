@@ -1,5 +1,5 @@
 <script>
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
   import { wait } from "$lib";

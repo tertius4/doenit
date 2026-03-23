@@ -1,4 +1,4 @@
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import Table from "./base-table";
 
 export class CategoryTable extends Table<Domain.Category> {

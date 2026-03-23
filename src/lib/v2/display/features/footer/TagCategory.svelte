@@ -4,7 +4,7 @@
   import { Selected } from "$lib/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
   import Tag from "$display/comps/button/Tag.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
 
   const { category, task_count, disable_edit = false } = $props();

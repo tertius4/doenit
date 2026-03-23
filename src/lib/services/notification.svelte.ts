@@ -1,5 +1,5 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { Capacitor } from "@capacitor/core";
 import { DB } from "$lib/DB";
 import { sortTasksByDueDate, wait } from "$lib";

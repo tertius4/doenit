@@ -1,5 +1,5 @@
 <script>
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Accordion from "$display/comps/button/Accordion.svelte";
   import ButtonBackup from "$lib/components/element/button/ButtonBackup.svelte";
   import ButtonRestore from "$lib/components/element/button/ButtonRestore.svelte";

@@ -1,7 +1,7 @@
 <script>
   import { navigating } from "$app/state";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   /**
    * @typedef {Object} Props

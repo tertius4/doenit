@@ -1,7 +1,7 @@
 <script>
   import { backHandler } from "$logic/navigation";
   import { Photos } from "$lib/services/photos.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { CameraSource } from "@capacitor/camera";
   import Icon from "$display/comps/Icon.svelte";
   import { slide } from "svelte/transition";

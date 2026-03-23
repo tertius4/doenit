@@ -1,4 +1,5 @@
 import db from "$domain/db";
+
 class ContextClass {
   private _user: DB.User | null = $state(null);
   private _settings: DB.Settings | null = $state(null);

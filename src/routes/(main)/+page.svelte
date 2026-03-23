@@ -1,6 +1,6 @@
 <script>
   import Task from "$display/features/task-list/Task.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { Selected } from "$lib/selected.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";

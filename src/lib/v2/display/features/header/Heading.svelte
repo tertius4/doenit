@@ -3,7 +3,7 @@
   import { fade, slide } from "svelte/transition";
   import ButtonBack from "$display/features/header/ButtonBack.svelte";
   import DeleteAll from "$display/features/header/ButtonDeleteAll.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { Selected } from "$lib/selected.svelte";
   import ButtonSearchTask from "$display/features/header/ButtonSearchTask.svelte";
   import { getContext, onMount, untrack } from "svelte";

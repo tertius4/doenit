@@ -1,7 +1,7 @@
 import { PUBLIC_GOOGLE_PLAY_STORE_URL } from "$env/static/public";
 import { InAppReview } from "@capacitor-community/in-app-review";
 import { alert } from "$lib/core/alert.js";
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { DateUtil } from "$lib/core/date_util";
 import { Cached } from "$lib/core/cache.svelte";
 import { Browser } from "@capacitor/browser";

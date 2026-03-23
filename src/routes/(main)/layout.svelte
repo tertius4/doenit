@@ -5,7 +5,6 @@
   import { UsersContext, setUsersContext } from "$lib/contexts/users.svelte";
   import { setTasksContext, TasksContext } from "$lib/contexts/tasks.svelte";
   import { notifications } from "$lib/services/notification.svelte";
-  import { DailySummary } from "$lib/services/dailySummary.svelte";
   import { onDestroy, onMount, setContext, untrack } from "svelte";
   import { SyncService } from "$lib/services/syncService";
   import { backHandler } from "$logic/navigation";
@@ -167,9 +166,6 @@
 
   onMount(() => {
     untrack(async () => {
-      // Initialize daily summary
-      await DailySummary.recordAppOpen();
-
       // Listen for notification taps
       const { LocalNotifications } = await import("@capacitor/local-notifications");
       await LocalNotifications.addListener("localNotificationActionPerformed", async (notification) => {

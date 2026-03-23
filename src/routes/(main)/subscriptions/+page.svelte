@@ -2,7 +2,7 @@
   import { backHandler } from "$logic/navigation";
   import { afterNavigate, goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { user } from "$lib/core/user.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { alert } from "$lib/core/alert";

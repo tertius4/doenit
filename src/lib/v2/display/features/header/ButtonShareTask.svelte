@@ -2,7 +2,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import { alert } from "$lib/core/alert";
   import { Selected } from "$lib/selected.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Api from "$logic/api";
   import { Share } from "@capacitor/share";
 

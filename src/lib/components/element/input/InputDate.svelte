@@ -1,7 +1,7 @@
 <script>
   import Icon from "$display/comps/Icon.svelte";
   import { tick, untrack } from "svelte";
-  import { language } from "$lib/services/language.svelte";
+  import { context } from "$logic/context.svelte";
 
   /**
    * @typedef {Object} Props
@@ -52,7 +52,8 @@
   function displayDate(date) {
     if (!date) return "";
 
-    return new Date(date).toLocaleDateString(language.value === "af" ? "af-ZA" : "en-US", {
+    const is_en = context.settings.language === "en";
+    return new Date(date).toLocaleDateString(is_en ? "en-US" : "af-ZA", {
       year: "numeric",
       month: "short",
       day: "numeric",

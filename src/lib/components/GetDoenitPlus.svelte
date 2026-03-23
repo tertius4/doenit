@@ -1,6 +1,6 @@
 <script>
   import { goto } from "$app/navigation";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
 
   const { ...rest } = $props();

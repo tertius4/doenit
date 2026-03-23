@@ -2,7 +2,7 @@
   import ModalCreateCategory from "$lib/components/modal/ModalCreateCategory.svelte";
   import { backHandler } from "$logic/navigation";
   import CategoryButton from "./CategoryButton.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { selectedCategories } from "$lib/cached";
   import Icon from "$display/comps/Icon.svelte";
   import { Selected } from "$lib/selected.svelte";

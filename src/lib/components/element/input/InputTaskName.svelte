@@ -1,5 +1,5 @@
 <script>
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import ButtonClear from "$display/comps/button/ButtonClear.svelte"
 
   /**

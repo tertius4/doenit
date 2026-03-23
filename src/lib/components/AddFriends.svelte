@@ -1,5 +1,5 @@
 <script>
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import InputText from "./element/input/InputText.svelte";
   import { slide } from "svelte/transition";
   import Button from "./element/button/Button.svelte";

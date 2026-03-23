@@ -14,6 +14,10 @@
   $effect(() => {
     document.documentElement.setAttribute("data-theme", context.settings.theme || "dark");
   });
+
+  $effect(() => {
+    document.documentElement.style.setProperty("--base-size", `var(--${context.settings.text_size})`);
+  });
 </script>
 
 <div

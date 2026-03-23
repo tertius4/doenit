@@ -1,6 +1,6 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { Selected } from "$lib/selected.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { onNavigate } from "$app/navigation";

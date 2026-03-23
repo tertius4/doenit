@@ -3,7 +3,7 @@
   import { notifications } from "$lib/services/notification.svelte";
   import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
   import InputTime from "$lib/components/element/input/InputTime.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Accordion from "$display/comps/button/Accordion.svelte";
   import { user } from "$lib/core/user.svelte";
   import { untrack } from "svelte";

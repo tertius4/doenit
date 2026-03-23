@@ -1,11 +1,15 @@
 import { cached_automatic_backup, cached_last_backup } from "$lib/cached";
-import { t } from "$lib/services/language.svelte";
+// import t from "$display/translate";
 import Files from "$lib/services/files.svelte";
 import { OnlineDB } from "$lib/OnlineDB";
 import { user } from "$lib/core/user.svelte";
 import { alert } from "$lib/core/alert";
 import { DateUtil } from "$lib/core/date_util";
 import { DB } from "$lib/DB";
+
+function t(key: string): string {
+  return key; // Placeholder translation function, replace with actual implementation
+}
 
 class BackupClass {
   #automatic_backup: boolean = $state(false);

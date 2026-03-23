@@ -2,7 +2,7 @@
   import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
   import { backHandler } from "$logic/navigation";
   import ButtonCategory from "./ButtonCategory.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
   import { Selected } from "$lib/selected.svelte";
   import { onMount } from "svelte";
@@ -31,30 +31,27 @@
 </script>
 
 <Drawer is_open={is_filter_open} onclose={() => (is_filter_open = false)}>
-  <div class="grow flex flex-col relative h-full">
-    <div class="absolute top-0 z-10 w-full flex gap-2 items-center justify-center rounded-t-2xl">
+  <div class="h-full">
+    <div class="w-full flex gap-2 items-center justify-center pb-2">
       <Icon name="categories" size={24} />
       <span class="font-medium">{t("categories")}</span>
     </div>
 
-    <div class="pt-6 pb-12 h-full">
-      <div class="max-h-[calc(90vh-48px-24px-28px)] overflow-y-auto">
-        <ButtonCategory id="default" name={t("DEFAULT_NAME")} />
+    <div class="max-h-[calc(90vh-48px-24px-28px)] overflow-y-auto mb-12">
+      <ButtonCategory id="default" name={t("DEFAULT_NAME")} />
 
-        {#each category_list as { id, name } (id)}
-          <ButtonCategory {id} {name} />
-        {/each}
-      </div>
+      {#each category_list as { id, name } (id)}
+        <ButtonCategory {id} {name} />
+      {/each}
     </div>
-
-    <button
-      class="fixed bottom-0 z-10 w-full bg-primary text-alt h-12 flex items-center gap-1 px-4"
-      onclick={() => (is_adding = true)}
-    >
-      <Icon name="plus" class="m-auto text-xl" />
-      <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
-    </button>
   </div>
+  <button
+    class="fixed bottom-0 w-full bg-primary text-alt h-12 flex items-center gap-1 px-4"
+    onclick={() => (is_adding = true)}
+  >
+    <Icon name="plus" class="m-auto text-xl" />
+    <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
+  </button>
 </Drawer>
 
 <button

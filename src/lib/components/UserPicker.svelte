@@ -3,7 +3,7 @@
   import Modal from "$display/comps/modal/Modal.svelte";
   import CardFriend from "$lib/components/CardFriend.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { wait } from "$lib";
 
   /**

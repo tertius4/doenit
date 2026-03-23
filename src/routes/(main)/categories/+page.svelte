@@ -2,7 +2,7 @@
   import CardCategory from "$display/features/categories/CardCategory.svelte";
   import InputText from "$lib/components/element/input/InputText.svelte";
   import { backHandler } from "$logic/navigation";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import View from "$display/view";
   import { goto } from "$app/navigation";

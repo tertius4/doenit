@@ -1,6 +1,6 @@
 <script>
-  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
-  import { language } from "$lib/services/language.svelte";
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
+  import { context } from "$logic/context.svelte";
   import { tick, untrack } from "svelte";
 
   /**
@@ -54,7 +54,8 @@
       let date = new Date(0);
       date.setHours(hours, minutes, 0, 0);
 
-      return date.toLocaleTimeString(language.value === "af" ? "af-ZA" : "en-US", {
+      const is_en = context.settings.language === "en";
+      return date.toLocaleTimeString(is_en ? "en-US" : "af-ZA", {
         hour: "2-digit",
         minute: "2-digit",
       });

@@ -9,10 +9,10 @@
 
   /**
    * Handles the selection of a category.
-   * @param {Event} event
+   * @param {Event} [event]
    */
   function onselect(event) {
-    event.stopPropagation();
+    event?.stopPropagation();
 
     Selected.tasks.clear();
     if (is_selected) {
@@ -25,16 +25,15 @@
 </script>
 
 <button
+  type="button"
   class={{
-    "w-full flex h-12 items-center gap-1": true,
+    "w-full flex h-12 px-2 items-center gap-2 hover:bg-card cursor-pointer": true,
     "bg-surface": !is_selected,
     "bg-card": is_selected,
   }}
   onclick={onselect}
 >
-  <div class="relative w-12 h-12">
-    <InputCheckbox {is_selected} tick_animation={is_selected} class="w-12 h-12" />
-  </div>
+  <InputCheckbox checked={is_selected} onchange={() => onselect()} />
   <div class="w-full text-left my-auto">
     {name}
   </div>

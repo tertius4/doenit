@@ -2,7 +2,7 @@
   import TaskCompleted from "$display/features/task-list/TaskCompleted.svelte";
   import { BACK_BUTTON_FUNCTION, normalize } from "$lib";
   import { backHandler } from "$logic/navigation";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { Selected } from "$lib/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
   import { getContext, onMount } from "svelte";

@@ -8,7 +8,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import { Photos } from "$lib/services/photos.svelte";
   import Button from "./element/button/Button.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import DatePicker from "./DatePicker.svelte";
   import { user } from "$lib/core/user.svelte";
   import UserPicker from "./UserPicker.svelte";

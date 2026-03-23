@@ -1,4 +1,4 @@
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { context } from "$logic/context.svelte";
 import { alert } from "$lib/core/alert";
 import { apiLogger } from "$lib";

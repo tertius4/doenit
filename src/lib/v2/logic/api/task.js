@@ -1,4 +1,4 @@
-import { t } from "$lib/services/language.svelte";
+import t from "$display/translate";
 import { tempMediaManager } from "../temp-media";
 import { DateUtil } from "$lib/core/date_util";
 import { deepEqual } from "$lib/utils.svelte";

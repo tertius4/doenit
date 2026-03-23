@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
 

@@ -1,22 +1,26 @@
 <script>
   import ButtonLanguage from "$lib/components/element/button/ButtonLanguage.svelte";
   import ButtonTextSize from "$lib/components/element/button/ButtonTextSize.svelte";
-  import Icon from "$display/comps/Icon.svelte";
-  import { t, language } from "$lib/services/language.svelte";
   import Accordion from "$display/comps/button/Accordion.svelte";
   import { text } from "$lib/services/text.svelte";
-  import { user } from "$lib/core/user.svelte";
+  import { context } from "$logic/context.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import Api from "$logic/api";
+  import t from "$display/translate";
+
+  const is_dark = $derived(context.settings.theme === "dark");
+  const is_af = $derived(context.settings.language === "af");
+  const text_size = $derived(context.settings.text_size);
 
   /**
-   * Handle language change
-   * @param {Language} lang
+   * Update App Settings
+   * @param {Object} change
+   * @param {"light" | "dark"} [change.theme]
+   * @param {"af" | "en"} [change.language]
+   * @param {"sm" | "md" | "lg"} [change.text_size]
    */
-  function onlanguagechange(lang) {
-    user.update({ language_code: lang });
-  }
-
-  function toggle() {
-    user.update({ theme: user.theme === "dark" ? "light" : "dark" });
+  async function onchange(change) {
+    await Api.settings.update(change);
   }
 </script>
 
@@ -24,29 +28,31 @@
   <!-- Theme selector -->
   <div class="mb-6">
     <h3 class="mb-1">{t("theme")}</h3>
-    <button
-      class="relative flex h-12 w-full p-1 gap-2 rounded-lg bg-card"
-      onclick={toggle}
-      aria-label={t("toggle_theme")}
-    >
-      <div class="relative w-full">
-        <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
-          <Icon name="sun" />
-          <span class="font-medium">{t("light_theme")}</span>
-        </div>
-      </div>
+    <div class="relative flex h-12 w-full p-1 gap-2 rounded-lg bg-card">
+      <button
+        class="relative z-1 w-full flex h-full justify-center items-center gap-2"
+        type="button"
+        onclick={() => onchange({ theme: "light" })}
+        aria-label={t("light_theme")}
+      >
+        <Icon name="sun" />
+        <span class="font-medium">{t("light_theme")}</span>
+      </button>
 
-      <div class="relative w-full">
-        <div class="absolute z-2 flex w-full h-full justify-center items-center gap-2">
-          <span class="font-medium">{t("dark_theme")}</span>
-          <Icon name="moon" />
-        </div>
-      </div>
+      <button
+        class="w-full z-1 flex h-full justify-center items-center gap-2"
+        type="button"
+        onclick={() => onchange({ theme: "dark" })}
+        aria-label={t("dark_theme")}
+      >
+        <span class="font-medium">{t("dark_theme")}</span>
+        <Icon name="moon" />
+      </button>
 
-      <div class="absolute inset-0 {user.theme === 'dark' ? 'translate-x-full' : ''} w-1/2 h-full p-1">
+      <div class="z-0 absolute inset-0 {is_dark ? 'translate-x-full' : ''} w-1/2 h-full p-1">
         <div class="rounded-lg h-full z-1 w-full bg-surface"></div>
       </div>
-    </button>
+    </div>
   </div>
 
   <!-- Language selector -->
@@ -55,16 +61,16 @@
 
     <div class="flex gap-2">
       <ButtonLanguage
-        selected={language.value === "af"}
+        selected={is_af}
         flagSrc="flags/af.webp"
         languageName={t("afrikaans")}
-        onclick={() => onlanguagechange("af")}
+        onclick={() => onchange({ language: "af" })}
       />
       <ButtonLanguage
-        selected={language.value === "en"}
+        selected={!is_af}
         flagSrc="flags/en.webp"
         languageName={t("english")}
-        onclick={() => onlanguagechange("en")}
+        onclick={() => onchange({ language: "en" })}
       />
     </div>
   </div>
@@ -73,13 +79,13 @@
   <div>
     <h3 class="mb-1">{t("text_size")}</h3>
     <div class="flex gap-2">
-      <ButtonTextSize class="text-[16px]" onclick={() => (text.size = 16)} selected={text.size === 16}>
+      <ButtonTextSize class="text-[16px]" onclick={() => onchange({ text_size: "sm" })} selected={text_size === "sm"}>
         {t("small")}
       </ButtonTextSize>
-      <ButtonTextSize class="text-[20px]" onclick={() => (text.size = 20)} selected={text.size === 20}>
+      <ButtonTextSize class="text-[20px]" onclick={() => onchange({ text_size: "md" })} selected={text_size === "md"}>
         {t("medium")}
       </ButtonTextSize>
-      <ButtonTextSize class="text-[24px]" onclick={() => (text.size = 24)} selected={text.size === 24}>
+      <ButtonTextSize class="text-[24px]" onclick={() => onchange({ text_size: "lg" })} selected={text_size === "lg"}>
         {t("large")}
       </ButtonTextSize>
     </div>

@@ -7,7 +7,7 @@
   import Button from "./element/button/Button.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { onMount, untrack } from "svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import ButtonClear from "$display/comps/button/ButtonClear.svelte";
 
   /**

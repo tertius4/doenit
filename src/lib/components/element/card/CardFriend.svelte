@@ -1,5 +1,5 @@
 <script>
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
   import { user as current_user } from "$lib/core/user.svelte";
 
   /**

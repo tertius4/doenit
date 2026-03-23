@@ -5,7 +5,7 @@
   import { alert } from "$lib/core/alert";
   import Icon from "$display/comps/Icon.svelte";
   import { user as current_user } from "$lib/core/user.svelte";
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   /**
    * @typedef {Object} Props

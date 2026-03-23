@@ -2,7 +2,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import Modal, { ModalHeader } from "$display/comps/modal";
 
-  import { t } from "$lib/services/language.svelte";
+  import t from "$display/translate";
 
   const { ondelete, ...rest } = $props();
 
