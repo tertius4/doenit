@@ -1,5 +1,5 @@
 <script>
-  import ButtonMainSubmit from "$lib/components/element/button/ButtonMainSubmit.svelte";
+  import ButtonMainSubmit from "$display/features/footer/ButtonMainSubmit.svelte";
   import ButtonNavbar from "./ButtonNavbar.svelte";
   import CategoryFilter from "./CategoryFilter.svelte";
   import Hotbar from "$display/features/footer/Hotbar.svelte";

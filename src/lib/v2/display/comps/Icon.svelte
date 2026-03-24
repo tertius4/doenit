@@ -1,4 +1,12 @@
 <script>
+  /**
+   * @typedef {Object} Props
+   * @property {string} name - The name of the icon to display.
+   * @property {string | Record<string, boolean>} [class] - Additional CSS classes to apply to the icon.
+   * @property {number} [size=28] - The size of the icon in pixels.
+   */
+
+  /** @type {Props}*/
   const { name, class: className = "", size = 28 } = $props();
 </script>
 

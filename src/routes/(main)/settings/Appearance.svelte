@@ -1,12 +1,11 @@
 <script>
-  import ButtonLanguage from "$lib/components/element/button/ButtonLanguage.svelte";
-  import ButtonTextSize from "$lib/components/element/button/ButtonTextSize.svelte";
   import Accordion from "$display/comps/button/Accordion.svelte";
-  import { text } from "$lib/services/text.svelte";
+  import ButtonLanguage from "./comps/ButtonLanguage.svelte";
   import { context } from "$logic/context.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import Api from "$logic/api";
   import t from "$display/translate";
+  import ButtonTextSize from "./comps/ButtonTextSize.svelte";
 
   const is_dark = $derived(context.settings.theme === "dark");
   const is_af = $derived(context.settings.language === "af");
@@ -62,14 +61,14 @@
     <div class="flex gap-2">
       <ButtonLanguage
         selected={is_af}
-        flagSrc="flags/af.webp"
-        languageName={t("afrikaans")}
+        flag_src="flags/af.webp"
+        language_name={t("afrikaans")}
         onclick={() => onchange({ language: "af" })}
       />
       <ButtonLanguage
         selected={!is_af}
-        flagSrc="flags/en.webp"
-        languageName={t("english")}
+        flag_src="flags/en.webp"
+        language_name={t("english")}
         onclick={() => onchange({ language: "en" })}
       />
     </div>

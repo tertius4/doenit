@@ -1,5 +1,5 @@
-import { PUBLIC_GOOGLE_AUTH } from "$env/static/public";
-import { APP_NAME, FIREBASE_CONFIG } from "$lib";
+// import { PUBLIC_GOOGLE_AUTH } from "$env/static/public";
+// import { APP_NAME, FIREBASE_CONFIG } from "$lib";
 // import { User } from "$lib/tools/src/index";
 import { Preferences } from "@capacitor/preferences";
 import { getApp, initializeApp } from "firebase/app";
@@ -215,21 +215,22 @@ class UserClass /* extends User */ {
   }
 }
 
-function getFirestoreInstance(): Firestore {
-  let app;
+// function getFirestoreInstance(): Firestore {
+//   let app;
 
-  try {
-    app = getApp(APP_NAME);
-  } catch {
-    app = initializeApp(FIREBASE_CONFIG, APP_NAME);
-  }
+//   try {
+//     app = getApp(APP_NAME);
+//   } catch {
+//     app = initializeApp(FIREBASE_CONFIG, APP_NAME);
+//   }
 
-  return getFirestore(app, "doenitdb");
-}
+//   return getFirestore(app, "doenitdb");
+// }
 
-const user = new UserClass({
-  client_id: PUBLIC_GOOGLE_AUTH,
-  app: getFirestoreInstance(),
-});
+// const user = new UserClass({
+//   client_id: PUBLIC_GOOGLE_AUTH,
+//   app: getFirestoreInstance(),
+// });
 
+const user = {};
 export { user };
