@@ -14,9 +14,9 @@
   type="button"
   {onclick}
   class={[
-    "flex text-left border rounded-lg border-primary w-full p-2 outline-none",
-    is_selected && "bg-primary/20 text-alt",
-    !is_selected && "border-default bg-card",
+    "flex text-left border rounded-lg border-primary w-full p-2 outline-none gap-1 cursor-pointer",
+    is_selected && "bg-primary/20 text-alt ",
+    !is_selected && "border-default bg-card hover:opacity-80",
   ]}
 >
   <div

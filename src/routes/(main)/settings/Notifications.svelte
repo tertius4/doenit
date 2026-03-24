@@ -13,8 +13,8 @@
 
   let saving = $state(false);
   let saved = $state(false);
-  let enabled = $state(user.notifications.enabled);
-  let time = $state(user.notifications.time);
+  let enabled = $state(user.notifications?.enabled);
+  let time = $state(user.notifications?.time);
 
   $effect(() => {
     enabled;
@@ -24,8 +24,8 @@
       user.update({ notifications: { enabled, time } });
       await notifications.scheduleNotifications();
 
-      enabled = user.notifications.enabled;
-      time = user.notifications.time;
+      enabled = user.notifications?.enabled;
+      time = user.notifications?.time;
     });
   });
 
@@ -36,7 +36,7 @@
   function handleTimeChange({ value }) {
     if (value === time) return;
     if (!value) {
-      time = user.notifications.time;
+      time = user.notifications?.time;
       return;
     }
 
@@ -74,7 +74,7 @@
     {#if enabled}
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
-        <InputSwitch bind:value={user.notifications.past_tasks} />
+        <!-- <InputSwitch bind:value={user.notifications?.past_tasks} /> -->
       </div>
     {/if}
 

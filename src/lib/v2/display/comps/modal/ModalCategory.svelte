@@ -10,7 +10,7 @@
    * @typedef {Object} Props
    * @prop {boolean} [open=false] - Whether the modal is open.
    * @prop {{ id: string, name: string }} [category] - The category to edit. If not provided, a new category will be created.
-   * @prop {(name: string) => *} [onsubmit] - Callback function to call when a category is created.
+   * @prop {(id: string) => *} [onsubmit] - Callback function to call when a category is created.
    * @prop {() => *} [onclose] - Callback function to call when the modal is closed.
    */
 

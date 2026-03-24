@@ -4,6 +4,7 @@
   import { quadInOut } from "svelte/easing";
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
+  import { on } from "svelte/events";
 
   /**
    * @typedef {Object} Props
@@ -65,6 +66,12 @@
 
     return () => (document.body.style.overflow = "");
   });
+
+  function closeOnEsc() {
+    return on(window, "keydown", (e) => {
+      if (e.key === "Escape") handleClose();
+    });
+  }
 </script>
 
 {#if is_open}
@@ -77,6 +84,7 @@
   >
     <div
       aria-modal="true"
+      {@attach closeOnEsc}
       role="dialog"
       class="relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4"
     >

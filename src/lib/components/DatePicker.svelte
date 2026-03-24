@@ -1,14 +1,15 @@
 <script>
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import Calendar from "./element/calendar/Calendar.svelte";
-  import Slider from "./Slider.svelte";
-  import { slide } from "svelte/transition";
-  import { DateUtil } from "$lib/core/date_util";
-  import Button from "./element/button/Button.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { onMount, untrack } from "svelte";
   import t from "$display/translate";
-  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
+
+  import Calendar from "./element/calendar/Calendar.svelte";
+
+  import Button from "./element/button/Button.svelte";
+  import DateUtil from "$display/date-util";
+  import InputTime from "$display/comps/input/InputTime.svelte";
 
   /**
    * @typedef {Object} Props
@@ -30,6 +31,9 @@
   let end_date = $state(end ? new Date(end) : null);
   let start_hour = $state(initStartHour(start));
   let start_min = $state(initStartMinute(start));
+
+  let start_time = $state("");
+  let end_time = $state("");
 
   let is_open = $state(false);
 
@@ -119,43 +123,16 @@
   {/if}
 </div>
 
-<Modal bind:is_open onclose={() => (enable_range = false)} close_button={false}>
+<Modal bind:is_open close_button={false} class="space-y-2">
   <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
-  <div class="mb-2">
+  <div>
     <Calendar is_range_enabled={enable_range} bind:start_date bind:end_date ondateselected={handleSelection} />
   </div>
 
-  {#if !end_date}
-    <h1 class="mx-auto w-fit font-semibold py-2 text-lg">{t("datepicker_choose_start_time")}</h1>
-    <div transition:slide={{ axis: "y" }} class="flex gap-2 w-full mb-2">
-      <div class="w-full text-center">
-        <span class={{ "font-semibold": true, "opacity-50": !is_time_picked }}>{t("datepicker_hour")}</span>
-        <Slider
-          class={{ "opacity-50": !is_time_picked }}
-          options={Array.from({ length: 24 }).map((_, i) => `${i}`.padStart(2, "0"))}
-          bind:value={start_hour}
-          onchange={() => {
-            if (!start_date) return;
-            const start_time = `${start_hour}:${start_min}`;
-            handleSelection({ start_date, start_time });
-          }}
-        />
-      </div>
-      <div class="w-full text-center">
-        <span class={{ "font-semibold": true, "opacity-50": !is_time_picked }}>{t("datepicker_minute")}</span>
-        <Slider
-          class={{ "opacity-50": !is_time_picked }}
-          options={Array.from({ length: 60 }).map((_, i) => `${i}`.padStart(2, "0"))}
-          bind:value={start_min}
-          onchange={() => {
-            if (!start_date) return;
-            const start_time = `${start_hour}:${start_min}`;
-            handleSelection({ start_date, start_time });
-          }}
-        />
-      </div>
-    </div>
-  {/if}
+  <div class="flex items-center gap-2">
+    <InputTime value={start_time} onchange={(value) => (start_time = value)} placeholder={t("start_date")} />
+    <InputTime value={end_time} onchange={(value) => (end_time = value)} placeholder={t("due_date")} />
+  </div>
 
   <Button
     class="bg-card"

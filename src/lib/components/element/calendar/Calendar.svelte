@@ -143,7 +143,7 @@
 </script>
 
 <div class="w-full bg-surface rounded-lg">
-  <div class="flex items-center justify-between mb-4 gap-1">
+  <div class="flex items-center justify-between mb-2 md:mb-4 gap-1">
     <button
       class="cursor-pointer p-2 rounded flex items-center justify-center text-muted"
       aria-label="Previous month"
@@ -222,7 +222,10 @@
             type="button"
           >
             {current_month.getFullYear()}
-            <Icon name="chevron-down" class="w-4 h-4 transition-transform duration-200 {is_year_picker_open ? 'rotate-180' : ''}" />
+            <Icon
+              name="chevron-down"
+              class="w-4 h-4 transition-transform duration-200 {is_year_picker_open ? 'rotate-180' : ''}"
+            />
           </button>
         </div>
       </div>

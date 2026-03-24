@@ -1,7 +1,7 @@
 <script>
   import SelectRepeatInterval from "$display/features/repeat/SelectRepeatInterval.svelte";
   import DropdownCategory from "$display/features/edit-task/DropdownCategory.svelte";
-  import InputTaskName from "$lib/components/element/input/InputTaskName.svelte";
+  import InputName from "$display/features/edit-task/InputName.svelte";
   import ButtonSubmitTask from "./element/button/ButtonSubmitTask.svelte";
   import DatePickerShortcut from "./DatePickerShortcut.svelte";
   import PhotoGallery from "./photo/PhotoGallery.svelte";
@@ -11,7 +11,7 @@
   import t from "$display/translate";
   import DatePicker from "./DatePicker.svelte";
   import { slide } from "svelte/transition";
-  import { alert } from "$lib/core/alert";
+  import toast from "$display/toast/toast.svelte";
 
   /**
    * @typedef {Object} Props
@@ -23,10 +23,9 @@
   const { task, onsubmit } = $props();
 
   let is_loading = $state(false);
-  let invalid = $state(false);
+  let name_invalid = $state(false);
 
-  const title = $derived(!!task.start_date ? t("date") : t("due_date"));
-
+  const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
 
   /**
    * Handle form submission
@@ -38,14 +37,25 @@
     is_loading = true;
 
     const result = await onsubmit(task);
-    if (!result.ok) alert.error(result.error);
+    if (!result.ok) {
+      toast.show({ body: result.error, type: "error", duration: 3000 });
+      name_invalid = t("what_must_be_done") === result.error;
+    }
 
     is_loading = false;
+  }
+
+  /**
+   * @param {string} value
+   */
+  function onchangeName(value) {
+    if (name_invalid) name_invalid = false;
+    task.name = value;
   }
 </script>
 
 <form class="space-y-4" onsubmit={handleSubmit}>
-  <InputTaskName {onsubmit} {invalid} focus_on_mount bind:value={task.name} />
+  <InputName value={task.name} onchange={onchangeName} invalid={name_invalid} focus_on_mount />
 
   <div>
     <label class="font-semibold" for="category">{t("category")}</label>
@@ -53,7 +63,7 @@
   </div>
 
   <div class="w-full">
-    <label class="font-semibold" for="date">{title}</label>
+    <label class="font-semibold" for="date">{date_title}</label>
     <DatePicker bind:start={task.start_date} bind:end={task.due_date} />
     <DatePickerShortcut bind:date={task.start_date} />
   </div>

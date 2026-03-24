@@ -4,7 +4,7 @@
   "version": "1.4.5",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --host app.doenit.com --port 2001",
+    "dev": "vite dev",
     "build": "vite build --mode production",
     "build:dev": "NODE_ENV=development vite build --mode development",
     "build:prod": "NODE_ENV=production vite build",
@@ -15,15 +15,15 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.53.4",
+    "@sveltejs/kit": "^2.55.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/pako": "^2.0.4",
-    "@vitejs/plugin-basic-ssl": "^2.1.4",
-    "svelte": "^5.53.9",
+    "@vitejs/plugin-basic-ssl": "^2.2.0",
+    "svelte": "^5.55.0",
     "svelte-check": "^4.4.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.0.0",
-    "vite": "^7.3.1"
+    "vite": "^8.0.2"
   },
   "dependencies": {
     "@capacitor-community/in-app-review": "^8.0.0",

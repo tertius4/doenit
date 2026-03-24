@@ -19,7 +19,7 @@ export class TaskTable extends Table<Task> {
 
   async create(task: Task | TaskData): Promise<Task> {
     if (!task) throw Error(t("no_task_found"));
-    if (!task.name?.trim()) throw Error(t("task_title_required"));
+    if (!task.name?.trim()) throw Error(t("task_name_required"));
 
     if (!!task.start_date && !!task.due_date && task.start_date > task.due_date) {
       throw Error(t("start_date_before_end"));

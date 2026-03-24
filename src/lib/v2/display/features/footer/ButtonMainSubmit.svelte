@@ -30,7 +30,7 @@
     {type}
     {form}
     class={{
-      "flex justify-center items-center aspect-square rounded-full h-15 w-15 p-3",
+      "flex justify-center items-center aspect-square rounded-full h-15 w-15 p-3": true,
       "bg-primary": page.data.is_home,
       "bg-card": !page.data.is_home,
     }}

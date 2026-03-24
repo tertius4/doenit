@@ -3,7 +3,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
   import { wait } from "$lib";
-  import ButtonClear from "$display/comps/button/ButtonClear.svelte"
+  import ButtonClear from "$display/comps/button/ButtonClear.svelte";
   import { onMount } from "svelte";
   import View from "$display/view";
   import Api from "$logic/api";
@@ -36,7 +36,7 @@
   async function selectCategory(id) {
     category_id = id;
 
-    await wait(200);
+    await wait(200); // Wait for the click animation to finish
     is_open = false;
   }
 </script>
@@ -45,7 +45,7 @@
   <button
     type="button"
     class={[
-      "text-left bg-card p-2 w-full border border-default rounded-lg appearance-none outline-none focus:ring ring-primary pr-6 truncate",
+      "text-left bg-card h-12 p-2 w-full border border-default rounded-lg appearance-none outline-none focus:ring ring-primary pr-6 truncate",
       !category && "text-muted",
     ]}
     onclick={() => (is_open = true)}
@@ -61,7 +61,7 @@
     <ButtonClear onclick={() => (category_id = "")} class="absolute right-0 top-0 bottom-0" />
   {:else}
     <div
-      class="aspect-square h-11 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
+      class="aspect-square h-12 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
     >
       <Icon name="chevron-down" class="text-muted pointer-events-none {is_open ? '-rotate-180' : ''}" />
     </div>
@@ -73,10 +73,6 @@
 
   <div class="space-y-1">
     {#each categories as category (category.id)}
-      {#if category.show_shared_title}
-        <h2 class="font-semibold my-1">{t("shared_categories")}</h2>
-      {/if}
-
       <OptionCategory
         is_selected={category.id === category_id}
         label={category.name || t("DEFAULT_NAME")}
@@ -100,4 +96,4 @@
   </button>
 </Modal>
 
-<ModalCategory bind:open={is_adding} oncreate={(id) => (category_id = id)} onclose={() => (category_id = "")} />
+<ModalCategory bind:open={is_adding} onsubmit={(id) => (category_id = id)} onclose={() => (category_id = "")} />

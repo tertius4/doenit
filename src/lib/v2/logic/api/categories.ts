@@ -76,6 +76,8 @@ async function deleteCategoryHandler(id: string): AsyncResult {
 
 async function getCategoryByIdHandler(id: string): Promise<DB.Category | null> {
   try {
+    if (!id) return null;
+
     const category = await DB.category.findById(id);
     return category.ok ? category.value : null;
   } catch (error) {

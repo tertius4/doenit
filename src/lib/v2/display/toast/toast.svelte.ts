@@ -46,7 +46,7 @@ class ToastClass {
   }
 
   private push(t: Toast) {
-      this.ensureContainer();
+    this.ensureContainer();
     this.toasts = [t, ...this.toasts];
   }
 

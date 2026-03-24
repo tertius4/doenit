@@ -48,7 +48,7 @@ export const translations = {
     create_new_item: "Skep nuwe item",
     what_needs_to_be_done: "Wat moet gedoen word?",
     what_must_be_done: "Wat moet gedoen word?",
-    task_title_required: "Taak se titel ontbreek",
+    task_name_required: "Taak se naam ontbreek",
     task_eg: "Bv. Was skottelgoed",
     task_not_found: "Kon nie taak vind nie",
     description: "Beskrywing",
@@ -102,6 +102,7 @@ export const translations = {
 
     // Date & Time
     date: "Datum",
+    start_date: "Begindatum",
     due_date: "Sperdatum",
     no_date: "Geen datum",
     today: "Vandag",
@@ -579,7 +580,7 @@ export const translations = {
     create_new_item: "Create new item",
     what_needs_to_be_done: "What needs to be done?",
     what_must_be_done: "What must be done?",
-    task_title_required: "Task title is required",
+    task_name_required: "Task naam is required",
     task_eg: "e.g. Do the dishes",
     task_not_found: "Could not find task",
     description: "Description",
@@ -633,6 +634,7 @@ export const translations = {
 
     // Date & Time
     date: "Date",
+    start_date: "Start date",
     due_date: "Due date",
     no_date: "No Date",
     today: "Today",
