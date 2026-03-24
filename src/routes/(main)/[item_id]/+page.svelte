@@ -1,7 +1,7 @@
 <script>
-  import SaveChanges from "$display/features/edit_task/SaveChanges.svelte";
+  import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
-  import { ButtonDelete } from "$display/features/edit_task";
+  import { ButtonDelete } from "$display/features/edit-task";
   import EditTask from "$lib/components/EditTask.svelte";
   import t from "$display/translate";
   import { alert } from "$lib/core/alert.js";
@@ -13,7 +13,7 @@
   let archived = $state(!!task.archived);
 
   /**
-   * @returns {Promise<Task>}
+   * @returns {Promise<DB.Task>}
    */
   async function getTask() {
     const result = await Api.task.getTaskById(page.params.item_id);
@@ -25,7 +25,7 @@
   }
 
   /**
-   * @param {Task} task
+   * @param {DB.Task} task
    * @returns {AsyncResult}
    */
   async function handleUpdateTask(task) {

@@ -1,5 +1,5 @@
 <script>
-  import SaveChanges from "$display/features/edit_task/SaveChanges.svelte";
+  import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import EditTask from "$lib/components/EditTask.svelte";
   import { Selected } from "$lib/selected.svelte";
   import Api from "$logic/api";

@@ -1,6 +1,6 @@
 <script>
   import SelectRepeatInterval from "$display/features/repeat/SelectRepeatInterval.svelte";
-  import DropdownCategory from "$display/features/edit_task/DropdownCategory.svelte";
+  import DropdownCategory from "$display/features/edit-task/DropdownCategory.svelte";
   import InputTaskName from "$lib/components/element/input/InputTaskName.svelte";
   import ButtonSubmitTask from "./element/button/ButtonSubmitTask.svelte";
   import DatePickerShortcut from "./DatePickerShortcut.svelte";
@@ -10,31 +10,23 @@
   import Button from "./element/button/Button.svelte";
   import t from "$display/translate";
   import DatePicker from "./DatePicker.svelte";
-  import { user } from "$lib/core/user.svelte";
-  import UserPicker from "./UserPicker.svelte";
   import { slide } from "svelte/transition";
   import { alert } from "$lib/core/alert";
 
   /**
    * @typedef {Object} Props
-   * @property {TaskData} task
-   * @property {(task: Task) => AsyncResult} onsubmit
+   * @property {Domain.Task} task
+   * @property {(task: Domain.Task) => AsyncResult} onsubmit
    */
 
   /** @type {Props & Record<string, any>} */
   const { task, onsubmit } = $props();
 
-  // const usersContext = getUsersContext();
-
   let is_loading = $state(false);
   let invalid = $state(false);
-  let task_user = $state(/* task.assigned_user_email ? usersContext.getUserByEmail(task.assigned_user_email) :  */undefined);
 
   const title = $derived(!!task.start_date ? t("date") : t("due_date"));
 
-  $effect(() => {
-    task.assigned_user_email = task_user?.email_address;
-  });
 
   /**
    * Handle form submission
@@ -59,10 +51,6 @@
     <label class="font-semibold" for="category">{t("category")}</label>
     <DropdownCategory bind:category_id={task.category_id} />
   </div>
-
-  <!-- {#if user.is_friends_enabled && task.category_id}
-    <UserPicker bind:user={task_user} category_id={task.category_id} />
-  {/if} -->
 
   <div class="w-full">
     <label class="font-semibold" for="date">{title}</label>
