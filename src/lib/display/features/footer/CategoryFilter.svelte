@@ -1,0 +1,71 @@
+<script>
+  import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
+  import { selected_categories } from "$display/selected.svelte";
+  import ButtonCategory from "./ButtonCategory.svelte";
+  import Drawer from "$display/comps/Drawer.svelte";
+  import { backHandler } from "$logic/navigation";
+  import Icon from "$display/comps/Icon.svelte";
+  import t from "$display/translate";
+  import { onMount } from "svelte";
+  import View from "$display/view";
+
+  /** @type {AL.CategoryListItem[]} */
+  let categories = $state([]);
+
+  let is_adding = $state(false);
+  let is_filter_open = $state(false);
+
+  onMount(View.categories.categoryList(categories));
+  onMount(() => {
+    const token = backHandler.register(() => {
+      if (is_filter_open) {
+        is_filter_open = false;
+        return true;
+      }
+      return is_filter_open;
+    }, 500);
+
+    return () => backHandler.unregister(token);
+  });
+</script>
+
+<Drawer is_open={is_filter_open} onclose={() => (is_filter_open = false)}>
+  <div class="h-full">
+    <div class="w-full flex gap-2 items-center justify-center pb-2">
+      <Icon name="categories" size={24} />
+      <span class="font-medium">{t("categories")}</span>
+    </div>
+
+    <div class="max-h-[calc(90vh-48px-24px-28px)] overflow-y-auto mb-12">
+      <ButtonCategory id="default" name={t("DEFAULT_NAME")} />
+
+      {#each categories as { id, name } (id)}
+        <ButtonCategory {id} {name} />
+      {/each}
+    </div>
+  </div>
+  <button
+    class="fixed bottom-0 w-full bg-primary text-alt h-12 flex items-center gap-1 px-4"
+    onclick={() => (is_adding = true)}
+  >
+    <Icon name="plus" class="m-auto text-xl" />
+    <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
+  </button>
+</Drawer>
+
+<button
+  class="w-full bg-card rounded-md h-15 px-4 flex items-center justify-between"
+  onclick={() => (is_filter_open = !is_filter_open)}
+>
+  {#if selected_categories.size === 0}
+    {t("all_categories")}
+  {:else if selected_categories.size === 1}
+    {t("category_selected")}
+  {:else}
+    {t("categories_selected", { count: selected_categories.size })}
+  {/if}
+
+  <Icon name="chevron-down" class={is_filter_open ? "" : "-rotate-180"} />
+</button>
+
+<ModalCategory bind:open={is_adding} />

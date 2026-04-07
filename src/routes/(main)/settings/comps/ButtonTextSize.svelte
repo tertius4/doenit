@@ -1,9 +1,9 @@
 <script>
   /**
    * @typedef {Object} Props
-   * @property {() => void} onclick
-   * @property {boolean} selected
-   * @property {import("svelte").Snippet} children
+   * @prop {() => void} onclick
+   * @prop {boolean} selected
+   * @prop {import("svelte").Snippet} children
    */
 
   /** @type {Props & Record<string, any>} */

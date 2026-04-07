@@ -1,65 +1,17 @@
 <script>
   import { slide } from "svelte/transition";
-  import { notifications } from "$lib/services/notification.svelte";
-  import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
-  import InputTime from "$lib/components/element/input/InputTime.svelte";
+  import InputSwitch from "$display/comps/input/InputSwitch.svelte";
   import t from "$display/translate";
   import Accordion from "$display/comps/button/Accordion.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { user } from "$lib/core/user.svelte";
-  import { untrack } from "svelte";
-
-  let is_loading = $state(false);
+  import InputTime from "$display/comps/input/InputTime.svelte";
+  import { context } from "$logic/context.svelte";
+  import Api from "$logic/api";
 
   let saving = $state(false);
   let saved = $state(false);
-  let enabled = $state(user.notifications?.enabled);
-  let time = $state(user.notifications?.time);
 
-  $effect(() => {
-    enabled;
-    time;
-
-    untrack(async () => {
-      user.update({ notifications: { enabled, time } });
-      await notifications.scheduleNotifications();
-
-      enabled = user.notifications?.enabled;
-      time = user.notifications?.time;
-    });
-  });
-
-  /**
-   *
-   * @param {{ value: string }}param0
-   */
-  function handleTimeChange({ value }) {
-    if (value === time) return;
-    if (!value) {
-      time = user.notifications?.time;
-      return;
-    }
-
-    user.updateNotificationSettings({ time: value });
-    notifications.scheduleNotifications();
-
-    saving = true;
-    setTimeout(() => {
-      saving = false;
-      saved = true;
-      setTimeout(() => (saved = false), 2 * 1000);
-    }, 1000);
-  }
-
-  async function handleRequestPermission() {
-    try {
-      is_loading = true;
-      await user.requestNotificationsPermission();
-      is_loading = false;
-    } catch (error) {
-      console.error("Permission request failed:", error);
-    }
-  }
+  const enabled = $derived(context.settings.notifications_enabled);
 </script>
 
 <Accordion label={t("notifications")}>
@@ -67,78 +19,92 @@
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <span class="text-sm font-medium">{t("reminders")}</span>
-      <InputSwitch bind:value={enabled} />
+      <InputSwitch
+        value={context.settings.notifications_enabled}
+        onchange={(value) => Api.settings.update({ notifications_enabled: value })}
+      />
     </div>
 
     <!-- Toggle for past due date notifications -->
     {#if enabled}
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
-        <!-- <InputSwitch bind:value={user.notifications?.past_tasks} /> -->
+        <InputSwitch
+          value={context.settings.present_task_reminder_enabled}
+          onchange={(value) => Api.settings.update({ present_task_reminder_enabled: value })}
+        />
       </div>
-    {/if}
 
-    <!-- Permission status with visual indicator -->
-    {#if enabled}
-      {#if notifications.status !== "granted"}
-        <div class="flex items-center gap-3 p-3 rounded-lg bg-t-secondary/5 border border-t-secondary/10">
-          {#if notifications.status === "denied"}
-            <Icon name="x-circle" class="text-red-600 dark:text-red-400" />
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-red-600 dark:text-red-400">{t("notification_denied")}</span>
-                <button
-                  class="text-sm px-3 py-1 rounded-full bg-t-primary-600 text-secondary hover:bg-t-primary-700 transition-colors"
-                  onclick={handleRequestPermission}
-                  disabled={is_loading}
-                >
-                  {is_loading ? t("loading") : t("request_permission")}
-                </button>
-              </div>
-            </div>
-          {:else}
-            <Icon name="clock" class="text-yellow-600 dark:text-yellow-400" />
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-yellow-600 dark:text-yellow-400">{t("notification_pending")}</span>
-                <button
-                  class="text-sm px-3 py-1 rounded-full bg-t-primary-600 text-secondary hover:bg-t-primary-700 transition-colors"
-                  onclick={handleRequestPermission}
-                  disabled={is_loading}
-                >
-                  {is_loading ? t("loading") : t("request_permission")}
-                </button>
-              </div>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <div transition:slide class="space-y-4">
+      <div transition:slide>
         <!-- Time picker with better layout -->
-        <div>
-          <span class="flex items-center gap-2 text-sm font-medium mb-2">
-            <Icon name="clock" class="w-5 h-5" />
-            {t("reminder_time")}
-          </span>
-          <div class="h-12 relative">
-            <InputTime value={time} can_clear={false} onchange={handleTimeChange} placeholder={t("choose_time")} />
 
-            <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
-              {#if saving}
-                <div in:slide={{ duration: 200 }}>
-                  <Icon name="loading" class="animate-spin" />
-                </div>
-              {:else if saved}
-                <div
-                  in:slide={{ duration: 200 }}
-                  out:slide={{ duration: 200 }}
-                  class="border-2 rounded-full border-success aspect-square h-fit p-1"
-                >
-                  <Icon name="check" class="text-success text-sm" />
-                </div>
-              {/if}
-            </div>
+        <span class="flex items-center gap-2 text-sm font-medium mb-2">
+          <Icon name="clock" class="w-5 h-5" />
+          {t("reminder_time")}
+        </span>
+        <div class="h-12 relative">
+          <InputTime
+            value={context.settings.present_task_reminder_time}
+            can_clear={false}
+            onchange={(value) => Api.settings.update({ present_task_reminder_time: value })}
+            placeholder={t("choose_time")}
+          />
+
+          <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
+            {#if saving}
+              <div in:slide={{ duration: 200 }}>
+                <Icon name="loading" class="animate-spin" />
+              </div>
+            {:else if saved}
+              <div
+                in:slide={{ duration: 200 }}
+                out:slide={{ duration: 200 }}
+                class="border-2 rounded-full border-success aspect-square h-fit p-1"
+              >
+                <Icon name="check" class="text-success text-sm" />
+              </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
+        <InputSwitch
+          value={context.settings.past_task_reminder_enabled}
+          onchange={(value) => Api.settings.update({ past_task_reminder_enabled: value })}
+        />
+      </div>
+
+      <div transition:slide>
+        <!-- Time picker with better layout -->
+
+        <span class="flex items-center gap-2 text-sm font-medium mb-2">
+          <Icon name="clock" class="w-5 h-5" />
+          {t("reminder_time")}
+        </span>
+        <div class="h-12 relative">
+          <InputTime
+            value={context.settings.past_task_reminder_time}
+            can_clear={false}
+            onchange={(value) => Api.settings.update({ past_task_reminder_time: value })}
+            placeholder={t("choose_time")}
+          />
+
+          <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
+            {#if saving}
+              <div in:slide={{ duration: 200 }}>
+                <Icon name="loading" class="animate-spin" />
+              </div>
+            {:else if saved}
+              <div
+                in:slide={{ duration: 200 }}
+                out:slide={{ duration: 200 }}
+                class="border-2 rounded-full border-success aspect-square h-fit p-1"
+              >
+                <Icon name="check" class="text-success text-sm" />
+              </div>
+            {/if}
           </div>
         </div>
       </div>

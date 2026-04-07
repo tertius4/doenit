@@ -1,5 +1,5 @@
-import DB from "$domain/db";
-import { alert } from "$lib/core/alert";
+import DB from "$lib/domain/db";
+import alert from "$display/toast/toast.svelte";;
 import { initApp } from "$logic/context.svelte";
 
 export const ssr = false;

@@ -1,1 +1,0 @@
-export { default as CardInvite } from "./CardInvite.svelte";

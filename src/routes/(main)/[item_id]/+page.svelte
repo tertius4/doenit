@@ -1,10 +1,10 @@
 <script>
   import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
-  import { ButtonDelete } from "$display/features/edit-task";
-  import EditTask from "$lib/components/EditTask.svelte";
+  import ButtonDelete from "$display/features/edit-task/ButtonDelete.svelte";
+  import EditTask from "$display/features/edit-task/EditTask.svelte";
   import t from "$display/translate";
-  import { alert } from "$lib/core/alert.js";
+  import alert from "$display/toast/toast.svelte";
   import Api from "$logic/api";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
@@ -62,11 +62,6 @@
   <div class="h-12 flex">
     <div class="font-bold text-left my-auto w-full">{t("complete")}</div>
 
-    <InputCheckbox
-      class="static! top-0! translate-0! left-0! bottom-0! right-0! p-2! z-1"
-      onselect={handleSelectTask}
-      is_selected={!!task.archived}
-      tick_animation={!!task.archived}
-    />
+    <InputCheckbox onchange={handleSelectTask} checked={!!task.archived} />
   </div>
 </div>

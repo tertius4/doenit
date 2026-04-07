@@ -1,6 +1,5 @@
 <script>
   import CardCategory from "$display/features/categories/CardCategory.svelte";
-  import InputText from "$lib/components/element/input/InputText.svelte";
   import { backHandler } from "$logic/navigation";
   import t from "$display/translate";
   import { BACK_BUTTON_FUNCTION } from "$lib";
@@ -8,8 +7,9 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import Api from "$logic/api";
-  import { alert } from "$lib/core/alert";
+  import alert from "$display/toast/toast.svelte";;
   import { fade } from "svelte/transition";
+  import InputText from "$display/comps/input/InputText.svelte";
 
   let error_message = $state("");
   let is_editing = $state(false);

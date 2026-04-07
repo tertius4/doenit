@@ -13,10 +13,10 @@ const config = {
       remoteFunctions: true,
     },
     alias: {
-      $logic: "./src/lib/v2/logic",
-      $display: "./src/lib/v2/display",
-      $domain: "./src/lib/v2/domain",
-      $services: "./src/lib/v2/services",
+      $logic: "./src/lib/logic",
+      $display: "./src/lib/display",
+      $domain: "./src/lib/domain",
+      $services: "./src/lib/services",
     },
   },
 

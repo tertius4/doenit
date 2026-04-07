@@ -2,11 +2,10 @@
   import Footer from "$display/features/footer/Footer.svelte";
   import Heading from "$display/features/header/Heading.svelte";
   import { context } from "$logic/context.svelte";
-  import { Value } from "$lib/utils.svelte";
   import { setContext } from "svelte";
   import "../../app.css";
 
-  const search_text = new Value("");
+  const search_text = $state({ value: "" });
   setContext("search_text", search_text);
 
   const { children } = $props();

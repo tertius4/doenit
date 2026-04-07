@@ -1,11 +1,11 @@
 <script>
-  import { DB } from "$lib/DB";
   import { goto } from "$app/navigation";
-  import { DateUtil } from "$lib/core/date_util";
+  import DateUtil from "$display/date-util";
+  import DB from "$domain/db";
 
-  let categories = $state(await DB.Category.getAll());
-  let tasks = $state(await DB.Task.getAll());
-  let users = $state(await DB.User.getAll());
+  let categories = $state((await DB.category.findMany()).value);
+  let tasks = $state((await DB.task.findMany()).value);
+  let users = $state((await DB.user.findMany()).value);
   let searchTerm = $state("");
   let filterType = $state("all"); // all, default, shared, private
   let sortBy = $state("created_at"); // created_at, name, task_count, user_count
@@ -16,7 +16,7 @@
     users.reduce((map, user) => {
       map[user.email_address] = user;
       return map;
-    }, {})
+    }, {}),
   );
 
   // Task count per category
@@ -25,7 +25,7 @@
       if (!task.category_id) return map;
       map[task.category_id] = (map[task.category_id] || 0) + 1;
       return map;
-    }, {})
+    }, {}),
   );
 
   // Statistics
@@ -50,7 +50,7 @@
         (c) =>
           c.name.toLowerCase().includes(term) ||
           c.id.includes(term) ||
-          c.users?.some((email) => email.toLowerCase().includes(term))
+          c.users?.some((email) => email.toLowerCase().includes(term)),
       );
     }
 
@@ -116,9 +116,9 @@
   }
 
   async function refreshData() {
-    categories = await DB.Category.getAll();
-    tasks = await DB.Task.getAll();
-    users = await DB.User.getAll();
+    categories = await DB.category.findMany();
+    tasks = await DB.task.findMany();
+    users = await DB.user.findMany();
   }
 
   function getUserName(email) {
@@ -132,25 +132,16 @@
       <div>
         <h1 class="text-3xl font-bold">Categories Database</h1>
         <div class="flex gap-2 mt-2">
-          <button
-            onclick={() => goto("/db")}
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
+          <button onclick={() => goto("/db")} class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
             ← Tasks
           </button>
           <span class="text-gray-400">|</span>
-          <button
-            onclick={() => goto("/db/users")}
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
+          <button onclick={() => goto("/db/users")} class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
             Users →
           </button>
         </div>
       </div>
-      <button
-        onclick={refreshData}
-        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-      >
+      <button onclick={refreshData} class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
         🔄 Refresh
       </button>
     </div>
@@ -239,9 +230,7 @@
             >
               Name {sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-              Type
-            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"> Type </th>
             <th
               onclick={() => toggleSort("task_count")}
               class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -260,9 +249,7 @@
             >
               Created {sortBy === "created_at" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-              Updated
-            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"> Updated </th>
           </tr>
         </thead>
         <tbody class="divide-y dark:divide-gray-700">
@@ -277,27 +264,19 @@
               <td class="px-4 py-3">
                 <div class="flex flex-col gap-1">
                   {#if category.is_default}
-                    <span
-                      class="inline-flex px-2 py-1 text-xs rounded bg-yellow-200 dark:bg-yellow-800"
-                    >
+                    <span class="inline-flex px-2 py-1 text-xs rounded bg-yellow-200 dark:bg-yellow-800">
                       ⭐ Default
                     </span>
                   {/if}
                   {#if category.archived}
-                    <span class="inline-flex px-2 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700">
-                      Archived
-                    </span>
+                    <span class="inline-flex px-2 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700"> Archived </span>
                   {/if}
                   {#if category.users && category.users.length > 0}
-                    <span
-                      class="inline-flex px-2 py-1 text-xs rounded bg-green-200 dark:bg-green-800"
-                    >
+                    <span class="inline-flex px-2 py-1 text-xs rounded bg-green-200 dark:bg-green-800">
                       👥 Shared
                     </span>
                   {:else}
-                    <span class="inline-flex px-2 py-1 text-xs rounded bg-blue-200 dark:bg-blue-800">
-                      🔒 Private
-                    </span>
+                    <span class="inline-flex px-2 py-1 text-xs rounded bg-blue-200 dark:bg-blue-800"> 🔒 Private </span>
                   {/if}
                 </div>
               </td>

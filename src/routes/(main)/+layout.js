@@ -1,4 +1,12 @@
+import { InAppReview } from "@capacitor-community/in-app-review";
+import { context } from "$logic/context.svelte";
+import { Widget } from "$services/widget";
+
 export async function load({ url, params }) {
+  Widget.init();
+  const is_a_20th_open = !(context.app_state.open_count % 20);
+  if (is_a_20th_open) await InAppReview.requestReview();
+
   return {
     is_home: !!(url.pathname === "/"),
     is_task_page: !!(url.pathname === "/create" || params.item_id),

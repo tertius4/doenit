@@ -22,8 +22,13 @@ declare global {
 
       theme: "light" | "dark" | "system";
       notifications_enabled: boolean;
-      reminders_enabled: boolean;
-      reminder_time: string; // e.g. "09:00"
+      present_task_reminder_enabled: boolean;
+      present_task_reminder_time: string; // e.g. "09:00"
+      past_task_reminder_enabled: boolean;
+      past_task_reminder_time: string; // e.g. "09:00"
+
+      automatic_backup: boolean;
+
       text_size: "sm" | "md" | "lg";
       language: "af" | "en";
     }
@@ -37,6 +42,7 @@ declare global {
 
     interface Task {
       name: string;
+      archived: boolean;
       description?: string;
       completed: number;
       completed_at: string | null;
@@ -90,32 +96,75 @@ declare global {
       user_id: string | null;
     }
 
-    interface MetaData {
+    interface AppState {
+      id: "current";
+      device_id: string;
+      last_opened_at: string;
+      open_count: number;
+      app_version: string;
+      updated_at: string;
+    }
+
+    interface UserState {
+      user_id: string;
+      last_opened_at: string;
+      open_count: number;
+      last_rate_prompt_at: string;
+      last_backed_up: string;
+      rate_prompt_count: number;
+      has_rated: boolean;
+      updated_at: string;
+    }
+
+    interface SharedMetaData {
       id: string;
       created_at: string;
       updated_at: string;
-      archived: boolean;
       version: number;
       soft_deleted?: boolean;
       dirty: boolean;
       owner_user_id: string;
     }
 
-    type Task = DB.MetaData & Domain.Task;
-    type Category = DB.MetaData & Domain.Category;
-    type Group = DB.MetaData & Domain.Group;
-    type Member = DB.MetaData & Domain.Member;
-    type Contact = DB.MetaData & Domain.Contact;
-    type Invite = DB.MetaData & Domain.Invite;
-    type User = DB.MetaData & Domain.User;
-    type Settings = DB.MetaData & Domain.Settings;
-    type Permissions = DB.MetaData & Domain.Permissions;
+    interface PrivateMetaData {
+      id: string;
+      created_at: string;
+      updated_at: string;
+    }
+
+    type Task = DB.SharedMetaData & Domain.Task;
+    type Category = DB.SharedMetaData & Domain.Category;
+    type Group = DB.SharedMetaData & Domain.Group;
+    type Member = DB.SharedMetaData & Domain.Member;
+    type Contact = DB.SharedMetaData & Domain.Contact;
+    type Invite = DB.SharedMetaData & Domain.Invite;
+    // Basic User info - could be the device (before any logins).
+    type User = DB.PrivateMetaData & Domain.User;
+    // User preferences
+    type Settings = DB.PrivateMetaData & Domain.Settings;
+    // Server controlled - private data
+    type Permissions = DB.PrivateMetaData & Domain.Permissions;
   }
 
   type Result<T = void> = T extends void
     ? { ok: true } | { ok: false; error: string }
     : { ok: true; value: T } | { ok: false; error: string };
   type AsyncResult<T = void> = Promise<Result<T>>;
+
+  namespace AL {
+    // App Logic
+    type TaskPhoto = {
+      id: string; // Primary key (UUID).
+      filepath: string; // Path to the photo file.
+      webview_path?: string; // Optional webview path for displaying the photo.
+    };
+
+    interface CategoryListItem {
+      id: string;
+      name: string;
+      task_count: number;
+    }
+  }
 }
 
 export {};

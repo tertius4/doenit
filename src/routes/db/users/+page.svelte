@@ -1,7 +1,7 @@
 <script>
   import { DB } from "$lib/DB";
   import { goto } from "$app/navigation";
-  import { DateUtil } from "$lib/core/date_util";
+  import DateUtil from "$display/date-util";
 
   let users = $state(await DB.User.getAll());
   let categories = $state(await DB.Category.getAll());

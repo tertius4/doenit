@@ -33,10 +33,10 @@ export default defineConfig({
         manualChunks: {
           // Separate chunk for translations
           translations: ["./src/lib/services/language/translations.js"],
-          "firebase-app": ["./src/lib/v2/app/chunk/firebase-app.ts"],
-          "firebase-firestore": ["./src/lib/v2/app/chunk/firebase-firestore.ts"],
-          rxdb: ["./src/lib/v2/app/chunk/rxdb.ts"],
-          "rxdb-helper": ["./src/lib/v2/app/chunk/rxdb_helper.ts"],
+          "firebase-app": ["./src/lib/app/chunk/firebase-app.ts"],
+          "firebase-firestore": ["./src/lib/app/chunk/firebase-firestore.ts"],
+          rxdb: ["./src/lib/app/chunk/rxdb.ts"],
+          "rxdb-helper": ["./src/lib/app/chunk/rxdb_helper.ts"],
         },
         
       },

@@ -1,6 +1,6 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import { alert } from "$lib/core/alert";
+  import alert from "$display/toast/toast.svelte";;
   import { user } from "$lib/core/user.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";

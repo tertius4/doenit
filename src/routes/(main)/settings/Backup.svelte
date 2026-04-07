@@ -1,14 +1,15 @@
 <script>
   import t from "$display/translate";
   import Accordion from "$display/comps/button/Accordion.svelte";
-  import ButtonBackup from "$lib/components/element/button/ButtonBackup.svelte";
-  import ButtonRestore from "$lib/components/element/button/ButtonRestore.svelte";
+  import ButtonRestore from "./comps/ButtonRestore.svelte";
   import Backup from "$lib/services/backup.svelte";
-  import InputSwitch from "$lib/components/element/input/InputSwitch.svelte";
-  import { user } from "$lib/core/user.svelte";
-  import { alert } from "$lib/core/alert";
+  import InputSwitch from "$display/comps/input/InputSwitch.svelte";
+  import alert from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import GetDoenitPlus from "$lib/components/GetDoenitPlus.svelte";
+  import GetDoenitPlus from "./comps/GetDoenitPlus.svelte";
+  import { context } from "$logic/context.svelte";
+  import ButtonBackup from "./comps/ButtonBackup.svelte";
+  import Api from "$logic/api";
 
   const has_backup = $derived(Backup.last_backup_at !== t("never"));
 
@@ -53,17 +54,17 @@
 
 <Accordion
   label={t("backup_label")}
-  disabled={!user.is_logged_in}
+  disabled={!context.permissions.backup_data}
   disabled_message={t("log_in_first")}
-  loading={user.is_loading}
+  loading={!context.user}
 >
-  {#if !!user.is_backup_enabled}
+  {#if !!context.permissions.backup_data}
     <div>
       <div class="flex items-center justify-between mb-4">
         <div>
           <p class="font-medium">{t("automatic_backup")}</p>
         </div>
-        <InputSwitch bind:value={Backup.automatic_backup} />
+        <InputSwitch value={context.settings.automatic_backup} onchange={(value) => Api.settings.update({ automatic_backup: value })}/>
       </div>
 
       <ButtonBackup is_loading={Backup.is_loading} onclick={() => createBackup()} class="mb-4" />

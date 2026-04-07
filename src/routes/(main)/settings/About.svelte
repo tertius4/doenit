@@ -1,24 +1,23 @@
 <script>
-  import t from "$display/translate";
-  import { RateApp } from "$lib/services/rateApp.js";
+  import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { Device } from "@capacitor/device";
+  import t from "$display/translate";
+  import { VERSION } from "$lib";
+  import Api from "$logic/api";
 
   // Hou Weergawe in lyn met:
   // - android/app/build.gradle – versionName
   // - package.json – version
-  const SUPPORT_EMAIL = "doenitapp@gmail.com";
-  const VERSION = "1.4.5";
 
   async function handleRateApp() {
-    await RateApp.openStorePage();
+    await Api.settings.openStorePage();
   }
 
   async function handleSendEmail() {
-    const deviceInfo = await Device.getInfo();
-    const device = `${deviceInfo.manufacturer} ${deviceInfo.model} - ${deviceInfo.operatingSystem} ${deviceInfo.osVersion}`;
-    const subject = encodeURIComponent(`Fout in Doenit ${VERSION} - ${device}`);
-    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}`;
+    const result = await Api.settings.email();
+    if (!result.ok) return toast.error(result.error || "Failed to open email client");
+
+    window.location.href = result.value;
   }
 </script>
 
