@@ -1,7 +1,7 @@
 import * as categories from "./categories.js";
-import * as tasks from "./tasks.js";
 import * as main_page from "./main_page.js";
 import * as done_page from "./done-page.js";
+import * as db from "./db.js";
 
 export default class View {
   static readonly categories = {
@@ -16,8 +16,10 @@ export default class View {
   static readonly done_page = {
     taskList: done_page.taskList,
   };
-
-  static readonly tasks = {
-    taskList: tasks.taskList,
-  };
+  
+  static readonly db = {
+    users: db.users,
+    category: db.category,
+    tasks: db.tasks
+  }
 }

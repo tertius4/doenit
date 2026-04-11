@@ -1,5 +1,4 @@
 <script>
-  import AddFriends from "$lib/components/AddFriends.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { navigating, page } from "$app/state";
   import { goto } from "$app/navigation";
@@ -23,9 +22,7 @@
   const onclick = $derived(page.data.is_task_page ? null : () => goto(page.data.is_home ? "/create" : "/"));
 </script>
 
-{#if page.data.is_friends_page}
-  <AddFriends />
-{:else if icon_name}
+{#if icon_name}
   <button
     {type}
     {form}

@@ -480,7 +480,7 @@
     <line x1="15" y1="9" x2="9" y2="15"></line>
     <line x1="9" y1="9" x2="15" y2="15"></line>
   </symbol>
-  <symbol id="verticle-ellipsis" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
+  <symbol id="vertical-ellipsis" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v.01M12 12v.01M12 18v.01" />
   </symbol>
 </svg>

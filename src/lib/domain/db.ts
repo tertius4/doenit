@@ -16,6 +16,8 @@ class DBClass {
   private _permissions: tables.permissions | undefined;
   private _settings: tables.settings | undefined;
   private _session: tables.session | undefined;
+  private _app_state: tables.app_state | undefined;
+  private _user_state: tables.user_state | undefined;
 
   async init() {
     if (this.is_initialized) return;
@@ -28,6 +30,8 @@ class DBClass {
     this._permissions = new tables.permissions(db.collections.permission);
     this._settings = new tables.settings(db.collections.settings);
     this._session = new tables.session(db.collections.session);
+    this._app_state = new tables.app_state(db.collections.app_state);
+    this._user_state = new tables.user_state(db.collections.user_state);
     this.is_initialized = true;
   }
 
@@ -60,6 +64,16 @@ class DBClass {
     if (!this._session) throw new Error("DB not initialized");
     return this._session;
   }
+
+  get app_state() {
+    if (!this._app_state) throw new Error("DB not initialized");
+    return this._app_state;
+  }
+
+  get user_state() {
+    if (!this._user_state) throw new Error("DB not initialized");
+    return this._user_state;
+  }
 }
 
 const DB = new DBClass();
@@ -88,6 +102,8 @@ async function initDB() {
     task: { schema: schema.task },
     category: { schema: schema.category },
     session: { schema: schema.session },
+    app_state: { schema: schema.app_state },
+    user_state: { schema: schema.user_state },
   });
 
   const task_needed = await collections.task.migrationNeeded();

@@ -1,8 +1,8 @@
 import DB from "$lib/domain/db";
-import { map } from "rxjs";
+import { map, Subscription } from "rxjs";
 
 /**
- * @param {Logic.DonePageTask[]} list
+ * @param {AL.DonePageTask[]} list
  * @returns {() => void}
  */
 export function taskList(list) {
@@ -17,13 +17,13 @@ export function taskList(list) {
 }
 
 /**
- * @returns {Promise<import("rxjs").Observable<Logic.DonePageTask[]>>}
+ * @returns {Promise<import("rxjs").Observable<AL.DonePageTask[]>>}
  */
 async function subscribeTaskList() {
   // return [{
 
   // }]
-  // /** @type {(task: DB.Task ) => Logic.DonePageTask} */
+  // /** @type {(task: DB.Task ) => AL.DonePageTask} */
   // const formatTask = (task) => ({
   //   id: task.id,
 

@@ -5,7 +5,10 @@ import * as settings from "./settings";
 export default class Api {
   static readonly settings = {
     update: settings.update,
-  }
+    openStorePage: settings.openStorePage,
+    email: settings.email,
+  };
+
   static readonly task = {
     ...task,
   };

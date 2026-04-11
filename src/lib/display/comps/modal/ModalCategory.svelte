@@ -1,34 +1,34 @@
 <script>
-  import InputText from "$lib/components/element/input/InputText.svelte";
-  import t from "$display/translate";
+  import InputText from "../input/InputText.svelte";
   import ModalHeader from "./ModalHeader.svelte";
   import Icon from "$display/comps/Icon.svelte";
+  import t from "$display/translate";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
 
   /**
    * @typedef {Object} Props
    * @prop {boolean} [open=false] - Whether the modal is open.
-   * @prop {{ id: string, name: string }} [category] - The category to edit. If not provided, a new category will be created.
+   * @prop {string} [id] - The ID of the category to edit (undefined if creating a new category).
+   * @prop {string} [name] - The name of the category (used when editing).
    * @prop {(id: string) => *} [onsubmit] - Callback function to call when a category is created.
    * @prop {() => *} [onclose] - Callback function to call when the modal is closed.
    */
 
   /** @type {Props & Record<string, any>} */
-  let { open = $bindable(false), ...props } = $props();
+  let { open = $bindable(false), id, name = "", ...props } = $props();
   // svelte-ignore state_referenced_locally
-  const { onsubmit, onclose, category, ...rest } = props;
+  const { onsubmit, onclose, ...rest } = props;
 
-  let name = $state(category?.name ?? "");
   let error_message = $state("");
 
-  const is_creating = $derived(!category);
+  $inspect("id", id);
+  const is_creating = $derived(!id);
 
   async function saveCategory() {
-    const result = await Api.cats.save({ id: category?.id, name });
+    const result = await Api.cats.save({ id, name });
     if (!result.ok) return (error_message = result.error);
 
-    name = "";
     open = false;
 
     if (onsubmit) onsubmit(result.value.id);
@@ -42,7 +42,8 @@
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={saveCategory} class="space-y-4" {...rest}>
   <ModalHeader>{is_creating ? t("create_new_category") : t("edit_category")}</ModalHeader>
   <InputText
-    bind:value={name}
+    value={name}
+    onchange={(value) => (name = value)}
     focus_on_mount
     maxlength="50"
     placeholder={t("choose_category_name")}

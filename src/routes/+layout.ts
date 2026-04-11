@@ -17,6 +17,6 @@ export async function load({ url, params }) {
   } catch (error) {
     console.error("Failed to initialize app", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
-    return alert.error("Initialisatie fout", message);
+    return alert.error("Initialisasie fout", message);
   }
 }

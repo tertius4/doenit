@@ -14,7 +14,7 @@
   let error_message = $state("");
   let is_editing = $state(false);
 
-  /** @type {Logic.CategoryListItem[]} */
+  /** @type {AL.CategoryListItem[]} */
   let categories = $state([]);
   let new_name = $state("");
 
@@ -41,7 +41,8 @@
 <div class="flex flex-col space-y-4 pt-2">
   <form onsubmit={createCategory} class="flex gap-2 items-center h-12 relative">
     <InputText
-      bind:value={new_name}
+      value={new_name}
+      onchange={(value) => (new_name = value)}
       maxlength="50"
       placeholder={t("enter_new_category_name")}
       oninput={() => (error_message = "")}

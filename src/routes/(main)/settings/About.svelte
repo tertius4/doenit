@@ -2,12 +2,8 @@
   import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import { VERSION } from "$lib";
   import Api from "$logic/api";
-
-  // Hou Weergawe in lyn met:
-  // - android/app/build.gradle – versionName
-  // - package.json – version
+  import { context } from "$logic/context.svelte";
 
   async function handleRateApp() {
     await Api.settings.openStorePage();
@@ -26,7 +22,7 @@
 
   <div class="flex justify-between">
     <p>{t("version")}:</p>
-    <pre>{VERSION}</pre>
+    <pre>{context.app_state.app_version}</pre>
   </div>
 
   <div class="pt-2 border-t border-default">

@@ -1,9 +1,9 @@
 import DB from "$lib/domain/db";
-import { map } from "rxjs";
+import { map, Subscription } from "rxjs";
 
 /**
  *
- * @param {Logic.MainPageTask[]} list
+ * @param {AL.MainPageTask[]} list
  * @returns {() => void}
  */
 export function taskList(list) {
@@ -18,7 +18,7 @@ export function taskList(list) {
 }
 
 /**
- * @returns {Promise<import("rxjs").Observable<Logic.MainPageTask[]>>}
+ * @returns {Promise<import("rxjs").Observable<AL.MainPageTask[]>>}
  */
 async function subscribeTaskList() {
   // return [{

@@ -1,8 +1,8 @@
 <script>
   import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
+  import toast from "$display/toast/toast.svelte";
   import { fly, slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
-  import { alert } from "$lib/core/alert";
   import Api from "$logic/api";
 
   /**
@@ -25,18 +25,19 @@
     const result = await Api.cats.delete(id);
     if (result.ok) return;
 
-    alert.error("Failed to delete category", result.error);
+    toast.error("Failed to delete category", result.error);
+  }
+
+  function handleEdit() {
+    if (disabled) return;
+
+    is_editing = true;
   }
 </script>
 
 <div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg">
   <div class="grid {disabled ? 'grid-cols-1 px-4' : 'grid-cols-[48px_1fr_48px]'} items-center justify-between">
-    <button
-      type="button"
-      class="h-full w-full flex justify-center items-center"
-      onclick={() => (is_editing = true)}
-      hidden={disabled}
-    >
+    <button type="button" class="h-full w-full flex justify-center items-center" onclick={handleEdit} hidden={disabled}>
       <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
         <Icon name="edit" class="w-5 h-5" />
       </div>
@@ -55,4 +56,4 @@
   </div>
 </div>
 
-<ModalCategory bind:open={is_editing} category={{ id, name }} />
+<ModalCategory bind:open={is_editing} {id} {name} />

@@ -1,6 +1,6 @@
 <script>
-  import ContextMenu from "$lib/components/ContextMenu.svelte";
   import Icon from "$display/comps/Icon.svelte";
+  import ContextMenu from "./ContextMenu.svelte";
 
   let show = $state(false);
 
@@ -11,7 +11,7 @@
 
 <button id="meer-opsies" aria-label="More options" type="button" onclick={toggle} class="mx-2 flex justify-center items-center aspect-square rounded-full">
   <div class="bg-card rounded-full h-10 flex justify-center items-center aspect-square p-1">
-    <Icon name="verticle-ellipsis" size={28} class="pointer-events-none h-full aspect-square" />
+    <Icon name="vertical-ellipsis" size={28} class="pointer-events-none h-full aspect-square" />
   </div>
 </button>
 

@@ -164,6 +164,30 @@ declare global {
       name: string;
       task_count: number;
     }
+
+    interface MainPageTask {
+      id: string;
+      name: string;
+      is_ongoing: boolean;
+      is_past: boolean;
+      onclick: () => void;
+      onlongpress: () => void;
+      pills: { type: "round" | "square"; label: string; pre_icon?: string; post_icon?: string }[];
+      top_right_icons?: { name: string }[];
+    }
+
+    interface DonePageTask {
+      id: string;
+      name: string;
+      completed_count: number;
+      pills: { type: "round" | "square"; label: string; pre_icon?: string; post_icon?: string }[];
+    }
+
+    interface TaskPhoto {
+      id: string;
+      filepath: string;
+      webview_path?: string;
+    }
   }
 }
 

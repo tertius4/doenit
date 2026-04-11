@@ -1,4 +1,4 @@
-import { Photos } from "$lib/services/photos.svelte";
+import photos from "$lib/services/photos.svelte";
 
 class TempMediaManager {
   private tempFiles = new Set<string>();
@@ -9,13 +9,13 @@ class TempMediaManager {
 
   async commit(used_file_ids: string[] = []) {
     const unused_files = Array.from(this.tempFiles).filter((id) => !used_file_ids.includes(id));
-    Photos.deletePhotos(unused_files);
+    photos.deletePhotos(unused_files);
 
     this.tempFiles.clear();
   }
 
   async discardAll() {
-    Photos.deletePhotos(Array.from(this.tempFiles));
+    photos.deletePhotos(Array.from(this.tempFiles));
 
     this.tempFiles.clear();
   }

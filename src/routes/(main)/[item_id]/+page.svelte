@@ -1,13 +1,13 @@
 <script>
+  import ButtonDelete from "$display/features/edit-task/ButtonDelete.svelte";
   import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
-  import ButtonDelete from "$display/features/edit-task/ButtonDelete.svelte";
   import EditTask from "$display/features/edit-task/EditTask.svelte";
-  import t from "$display/translate";
   import alert from "$display/toast/toast.svelte";
-  import Api from "$logic/api";
   import { goto } from "$app/navigation";
+  import t from "$display/translate";
   import { page } from "$app/state";
+  import Api from "$logic/api";
 
   const task = $state(await getTask());
   let archived = $state(!!task.archived);

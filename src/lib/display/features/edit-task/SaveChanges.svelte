@@ -1,21 +1,21 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
   import { tempMediaManager } from "$logic/temp-media";
-  import Icon from "$display/comps/Icon.svelte";
+  import toast from "$display/toast/toast.svelte";
   import { backHandler } from "$logic/navigation";
-  import t from "$display/translate";
+  import Icon from "$display/comps/Icon.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { alert } from "$lib/core/alert";
   import { goto } from "$app/navigation";
-  import Api from "$logic/api";
+  import t from "$display/translate";
   import { onMount } from "svelte";
+  import Api from "$logic/api";
 
   /**
    * @typedef {Object} Props
-   * @property {((task: any) => AsyncResult)} onsave
+   * @property {((task: DB.Task | Domain.Task) => AsyncResult)} onsave
    * @property {() => Result | AsyncResult} [oncancel]
-   * @property {Task['id']} [task_id] - The ID of the original task (undefined if new)
-   * @property {Task | TaskData} changed - The changed object to compare against the original.
+   * @property {string} [task_id] - The ID of the original task (undefined if new)
+   * @property {DB.Task | Domain.Task} changed - The changed object to compare against the original.
    */
 
   /** @type {Props} */
@@ -42,14 +42,14 @@
 
   async function handleSave() {
     const result = await onsave(changed);
-    if (!result.ok) return alert.error(result.error);
+    if (!result.ok) return toast.error(result.error);
 
     is_open = false;
   }
 
   async function handleDiscard() {
     const result = await oncancel();
-    if (!result.ok) return alert.error(result.error);
+    if (!result.ok) return toast.error(result.error);
 
     is_open = false;
   }

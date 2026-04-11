@@ -1,16 +1,16 @@
 <script>
-  import { page } from "$app/state";
-  import { fade, slide } from "svelte/transition";
-  import ButtonBack from "$display/features/header/ButtonBack.svelte";
-  import DeleteAll from "$display/features/header/ButtonDeleteAll.svelte";
-  import t from "$display/translate";
-  import { Selected } from "$lib/selected.svelte";
   import ButtonSearchTask from "$display/features/header/ButtonSearchTask.svelte";
+  import DeleteAll from "$display/features/header/ButtonDeleteAll.svelte";
+  import ButtonBack from "$display/features/header/ButtonBack.svelte";
+  import { selected_tasks } from "$display/selected.svelte";
   import { getContext, onMount, untrack } from "svelte";
+  import { fade, slide } from "svelte/transition";
   import { backHandler } from "$logic/navigation";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
-  import InputTextDebounce from "$lib/components/element/input/InputTextDebounce.svelte";
   import ButtonMore from "./ButtonMore.svelte";
+  import { BACK_BUTTON_FUNCTION } from "$lib";
+  import t from "$display/translate";
+  import { page } from "$app/state";
+  import InputTextDebounce from "$display/comps/input/InputTextDebounce.svelte";
 
   let show_searchbar = $state(false);
 
@@ -82,7 +82,7 @@
     </div>
 
     <div>
-      {#if Selected.tasks.size}
+      {#if selected_tasks.size}
         <DeleteAll />
         <ButtonMore />
       {:else if page.data.is_home || page.data.is_completed_page}
@@ -94,7 +94,8 @@
   {#if show_searchbar}
     <div class="p-2 bg-surface" transition:slide={{ duration: 200 }}>
       <InputTextDebounce
-        bind:value={search_text.value}
+        value={search_text.value}
+        onchange={(value) => (search_text.value = value)}
         debounce={300}
         class="h-12"
         placeholder={t("search")}

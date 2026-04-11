@@ -1,25 +1,24 @@
 <script>
+  import { selected_tasks } from "$display/selected.svelte";
+  import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { alert } from "$lib/core/alert";
-  import { Selected } from "$lib/selected.svelte";
+  import { Share } from "@capacitor/share";
   import t from "$display/translate";
   import Api from "$logic/api";
-  import { Share } from "@capacitor/share";
 
   const { onclick = () => {} } = $props();
 
-  const multiple = $derived(Selected.tasks.size > 1);
+  const multiple = $derived(selected_tasks.size > 1);
 
   async function handleShare() {
-    const task_ids = [...Selected.tasks.values()];
-    if (!task_ids?.length) return;
-
-    const result = await Api.task.getShareTaskText(task_ids);
-    if (!result.ok) return alert.error(result.error);
+    const result = await Api.task.getShareTaskText({
+      ids: [...selected_tasks.values()],
+    });
+    if (!result.ok) return toast.error(result.error);
 
     await Share.share({ title: "Deel Taak", text: result.value, dialogTitle: "Deel Taak" });
 
-    Selected.tasks.clear();
+    selected_tasks.clear();
 
     onclick();
   }

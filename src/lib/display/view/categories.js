@@ -1,8 +1,8 @@
 import DB from "$lib/domain/db";
-import { map } from "rxjs";
+import { map, Subscription, Observable } from "rxjs";
 
 /**
- * @param {Logic.CategoryListItem[]} list
+ * @param {AL.CategoryListItem[]} list
  * @returns {() => void}
  */
 export function categoryList(list) {
@@ -18,7 +18,7 @@ export function categoryList(list) {
 
 /**
  *
- * @param {Logic.CategoryAssignTask[]} list
+ * @param {AL.CategoryListItem[]} list
  * @returns {() => void}
  */
 export function listAssignTask(list) {
@@ -33,7 +33,7 @@ export function listAssignTask(list) {
 }
 
 /**
- * @returns {Promise<import("rxjs").Observable<Logic.CategoryListItem[]>>}
+ * @returns {Promise<Observable<AL.CategoryListItem[]>>}
  */
 async function subscribeCategoryList() {
   const hash = new Map();
@@ -49,7 +49,7 @@ async function subscribeCategoryList() {
     hash.set(task.category_id, currentCount + 1);
   }
 
-  /** @type {(category: DB.Category) => Logic.CategoryListItem} */
+  /** @type {(category: DB.Category) => AL.CategoryListItem} */
   const formatCategory = (category) => {
     return {
       id: category.id,

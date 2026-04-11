@@ -1,11 +1,9 @@
+import { deepEqual, apiLogger, syncApiLogger } from "$lib";
+import { tempMediaManager } from "$logic/temp-media";
+import DateUtil from "$display/date-util";
 import t from "$lib/display/translate";
-import { tempMediaManager } from "../temp-media";
-import { DateUtil } from "$lib/core/date_util";
-import { deepEqual } from "$lib/utils.svelte";
-import { Logger } from "$lib/core/logger";
+import logger from "$display/logger";
 import DB from "$lib/domain/db";
-import { apiLogger, syncApiLogger } from "$lib";
-import { context } from "$logic/context.svelte";
 
 export const updateTask = apiLogger(updateTaskHandler);
 export const isTaskUpdated = apiLogger(isTaskUpdatedHandler);
@@ -48,6 +46,7 @@ function getNewTaskHandler(overrides = {}) {
     category_id: undefined,
     assigned_user_email: undefined,
     photo_ids: [],
+    archived: false,
     ...overrides,
   };
 }
@@ -68,7 +67,7 @@ async function getTaskByIdHandler(task_id) {
 
     return { ok: true, value: task };
   } catch (error) {
-    Logger.error("Error fetching task by ID:", error);
+    logger.error("Error fetching task by ID:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }
@@ -132,7 +131,7 @@ async function updateTaskHandler(task) {
 
     return { ok: true };
   } catch (error) {
-    Logger.error("Error updating task:", error);
+    logger.error("Error updating task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }
@@ -152,7 +151,7 @@ async function createTaskHandler(task) {
 
     return { ok: true };
   } catch (error) {
-    Logger.error("Error creating task:", error);
+    logger.error("Error creating task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }
@@ -168,7 +167,7 @@ async function deleteTaskHandler(task_id) {
     await DB.task.remove(task_id);
     return { ok: true };
   } catch (error) {
-    Logger.error("Error deleting task:", error);
+    logger.error("Error deleting task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }
@@ -199,7 +198,7 @@ async function completeTaskHandler(task_id) {
 
     return DB.task.update(task_id, task);
   } catch (error) {
-    Logger.error("Error completing task:", error);
+    logger.error("Error completing task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     if (message === "NOT_FOUND") {
       return { ok: false, error: t("task_not_found") };
@@ -231,7 +230,7 @@ async function uncompleteTaskHandler(id) {
 
     return { ok: true };
   } catch (error) {
-    Logger.error("Error uncompleting task:", error);
+    logger.error("Error uncompleting task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }
@@ -246,20 +245,20 @@ async function getTasksByIdsHandler(task_ids) {
   try {
     return DB.task.findMany({ selector: { id: { $in: task_ids } } });
   } catch (err) {
-    Logger.error("Error fetching tasks by IDs:", err);
+    logger.error("Error fetching tasks by IDs:", err);
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };
   }
 }
 
 /**
- *
- * @param {string[]} task_ids
+ * @param {Object} param0
+ * @param {string[]} param0.ids
  * @returns {AsyncResult<string>}
  */
-async function getShareTaskTextHandler(task_ids) {
+async function getShareTaskTextHandler({ ids }) {
   try {
-    const result = await DB.task.findMany({ selector: { id: { $in: task_ids } } });
+    const result = await DB.task.findMany({ selector: { id: { $in: ids } } });
     if (!result.ok) return result;
 
     const tasks = result.value;
@@ -268,7 +267,7 @@ async function getShareTaskTextHandler(task_ids) {
 
     return { ok: true, value: text };
   } catch (err) {
-    Logger.error("Error fetching tasks by IDs:", err);
+    logger.error("Error fetching tasks by IDs:", err);
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };
   }
@@ -303,7 +302,7 @@ async function deleteAllHandler({ ids }) {
 
     return { ok: true };
   } catch (error) {
-    Logger.error("Error deleting all tasks:", error);
+    logger.error("Error deleting all tasks:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
     return { ok: false, error: message };
   }

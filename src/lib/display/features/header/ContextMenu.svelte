@@ -1,17 +1,16 @@
 <script>
-  import { slide } from "svelte/transition";
-  import { Selected } from "$lib/selected.svelte";
-  import BulkAssignCategory from "$lib/components/BulkAssignCategory.svelte";
-  import { on } from "svelte/events";
+  import BulkAssignCategory from "./BulkAssignCategory.svelte";
+  import { selected_tasks } from "$display/selected.svelte";
   import ButtonShareTask from "./ButtonShareTask.svelte";
+  import { slide } from "svelte/transition";
+  import { on } from "svelte/events";
 
   let { show = $bindable() } = $props();
 
   /**
-   *
    * @param {HTMLElement} node
    */
-  function clickedoutside(node) {
+  function clickedOutside(node) {
     on(window, "click", (event) => {
       const target = /** @type {Node}  */ (event.target);
       if (!node.contains(target)) {
@@ -19,19 +18,20 @@
       }
     });
   }
+
+  function closeBulkAssign() {
+    selected_tasks.clear();
+    show = false;
+  }
 </script>
 
 <div
-  {@attach clickedoutside}
+  {@attach clickedOutside}
   id="context-menu"
   transition:slide
   class="absolute right-4 w-75 max-w-[90%] top-16 bg-surface rounded-lg shadow-lg border border-default z-50 p-2 space-y-2"
 >
   <ButtonShareTask onclick={() => (show = false)} />
-  <BulkAssignCategory
-    onclose={() => {
-      show = false;
-      Selected.tasks.clear();
-    }}
-  />
+  <BulkAssignCategory onclose={closeBulkAssign} />
 </div>
+

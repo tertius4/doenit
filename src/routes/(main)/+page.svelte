@@ -1,57 +1,59 @@
 <script>
+  import { selected_categories, selected_tasks } from "$display/selected.svelte";
   import Task from "$display/features/task-list/Task.svelte";
-  import t from "$display/translate";
-  import { Selected } from "$lib/selected.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import View from "$display/view";
   import { Haptics } from "@capacitor/haptics";
+  import { goto } from "$app/navigation";
+  import t from "$display/translate";
+  import View from "$display/view";
   import { normalize } from "$lib";
   import Api from "$logic/api";
 
-  Selected.tasks.clear();
+  selected_tasks.clear();
 
   const search_text = getContext("search_text");
   const normalized_search = $derived(normalize(search_text.value?.trim() ?? ""));
 
-  /** @type {Logic.MainPageTask[]} */
+  /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
+  
   const tasks = $derived(filterTasks(all_tasks, search_text.value));
 
   onMount(View.main_page.taskList(all_tasks));
+
   /**
    * Handles long press on a task to toggle its selection state.
-   * @param {Logic.MainPageTask} task
+   * @param {AL.MainPageTask} task
    */
   function handleLongPress(task) {
     Haptics.vibrate({ duration: 100 });
-    if (Selected.tasks.has(task.id)) {
-      Selected.tasks.delete(task.id);
+    if (selected_tasks.has(task.id)) {
+      selected_tasks.delete(task.id);
     } else {
-      Selected.tasks.add(task.id);
+      selected_tasks.add(task.id);
     }
   }
 
   /**
    * Handles click on a task to toggle its selection state or navigate to the task.
-   * @param {Logic.MainPageTask} task
+   * @param {AL.MainPageTask} task
    */
   async function handleClick(task) {
-    if (!Selected.tasks.size) return goto(`/${task.id}`);
+    if (!selected_tasks.size) return goto(`/${task.id}`);
 
-    if (Selected.tasks.has(task.id)) {
-      Selected.tasks.delete(task.id);
+    if (selected_tasks.has(task.id)) {
+      selected_tasks.delete(task.id);
     } else {
-      Selected.tasks.add(task.id);
+      selected_tasks.add(task.id);
       Haptics.vibrate({ duration: 50 });
     }
   }
 
   /**
-   * @param {Logic.MainPageTask[]} tasks
+   * @param {AL.MainPageTask[]} tasks
    * @param {string} search_text
-   * @returns {Logic.MainPageTask[]}
+   * @returns {AL.MainPageTask[]}
    */
   function filterTasks(tasks, search_text) {
     return tasks.filter((task) => {
@@ -66,7 +68,7 @@
   {#each tasks as task (task.id)}
     <Task
       {task}
-      is_selected={Selected.tasks.has(task.id)}
+      is_selected={selected_tasks.has(task.id)}
       onclick={() => handleClick(task)}
       oncheck={() => Api.task.complete(task.id)}
       onlongpress={() => handleLongPress(task)}
@@ -74,7 +76,7 @@
   {:else}
     <div class="flex flex-col items-center gap-4 py-12">
       <span class="text-lg">
-        {#if !Selected.categories.size}
+        {#if !selected_categories.size}
           {t("empty_list")}
         {:else if search_text.value?.trim().length}
           {t("no_tasks_found_for_search")}
