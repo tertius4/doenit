@@ -81,7 +81,11 @@
       <ButtonTextSize class="text-[16px]" onclick={() => onchange({ text_size: "sm" })} selected={text_size === "sm"}>
         {t("small")}
       </ButtonTextSize>
-      <ButtonTextSize class="text-[20px]" onclick={() => onchange({ text_size: "md" })} selected={text_size === "md"}>
+      <ButtonTextSize
+        class="text-[20px]"
+        onclick={() => onchange({ text_size: "md" })}
+        selected={text_size === "md" || text_size == null}
+      >
         {t("medium")}
       </ButtonTextSize>
       <ButtonTextSize class="text-[24px]" onclick={() => onchange({ text_size: "lg" })} selected={text_size === "lg"}>

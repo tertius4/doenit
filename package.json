@@ -42,7 +42,7 @@
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/push-notifications": "^8.0.0",
     "@capacitor/share": "^8.0.0",
-    "@capawesome/capacitor-google-sign-in": "^0.1.1",
+    "@capgo/capacitor-social-login": "^8.3.11",
     "cordova-plugin-purchase": "^13.12.1",
     "dexie": "^4.2.1",
     "dotenv": "^17.2.3",

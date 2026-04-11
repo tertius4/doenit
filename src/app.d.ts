@@ -139,7 +139,7 @@ declare global {
     type Contact = DB.SharedMetaData & Domain.Contact;
     type Invite = DB.SharedMetaData & Domain.Invite;
     // Basic User info - could be the device (before any logins).
-    type User = DB.PrivateMetaData & Domain.User;
+    type User = Domain.User & DB.PrivateMetaData;
     // User preferences
     type Settings = DB.PrivateMetaData & Domain.Settings;
     // Server controlled - private data
@@ -187,6 +187,15 @@ declare global {
       id: string;
       filepath: string;
       webview_path?: string;
+    }
+
+    interface GoogleUserProfile {
+      id: string;
+      name: string;
+      email: string;
+      avatar?: string;
+      id_token?: string;
+      access_token?: string;
     }
   }
 }

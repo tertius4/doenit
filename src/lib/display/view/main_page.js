@@ -1,5 +1,6 @@
 import DB from "$lib/domain/db";
-import { map, Subscription } from "rxjs";
+import DateUtil from "$lib/display/date-util";
+import { map, combineLatest } from "rxjs";
 
 /**
  *
@@ -7,7 +8,7 @@ import { map, Subscription } from "rxjs";
  * @returns {() => void}
  */
 export function taskList(list) {
-  /** @type {Subscription} */
+  /** @type {import("rxjs").Subscription} */
   let subscription;
 
   subscribeTaskList()
@@ -21,44 +22,85 @@ export function taskList(list) {
  * @returns {Promise<import("rxjs").Observable<AL.MainPageTask[]>>}
  */
 async function subscribeTaskList() {
-  // return [{
+  const tasks$ = DB.task.subscribe$({
+    selector: { archived: { $eq: false }, soft_deleted: { $ne: true } },
+    sort: [{ due_date: "asc" }],
+  });
+  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  // }]
-  // /** @type {(task: DB.Task ) => Logic.MainPageTask} */
-  // const formatTask = (task) => ({
-  //   id: task.id,
-
-  // });
-
-  return (
-    DB.task
-      .subscribe$({ selector: { archived: { $eq: true } }, sort: [{ completed: "desc" }] })
-      // .pipe(map((tasks) => tasks.map(formatTask)));
-      .pipe(
-        map((tasks) => [
-          {
-            id: "1",
-            is_ongoing: true,
-            is_past: false,
-            onclick: () => {},
-            onlongpress: () => {},
-            name: "Task 1",
-            pills: [
-              { type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" },
-              { type: "square", label: "Onderhoud", pre_icon: "categories" },
-            ],
-            top_right_icons: [{ name: "important" }, { name: "camera" }],
-          },
-          {
-            id: "2",
-            is_ongoing: false,
-            is_past: true,
-            onclick: () => {},
-            onlongpress: () => {},
-            name: "Task 2",
-            pills: [{ type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" }],
-          },
-        ]),
-      )
+  return combineLatest([tasks$, categories$]).pipe(
+    map(([tasks, categories]) => {
+      /** @type {Map<string, DB.Category>} */
+      const categoryMap = new Map(categories.map((c) => [c.id, c]));
+      const today = new Date();
+      return tasks.map((task) => formatTask(task, categoryMap, today));
+    }),
   );
+}
+
+/**
+ * @param {DB.Task} task
+ * @param {Map<string, DB.Category>} categoryMap
+ * @param {Date} today
+ * @returns {AL.MainPageTask}
+ */
+function formatTask(task, categoryMap, today) {
+  const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
+  const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
+
+  const is_ongoing = DateUtil.isDateInRange(today, startDate, dueDate);
+  const is_past = dueDate ? dueDate < today && !is_ongoing : false;
+
+  /** @type {AL.MainPageTask['pills']} */
+  const pills = [];
+
+  if (startDate || dueDate) {
+    pills.push({
+      type: "round",
+      label: formatDateRange(startDate, dueDate),
+      pre_icon: "clock",
+      ...(task.repeat_interval ? { post_icon: "sync" } : {}),
+    });
+  }
+
+  if (task.category_id) {
+    const category = categoryMap.get(task.category_id);
+    if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
+  }
+
+  /** @type {AL.MainPageTask['top_right_icons']} */
+  const top_right_icons = [];
+  if (task.important) top_right_icons.push({ name: "important" });
+  if (task.photo_ids?.length) top_right_icons.push({ name: "camera" });
+
+  return {
+    id: task.id,
+    name: task.name,
+    is_ongoing,
+    is_past,
+    onclick: () => {},
+    onlongpress: () => {},
+    pills,
+    ...(top_right_icons.length ? { top_right_icons } : {}),
+  };
+}
+
+/**
+ * @param {Date | null} startDate
+ * @param {Date | null} dueDate
+ * @returns {string}
+ */
+function formatDateRange(startDate, dueDate) {
+  const date = dueDate ?? startDate;
+  if (!date) return "";
+
+  if (!startDate || !dueDate || DateUtil.isSameDay(startDate, dueDate)) {
+    return DateUtil.format(date, "D MMM. YYYY");
+  }
+
+  if (startDate.getFullYear() === dueDate.getFullYear() && startDate.getMonth() === dueDate.getMonth()) {
+    return `${DateUtil.format(startDate, "D")}-${DateUtil.format(dueDate, "D MMM. YYYY")}`;
+  }
+
+  return `${DateUtil.format(startDate, "D MMM")} - ${DateUtil.format(dueDate, "D MMM. YYYY")}`;
 }

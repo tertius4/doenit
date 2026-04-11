@@ -1,8 +1,5 @@
 <script>
   import ButtonClear from "$display/comps/button/ButtonClear.svelte";
-  import { wait } from "$lib";
-  import { context } from "$logic/context.svelte";
-  import { tick, untrack } from "svelte";
   import { on } from "svelte/events";
 
   /**
@@ -17,35 +14,7 @@
 
   let is_focused = $state(false);
 
-  const display_value = $derived(value /*  ? displayTime(value) : null */);
-
-  // /**
-  //  * Formats the time to a human-readable string for display.
-  //  * @param {string} [time]
-  //  * @return {string} The formatted time string.
-  //  */
-  // function displayTime(time) {
-  //   console.log("HERE", time);
-  //   return time || "";
-  //   if (!time) return "";
-
-  //   try {
-  //     const [hours, minutes] = time.split(":").map(Number);
-
-  //     if (isNaN(hours) || isNaN(minutes)) return "";
-
-  //     let date = new Date(0);
-  //     date.setHours(hours, minutes, 0, 0);
-
-  //     const is_en = context.settings.language === "en";
-  //     return date.toLocaleTimeString(is_en ? "en-US" : "af-ZA", {
-  //       hour: "2-digit",
-  //       minute: "2-digit",
-  //     });
-  //   } catch (error) {
-  //     return "";
-  //   }
-  // }
+  const display_value = $derived(value);
 
   /**
    * Handles input change events.
@@ -54,7 +23,7 @@
   function handleChange(e) {
     const target = /** @type {HTMLInputElement} */ (e.target);
     const newValue = target.value || undefined;
-    alert("newValue" + JSON.stringify(newValue));
+
     onchange(newValue);
 
     // Close the picker after selection
@@ -73,6 +42,10 @@
     is_focused = false;
   }
 
+  /**
+   *
+   * @param {HTMLInputElement} node
+   */
   function showPicker(node) {
     return on(window, "click", () => {
       if (is_focused) {
@@ -82,7 +55,6 @@
   }
 </script>
 
-<!-- {#if !is_focused} -->
 <div class="relative w-full">
   <input
     {...rest}

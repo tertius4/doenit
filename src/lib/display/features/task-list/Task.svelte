@@ -33,7 +33,7 @@
   {onclick}
   {id}
   class={{
-    "border grid grid-cols-[auto_1fr] gap-1": true,
+    "border grid grid-cols-[auto_1fr] gap-2": true,
     "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
     "bg-error/20 border-error text-alt": is_past && !is_selected,
     "bg-primary/20 border-primary text-alt": is_selected,

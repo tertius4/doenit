@@ -2,7 +2,6 @@
   import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
-  import { wait } from "$lib";
   import ButtonClear from "$display/comps/button/ButtonClear.svelte";
   import { onMount } from "svelte";
   import View from "$display/view";
@@ -10,10 +9,11 @@
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
   import OptionCategory from "./OptionCategory.svelte";
   import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
+  import { wait } from "$lib";
 
   let { category_id = $bindable() } = $props();
 
-  /** @type {Logic.CategoryAssignTask[]} */
+  /** @type {Logic.CategoryListItem[]} */
   let categories = $state([]);
 
   onMount(View.categories.listAssignTask(categories));

@@ -1,9 +1,9 @@
 <script>
   import toast from "$display/toast/toast.svelte";
+  import { context } from "$logic/context.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import Api from "$logic/api";
-  import { context } from "$logic/context.svelte";
 
   async function handleRateApp() {
     await Api.settings.openStorePage();

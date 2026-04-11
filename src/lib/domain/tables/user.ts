@@ -1,4 +1,4 @@
-import Table from "./base-table";
+import Table from "./local-table";
 
 export class UserTable extends Table<Domain.User> {
   async create(item: Domain.User): AsyncResult<DB.User> {

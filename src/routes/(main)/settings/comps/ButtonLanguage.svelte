@@ -15,8 +15,8 @@
   class={[
     {
       "flex items-center gap-2 h-12 p-2 rounded-lg border": true,
-      "bg-primary/40 border-primary": selected,
-      "bg-card": !selected,
+      "bg-primary/40 border-primary text-alt": selected,
+      "bg-card border-default": !selected,
     },
     rest.class || "",
   ]}

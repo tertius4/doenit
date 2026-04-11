@@ -1,10 +1,11 @@
 import { App } from "@capacitor/app";
 import { Device } from "@capacitor/device";
 import db from "$lib/domain/db";
+import { map, Subscription } from "rxjs";
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
-  private _settings: DB.Settings | null = $state(null);
+  _settings: DB.Settings | null = $state(null);
   private _permissions: DB.Permissions | null = $state(null);
   private _app_state: DB.AppState | null = $state(null);
   private _user_state: DB.UserState | null = $state(null);
@@ -56,28 +57,66 @@ class ContextClass {
 
 export const context = $state(new ContextClass());
 
-export async function initApp() {
-  const result = await db.session.get();
-  const user_id = (result.ok && result.value.user_id) || null;
+let _user_subscriptions: Subscription | null = null;
+
+function subscribeForUser(user_id: string | null) {
+  _user_subscriptions?.unsubscribe();
+  _user_subscriptions = new Subscription();
 
   if (user_id) {
-    db.user.subscribeOne$(user_id).subscribe((user) => {
-      context.user = user;
-    });
+    _user_subscriptions.add(
+      db.user.subscribeOne$(user_id).subscribe((user) => {
+        context.user = user;
+      }),
+    );
+  } else {
+    context.user = null;
   }
 
-  const settings_result = await db.settings.getDevice();
+  _user_subscriptions.add(
+    db.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
+      context.settings = settings;
+    }),
+  );
+
+  _user_subscriptions.add(
+    db.permissions.subscribeOne$(user_id || "device").subscribe((permissions) => {
+      context.permissions = permissions;
+    }),
+  );
+
+  _user_subscriptions.add(
+    db.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
+      context.user_state = user_state;
+    }),
+  );
+}
+
+export async function initApp() {
+  const result = await db.session.get();
+  const initial_user_id = (result.ok && result.value.user_id) || null;
+
+  const settings_result = await db.settings.findById(initial_user_id || 'device')
   if (!settings_result.ok) {
-    console.error("Failed to get settings for device:", settings_result.error);
+    console.error("Failed to load settings:", settings_result.error);
+  } else if (!settings_result.value) {
+    console.warn("No settings found for user/device, creating default");
+    const create_result = await db.settings.create({
+      id: initial_user_id || "device",
+    });
+    if (!create_result.ok) {
+      console.error("Failed to create default settings:", create_result.error);
+    }
   }
-  db.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
-    context.settings = settings;
+
+
+  // Subscribe to session changes and re-wire user-scoped subscriptions each time
+  db.session.collection.findOne("current").$.pipe(map((doc) => doc?.toJSON() ?? null)).subscribe((session) => {
+    subscribeForUser(session?.user_id ?? null);
   });
 
-  await db.permissions.getDevice();
-  db.permissions.subscribeOne$(user_id || "device").subscribe((permissions) => {
-    context.permissions = permissions;
-  });
+  // Also set up initial non-user subscriptions
+  subscribeForUser(initial_user_id);
 
   const app_state_result = await db.app_state.getDevice();
   if (!app_state_result.ok) {
@@ -104,19 +143,5 @@ export async function initApp() {
   }
   db.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
     context.app_state = app_state;
-  });
-
-  const user_state_result = await db.user_state.getDevice(user_id || "device");
-  if (!user_state_result.ok) {
-    console.error("Failed to get user state:", user_state_result.error);
-  } else if (user_id) {
-    await db.user_state.update(user_id, {
-      last_opened_at: new Date().toISOString(),
-      open_count: user_state_result.value.open_count + 1,
-    });
-  }
-  
-  db.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
-    context.user_state = user_state;
   });
 }

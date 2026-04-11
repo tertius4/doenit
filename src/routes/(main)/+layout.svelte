@@ -20,11 +20,9 @@
 </script>
 
 <div
-  class="min-h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
+  class="h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
 >
-  <div>
-    <Heading />
-  </div>
+  <Heading />
 
   <main class="max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
     {@render children()}

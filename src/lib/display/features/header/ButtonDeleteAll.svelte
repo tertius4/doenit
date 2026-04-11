@@ -30,11 +30,11 @@
     <button
       transition:fade
       aria-label={t("delete_tasks")}
-      class="aspect-square bg-error text-alt rounded-md flex justify-center items-center"
+      class="aspect-square bg-error text-alt rounded-md flex justify-center items-center p-1.5"
       onclick={() => (is_deleting = true)}
       type="button"
     >
-      <Icon name="trash" size={28} />
+      <Icon name="trash" size={28} class="pointer-events-none h-full aspect-square" />
     </button>
   {/if}
 </div>

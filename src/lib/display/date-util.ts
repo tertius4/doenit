@@ -41,7 +41,7 @@ export default class DateUtil {
     );
   }
 
-  static isDateInRange(date: Date, start: Date, end: Date): boolean {
+  static isDateInRange(date: Date, start: Date | null, end: Date | null): boolean {
     if (!start || !end) return false;
 
     const d = new Date(date);

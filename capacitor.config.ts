@@ -34,6 +34,14 @@ const config: CapacitorConfig = {
     EdgeToEdge: {
       backgroundColor: "#2b2f31",
     },
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+    },
   },
   android: {
     buildOptions: {

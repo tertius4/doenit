@@ -1,11 +1,11 @@
 <script>
-  import Slider from "$lib/components/Slider.svelte";
+  import Slider from "$display/comps/input/Slider.svelte";
   import t from "$display/translate";
   import { untrack } from "svelte";
 
   /**
    * @typedef {Object} Props
-   * @property {Task['repeat_interval']} interval - The current value of the repeat option
+   * @property {Domain.Task['repeat_interval']} interval - The current value of the repeat option
    */
 
   /** @type {Props} */

@@ -14,6 +14,10 @@ export function waitAtLeast(promise: () => Promise<any>, ms: number): Promise<vo
   });
 }
 
+export function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function ok<T = void>(value?: T): Result<T> {
   return { ok: true, value } as Result<T>;
 }

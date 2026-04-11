@@ -10,7 +10,7 @@
 
   /**
    * @typedef {Object} Props
-   * @property {Task['repeat_interval']} interval - The current value of the repeat option.
+   * @property {Domain.Task['repeat_interval']} interval - The current value of the repeat option.
    * @property {number} number - The interval number for the repeat option.
    * @property {DaysOfWeekNumbers[]} days - The selected days for the repeat option.
    */

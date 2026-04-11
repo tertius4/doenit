@@ -22,7 +22,6 @@
 
   let error_message = $state("");
 
-  $inspect("id", id);
   const is_creating = $derived(!id);
 
   async function saveCategory() {

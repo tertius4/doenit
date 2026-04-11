@@ -1,7 +1,7 @@
 import type { MangoQuery, RxCollection } from "$lib/logic/chunk/rxdb";
 import { map, type Observable } from "rxjs";
 
-export default class BaseTable<T extends DB.PrivateMetaData | DB.SharedMetaData> {
+export default class BaseTable<T> {
   collection: RxCollection<T>;
 
   constructor(collection: RxCollection<T>) {

@@ -32,7 +32,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Separate chunk for translations
-          translations: ["./src/lib/services/language/translations.js"],
           "firebase-app": ["./src/lib/app/chunk/firebase-app.ts"],
           "firebase-firestore": ["./src/lib/app/chunk/firebase-firestore.ts"],
           rxdb: ["./src/lib/app/chunk/rxdb.ts"],

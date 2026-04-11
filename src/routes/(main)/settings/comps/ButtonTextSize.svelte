@@ -17,8 +17,8 @@
   {onclick}
   class={[
     "w-full border h-12 px-4 py-2 rounded-lg flex items-center justify-center gap-2",
-    selected && "bg-primary/40 border-primary",
-    !selected && "bg-card",
+    selected && "bg-primary/40 border-primary text-alt",
+    !selected && "bg-card border-default",
     rest.class || "",
   ]}
 >

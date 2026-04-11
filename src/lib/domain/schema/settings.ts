@@ -9,19 +9,21 @@ export const settings: RxJsonSchema<DB.Settings> = {
   description: "All the settings of a specific user",
   properties: {
     id: { type: "string", maxLength: 50 },
-    archived: { type: "boolean" },
+
     created_at: { type: "string" },
     updated_at: { type: "string" },
-    soft_deleted: { type: "boolean" },
-    dirty: { type: "boolean" },
-    version: { type: "number" },
 
     user_id: { type: "string" },
     theme: { type: "string" },
     notifications_enabled: { type: "boolean" },
     language: { type: "string" },
-    reminder_time: { type: "string" },
-    reminders_enabled: { type: "boolean" },
+
+    automatic_backup: { type: "boolean" },
+    past_task_reminder_enabled: { type: "boolean" },
+    past_task_reminder_time: { type: "string" },
+    present_task_reminder_enabled: { type: "boolean" },
+    present_task_reminder_time: { type: "string" },
+
     text_size: { type: "string" },
   },
 };

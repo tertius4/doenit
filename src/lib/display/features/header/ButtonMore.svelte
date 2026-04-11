@@ -9,7 +9,7 @@
   }
 </script>
 
-<button id="meer-opsies" aria-label="More options" type="button" onclick={toggle} class="mx-2 flex justify-center items-center aspect-square rounded-full">
+<button id="meer-opsies" aria-label="More options" type="button" onclick={toggle} class="mr-2 flex justify-center items-center aspect-square rounded-full">
   <div class="bg-card rounded-full h-10 flex justify-center items-center aspect-square p-1">
     <Icon name="vertical-ellipsis" size={28} class="pointer-events-none h-full aspect-square" />
   </div>

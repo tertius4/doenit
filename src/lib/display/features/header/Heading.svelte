@@ -62,7 +62,7 @@
 </script>
 
 <div>
-  <div class="relative grid grid-cols-[auto_1fr_auto] bg-surface border-default border-b">
+  <div class="relative grid grid-cols-[auto_1fr_auto] bg-surface border-default border-b h-14">
     <div>
       {#if !page.data.is_home}
         <ButtonBack onclick={handleBackButton} />
@@ -70,7 +70,7 @@
     </div>
 
     <div class="w-fit mx-auto flex items-center justify-center gap-1 py-2">
-      <img alt="logo" src="logo.png" class="w-3xl" class:invisible={!title} />
+      <img alt="logo" src="logo.png" class="w-8" class:invisible={!title} />
       <div class="relative">
         <span class="text-transparent text-3xl font-bold px-2 line-clamp-1">{title}</span>
         {#key title}
@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <div>
+    <div class="flex">
       {#if selected_tasks.size}
         <DeleteAll />
         <ButtonMore />

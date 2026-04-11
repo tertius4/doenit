@@ -1,4 +1,5 @@
 import type { RxCollection } from "$lib/logic/chunk/rxdb";
+import { App } from "@capacitor/app";
 import { map, type Observable } from "rxjs";
 
 export class AppStateTable {
@@ -15,12 +16,13 @@ export class AppStateTable {
         return { ok: true, value: existing.toJSON() as DB.AppState };
       }
 
+      const app_info = await App.getInfo();
       const created = await this.collection.insert({
         id: "current",
         device_id: crypto.randomUUID(),
         last_opened_at: new Date().toISOString(),
         open_count: 1,
-        app_version: "1.0.0",
+        app_version: app_info.version,
         updated_at: new Date().toISOString(),
       });
 
@@ -49,8 +51,6 @@ export class AppStateTable {
   }
 
   subscribeOne$(id: string): Observable<DB.AppState | null> {
-    return this.collection
-      .findOne(id)
-      .$.pipe(map((doc) => (doc ? (doc.toJSON() as DB.AppState) : null)));
+    return this.collection.findOne(id).$.pipe(map((doc) => (doc ? (doc.toJSON() as DB.AppState) : null)));
   }
 }

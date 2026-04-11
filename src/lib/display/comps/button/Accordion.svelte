@@ -19,6 +19,7 @@
   const { children, label, disabled = false, disabled_message: message = "", loading, ...rest } = props;
 
   const disabled_message = disabled && message ? `(${message})` : "";
+
   function toggle() {
     if (disabled) return;
 
@@ -31,13 +32,13 @@
     type="button"
     aria-label={t("accordion_toggle")}
     aria-expanded={show}
+    onclick={toggle}
     {disabled}
     class={{
       "focus:outline-none w-full p-4 flex items-center justify-between rounded-lg transition-colors": true,
       "cursor-not-allowed": disabled,
       "hover:bg-t-primary-700 active:bg-t-primary-700": !disabled,
     }}
-    onclick={toggle}
   >
     <div class="flex items-center gap-2">
       {#if loading}
@@ -52,7 +53,7 @@
     </div>
 
     {#if !disabled || loading}
-      <Icon name="down-chevron" class="text-xl {show ? 'rotate-180' : ''}" />
+      <Icon name="chevron-down" class="text-xl {show ? 'rotate-180' : ''}" />
     {/if}
   </button>
 

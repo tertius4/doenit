@@ -144,7 +144,7 @@ async function updateTaskHandler(task) {
 async function createTaskHandler(task) {
   try {
     const result = await DB.task.create(task);
-    if (!result.ok) return result;
+    if (!result.ok) throw Error(result.error);
 
     const new_task = result.value;
     await tempMediaManager.commit(new_task.photo_ids);

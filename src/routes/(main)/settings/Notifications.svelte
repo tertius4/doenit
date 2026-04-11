@@ -17,96 +17,102 @@
 <Accordion label={t("notifications")}>
   <!-- Main toggle with better explanation -->
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <span class="text-sm font-medium">{t("reminders")}</span>
+    <div class="flex items-center gap-2">
       <InputSwitch
         value={context.settings.notifications_enabled}
         onchange={(value) => Api.settings.update({ notifications_enabled: value })}
       />
+      <span class="text-sm font-medium">{t("reminders")}</span>
     </div>
 
     <!-- Toggle for past due date notifications -->
     {#if enabled}
-      <div class="flex items-center justify-between">
-        <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
-        <InputSwitch
-          value={context.settings.present_task_reminder_enabled}
-          onchange={(value) => Api.settings.update({ present_task_reminder_enabled: value })}
-        />
-      </div>
-
-      <div transition:slide>
-        <!-- Time picker with better layout -->
-
-        <span class="flex items-center gap-2 text-sm font-medium mb-2">
-          <Icon name="clock" class="w-5 h-5" />
-          {t("reminder_time")}
-        </span>
-        <div class="h-12 relative">
-          <InputTime
-            value={context.settings.present_task_reminder_time}
-            can_clear={false}
-            onchange={(value) => Api.settings.update({ present_task_reminder_time: value })}
-            placeholder={t("choose_time")}
+      <div class="space-y-4" transition:slide>
+        <div class="flex items-center gap-2">
+          <InputSwitch
+            value={context.settings.present_task_reminder_enabled}
+            onchange={(value) => Api.settings.update({ present_task_reminder_enabled: value })}
           />
-
-          <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
-            {#if saving}
-              <div in:slide={{ duration: 200 }}>
-                <Icon name="loading" class="animate-spin" />
-              </div>
-            {:else if saved}
-              <div
-                in:slide={{ duration: 200 }}
-                out:slide={{ duration: 200 }}
-                class="border-2 rounded-full border-success aspect-square h-fit p-1"
-              >
-                <Icon name="check" class="text-success text-sm" />
-              </div>
-            {/if}
-          </div>
+          <span class="text-sm font-medium">{t("notify_due_tasks")}</span>
         </div>
-      </div>
 
-      <div class="flex items-center justify-between">
-        <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
-        <InputSwitch
-          value={context.settings.past_task_reminder_enabled}
-          onchange={(value) => Api.settings.update({ past_task_reminder_enabled: value })}
-        />
-      </div>
+        {#if context.settings.present_task_reminder_enabled}
+          <div transition:slide>
+            <!-- Time picker with better layout -->
 
-      <div transition:slide>
-        <!-- Time picker with better layout -->
+            <span class="flex items-center gap-2 text-sm font-medium mb-2">
+              <Icon name="clock" class="w-5 h-5" />
+              {t("reminder_time")}
+            </span>
+            <div class="h-12 relative">
+              <InputTime
+                value={context.settings.present_task_reminder_time}
+                can_clear={false}
+                onchange={(value) => Api.settings.update({ present_task_reminder_time: value })}
+                placeholder={t("choose_time")}
+              />
 
-        <span class="flex items-center gap-2 text-sm font-medium mb-2">
-          <Icon name="clock" class="w-5 h-5" />
-          {t("reminder_time")}
-        </span>
-        <div class="h-12 relative">
-          <InputTime
-            value={context.settings.past_task_reminder_time}
-            can_clear={false}
-            onchange={(value) => Api.settings.update({ past_task_reminder_time: value })}
-            placeholder={t("choose_time")}
+              <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
+                {#if saving}
+                  <div in:slide={{ duration: 200 }}>
+                    <Icon name="loading" class="animate-spin" />
+                  </div>
+                {:else if saved}
+                  <div
+                    in:slide={{ duration: 200 }}
+                    out:slide={{ duration: 200 }}
+                    class="border-2 rounded-full border-success aspect-square h-fit p-1"
+                  >
+                    <Icon name="check" class="text-success text-sm" />
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
+        {/if}
+
+        <div class="flex items-center gap-2">
+          <InputSwitch
+            value={context.settings.past_task_reminder_enabled}
+            onchange={(value) => Api.settings.update({ past_task_reminder_enabled: value })}
           />
-
-          <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
-            {#if saving}
-              <div in:slide={{ duration: 200 }}>
-                <Icon name="loading" class="animate-spin" />
-              </div>
-            {:else if saved}
-              <div
-                in:slide={{ duration: 200 }}
-                out:slide={{ duration: 200 }}
-                class="border-2 rounded-full border-success aspect-square h-fit p-1"
-              >
-                <Icon name="check" class="text-success text-sm" />
-              </div>
-            {/if}
-          </div>
+          <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
         </div>
+
+        {#if context.settings.past_task_reminder_enabled}
+          <div transition:slide>
+            <!-- Time picker with better layout -->
+
+            <span class="flex items-center gap-2 text-sm font-medium mb-2">
+              <Icon name="clock" class="w-5 h-5" />
+              {t("reminder_time")}
+            </span>
+            <div class="h-12 relative">
+              <InputTime
+                value={context.settings.past_task_reminder_time}
+                can_clear={false}
+                onchange={(value) => Api.settings.update({ past_task_reminder_time: value })}
+                placeholder={t("choose_time")}
+              />
+
+              <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
+                {#if saving}
+                  <div in:slide={{ duration: 200 }}>
+                    <Icon name="loading" class="animate-spin" />
+                  </div>
+                {:else if saved}
+                  <div
+                    in:slide={{ duration: 200 }}
+                    out:slide={{ duration: 200 }}
+                    class="border-2 rounded-full border-success aspect-square h-fit p-1"
+                  >
+                    <Icon name="check" class="text-success text-sm" />
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

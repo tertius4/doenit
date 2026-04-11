@@ -2,16 +2,16 @@
   import SelectRepeatInterval from "$display/features/repeat/SelectRepeatInterval.svelte";
   import DropdownCategory from "$display/features/edit-task/DropdownCategory.svelte";
   import InputName from "$display/features/edit-task/InputName.svelte";
-  import PhotoGallery from "./photo/PhotoGallery.svelte";
-  import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import DatePicker from "./DatePicker.svelte";
   import { slide } from "svelte/transition";
   import toast from "$display/toast/toast.svelte";
   import ButtonSubmitTask from "./ButtonSubmitTask.svelte";
   import Button from "$display/comps/button/Button.svelte";
   import DatePickerShortcut from "./DatePickerShortcut.svelte";
   import { config } from "$lib/config";
+  import PhotoGallery from "./PhotoGallery.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import DatePicker from "./DatePicker.svelte";
 
   /**
    * @typedef {Object} Props
@@ -36,7 +36,7 @@
 
     is_loading = true;
 
-    const result = await onsubmit(task);
+    const result = await onsubmit(JSON.parse(JSON.stringify(task)));
     if (!result.ok) {
       toast.show({ body: result.error, type: "error", duration: 3000 });
       name_invalid = t("what_must_be_done") === result.error;

@@ -1,24 +1,27 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import alert from "$display/toast/toast.svelte";;
-  import { user } from "$lib/core/user.svelte";
+  import { context } from "$logic/context.svelte";
+  import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
+  import Api from "$logic/api";
 
   let is_open = $state(false);
   let is_loading = $state(false);
 
+  const is_logged_in = $derived(context.user?.id);
+
   async function handleSignIn() {
     is_loading = true;
-    const result = await user.signIn();
+    const result = await Api.auth.signIn();
     is_loading = false;
 
-    if (!result.success) {
-      if (result.error_message === "USER_CANCELED") {
+    if (!result.ok) {
+      if (result.error === "USER_CANCELED") {
         return;
       }
 
-      alert.error("Inteken fout", result.error_message || t("something_went_wrong"));
+      toast.error("Inteken fout", result.error || t("something_went_wrong"));
     }
   }
 
@@ -26,16 +29,16 @@
     is_open = false;
 
     is_loading = true;
-    const result = await user.signOut();
+    const result = await Api.auth.signOut();
     is_loading = false;
-    if (result.success) return;
+    if (result.ok) return;
 
-    alert.error("Uitteken fout", result.error_message || t("something_went_wrong"));
+    toast.error("Uitteken fout", result.error || t("something_went_wrong"));
   }
 </script>
 
 <div class="bg-surface rounded-lg items-center p-4 flex flex-col relative gap-4">
-  {#if user.is_loading}
+  {#if is_loading}
     <div class="relative flex gap-x-2 w-full justify-start">
       <div class="w-13 h-13 rounded-full bg-card animate-pulse"></div>
       <div class="space-y-2">
@@ -49,7 +52,7 @@
         <p>{t("loading")}</p>
       </div>
     </div>
-  {:else if !user.is_logged_in}
+  {:else if !is_logged_in}
     <div class="text-center space-y-0.5">
       <h2 class="text-2xl font-semibold">{t("you_are_not_logged_in")}</h2>
       <p class="text-sm text-muted">{t("please_log_in_profile")}</p>
@@ -72,36 +75,41 @@
         {t("log_in_with_google")}
       {/if}
     </button>
-  {:else}
+  {:else if context.user}
     <button
-      aria-label="teken uit"
+      aria-label={t("sign_out")}
       type="button"
       class="flex justify-start gap-4 w-full"
       onclick={() => (is_open = true)}
     >
-      {#if user.avatar}
-        <img src={user.avatar} alt={t("profile")} class="w-13 h-13 my-auto rounded-full" referrerpolicy="no-referrer" />
+      {#if context.user.avatar}
+        <img
+          src={context.user.avatar}
+          alt={t("profile")}
+          class="w-13 h-13 my-auto rounded-full"
+          referrerpolicy="no-referrer"
+        />
       {/if}
 
       <div class="space-y-0.5">
         <h2 class="text-left text-2xl font-semibold">
-          {user.name}
+          {context.user.name}
         </h2>
         <p class="text-left text-sm font-medium text-muted">
-          {user.email_address}
+          {context.user.email_address}
         </p>
       </div>
     </button>
   {/if}
 </div>
 
-<Modal bind:is_open class="max-w-[80%]!" onclose={() => (is_open = false)}>
+<Modal bind:is_open class="max-w-80! *:space-y-2" onclose={() => (is_open = false)}>
   <ModalHeader>{t("sign_out")}?</ModalHeader>
   <div class="flex gap-1 w-full justify-between">
     <button type="button" class="py-1 px-3 w-25 h-10 bg-card rounded-lg" onclick={() => (is_open = false)}>
       {t("no")}
     </button>
-    <button type="button" class="py-1 px-3 w-25 h-10 bg-primary rounded-lg text-alt" onclick={() => handleSignOut()}>
+    <button type="button" class="py-1 px-3 w-25 h-10 bg-primary rounded-lg text-alt" onclick={handleSignOut}>
       {t("sign_out")}
     </button>
   </div>

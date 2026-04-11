@@ -2,9 +2,10 @@ import { context } from "$logic/context.svelte";
 
 function t(key: string | symbol, params: Record<string | symbol, string | number> = {}): string {
   // Get translation or fallback to key using type assertion for flexible key access
-  let translation = translations[context.settings.language][key];
+  const language = context._settings?.language ?? "af";
+  let translation = translations[language][key];
   if (!translation) {
-    console.warn(`Translation missing for key "${String(key)}" in language "${context.settings.language}"`);
+    console.warn(`Translation missing for key "${String(key)}" in language "${language}"`);
     return String(key);
   }
 
@@ -327,6 +328,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     notifications: "Kennisgewings",
     reminders: "Herinneringe",
     reminder_time: "Herinneringstyd",
+    notify_due_tasks: "Stel my in kennis oor vandag se take",
     notify_past_due_tasks: "Stel my in kennis oor verstreke take",
     past_due_date: "⚠️ U het {{task_count}} verstreke take ⚠️",
     past_due_date_singular: "⚠️ U het 1 verstreke taak ⚠️",
@@ -857,6 +859,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     notifications: "Notifications",
     reminders: "Reminders",
     reminder_time: "Reminder Time",
+    notify_due_tasks: "Notify me about tasks due today",
     notify_past_due_tasks: "Notify me about past due tasks",
     past_due_date: " ⚠️ You have {{task_count}} task overdue ⚠️",
     past_due_date_singular: " ⚠️ You have one task overdue ⚠️",

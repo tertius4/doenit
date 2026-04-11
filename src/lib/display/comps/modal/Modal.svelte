@@ -86,10 +86,10 @@
       aria-modal="true"
       {@attach closeOnEsc}
       role="dialog"
-      class="relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4"
+      class={["relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4", class_name || ""]}
     >
       <CloseButton class="absolute top-2 right-2" hidden={!close_button} onclose={handleClose} />
-      <form class={class_name} onsubmit={handleSubmit}>
+      <form onsubmit={handleSubmit}>
         {@render children?.()}
       </form>
     </div>

@@ -1,12 +1,13 @@
 import DB from "$lib/domain/db";
-import { map, Subscription } from "rxjs";
+import DateUtil from "$lib/display/date-util";
+import { map, combineLatest } from "rxjs";
 
 /**
  * @param {AL.DonePageTask[]} list
  * @returns {() => void}
  */
 export function taskList(list) {
-  /** @type {Subscription} */
+  /** @type {import("rxjs").Subscription} */
   let subscription;
 
   subscribeTaskList()
@@ -20,39 +21,71 @@ export function taskList(list) {
  * @returns {Promise<import("rxjs").Observable<AL.DonePageTask[]>>}
  */
 async function subscribeTaskList() {
-  // return [{
+  const tasks$ = DB.task.subscribe$({
+    selector: { archived: { $eq: true }, soft_deleted: { $ne: true } },
+    sort: [{ completed_at: "desc" }],
+  });
+  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  // }]
-  // /** @type {(task: DB.Task ) => AL.DonePageTask} */
-  // const formatTask = (task) => ({
-  //   id: task.id,
-
-  // });
-
-  return (
-    DB.task
-      .subscribe$({ selector: { archived: { $eq: true } }, sort: [{ completed: "desc" }] })
-      // .pipe(map((tasks) => tasks.map(formatTask)));
-      .pipe(
-        map((tasks) => [
-          {
-            id: "1",
-            completed_count: 5,
-            is_selected: false,
-            name: "Task 1",
-            pills: [
-              { type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" },
-              { type: "square", label: "Onderhoud", pre_icon: "categories" },
-            ],
-          },
-          {
-            id: "2",
-            completed_count: 1,
-            is_selected: false,
-            name: "Task 2",
-            pills: [{ type: "round", label: "12-13 Mrt. 2026", pre_icon: "clock", post_icon: "sync" }],
-          },
-        ]),
-      )
+  return combineLatest([tasks$, categories$]).pipe(
+    map(([tasks, categories]) => {
+      /** @type {Map<string, DB.Category>} */
+      const categoryMap = new Map(categories.map((c) => [c.id, c]));
+      return tasks.map((task) => formatTask(task, categoryMap));
+    }),
   );
+}
+
+/**
+ * @param {DB.Task} task
+ * @param {Map<string, DB.Category>} categoryMap
+ * @returns {AL.DonePageTask}
+ */
+function formatTask(task, categoryMap) {
+  const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
+  const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
+
+  /** @type {AL.DonePageTask['pills']} */
+  const pills = [];
+
+  if (startDate || dueDate) {
+    pills.push({
+      type: "round",
+      label: formatDateRange(startDate, dueDate),
+      pre_icon: "clock",
+      ...(task.repeat_interval ? { post_icon: "sync" } : {}),
+    });
+  }
+
+  if (task.category_id) {
+    const category = categoryMap.get(task.category_id);
+    if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
+  }
+
+  return {
+    id: task.id,
+    name: task.name,
+    completed_count: task.completed,
+    pills,
+  };
+}
+
+/**
+ * @param {Date | null} start_date
+ * @param {Date | null} due_date
+ * @returns {string}
+ */
+function formatDateRange(start_date, due_date) {
+  const date = due_date ?? start_date;
+  if (!date) return "";
+
+  if (!start_date || !due_date || DateUtil.isSameDay(start_date, due_date)) {
+    return DateUtil.format(date, "D MMM. YYYY");
+  }
+
+  if (start_date.getFullYear() === due_date.getFullYear() && start_date.getMonth() === due_date.getMonth()) {
+    return `${DateUtil.format(start_date, "D")}-${DateUtil.format(due_date, "D MMM. YYYY")}`;
+  }
+
+  return `${DateUtil.format(start_date, "D MMM")} - ${DateUtil.format(due_date, "D MMM. YYYY")}`;
 }
