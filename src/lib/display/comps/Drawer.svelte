@@ -9,18 +9,17 @@
    */
 
   /** @type {Props & Record<string, any>} */
-  let { is_open = $bindable(false), onclose, children } = $props();
+  let { is_open = $bindable(false), onclose, children, ...rest } = $props();
 
   // Refs to DOM nodes
-  /** @type {HTMLDivElement} */
-  let drawerEl;
-  /** @type {HTMLDivElement} */
-  let handleEl;
+  /** @type {HTMLDivElement | null} */
+  let drawerEl = $state(null);
 
   // Dragging state
   let startY = 0;
   let isDragging = false;
   let pendingTranslate = 0; // pixels
+  /** @type {number | null}*/
   let rafId = null;
   const RELEASE_THRESHOLD = 120;
 
@@ -31,7 +30,9 @@
     drawerEl.style.transform = `translate3d(0, ${Math.max(0, pendingTranslate)}px, 0)`;
   }
 
-  /** Start drag from handle */
+  /** Start drag from handle
+   * @param {TouchEvent} e
+   */
   function handleTouchStart(e) {
     if (!e.touches || e.touches.length !== 1) return;
     startY = e.touches[0].clientY;
@@ -41,7 +42,10 @@
     e.stopPropagation();
   }
 
-  /** Move while dragging */
+  /**
+   * Move while dragging
+   * @param {TouchEvent} e
+   */
   function handleTouchMove(e) {
     if (!isDragging) return;
     const currentY = e.touches[0].clientY;
@@ -124,13 +128,12 @@
       bind:this={drawerEl}
       class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl min-h-[40vh] max-h-[90vh] flex flex-col pointer-events-auto shadow-lg"
       transition:fly={{ y: 300, duration: 300 }}
-      style="will-change: transform;"
+      style="will-change: transform; padding-bottom: env(safe-area-inset-bottom);"
       role="dialog"
       aria-modal="true"
     >
       <!-- Handle -->
       <div
-        bind:this={handleEl}
         class="flex justify-center p-3 cursor-grab active:cursor-grabbing touch-action-none"
         ontouchstart={handleTouchStart}
         ontouchmove={handleTouchMove}
@@ -143,7 +146,7 @@
       </div>
 
       <!-- Content -->
-      <div class="h-full">
+      <div class={["h-full", rest.class]} style="padding-bottom: env(safe-area-inset-bottom);">
         {@render children?.()}
       </div>
     </div>

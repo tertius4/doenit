@@ -21,7 +21,7 @@ class PhotoService {
 
       return { ok: true };
     } catch (error: any) {
-      const exists = error?.message?.includes("exists");
+      const exists = error?.message?.includes("exist");
       if (!exists) {
         const message = error instanceof Error ? error.message : JSON.stringify(error);
         return { ok: false, error: message };
@@ -39,11 +39,6 @@ class PhotoService {
     if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
 
     try {
-      if (!Capacitor.isNativePlatform()) {
-        // TODO: Implement web support using file input and FileReader API
-        return { ok: false, error: t("photos_not_supported_web") };
-      }
-
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.Base64,
         source: source,
@@ -81,7 +76,9 @@ class PhotoService {
       directory: Directory.Data,
     });
 
-    const webview_path = Capacitor.convertFileSrc(saved_file.uri);
+    const webview_path = Capacitor.isNativePlatform()
+      ? Capacitor.convertFileSrc(saved_file.uri)
+      : `data:image/${photo.format};base64,${photo.base64String}`;
 
     return { ok: true, value: { id: filename, filepath: saved_file.uri, webview_path } };
   }
@@ -93,16 +90,27 @@ class PhotoService {
     if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
 
     try {
-      // Get the full URI for the file
-      const file_uri = await Filesystem.getUri({
-        path: `doenit_photos/${photo_id}`,
-        directory: Directory.Data,
-      });
+      let filepath: string;
+      let webview_path: string;
 
-      // Convert to webview path for display
-      const webview_path = Capacitor.convertFileSrc(file_uri.uri);
+      if (Capacitor.isNativePlatform()) {
+        const file_uri = await Filesystem.getUri({
+          path: `doenit_photos/${photo_id}`,
+          directory: Directory.Data,
+        });
+        filepath = file_uri.uri;
+        webview_path = Capacitor.convertFileSrc(filepath);
+      } else {
+        const file = await Filesystem.readFile({
+          path: `doenit_photos/${photo_id}`,
+          directory: Directory.Data,
+        });
+        const ext = photo_id.split(".").pop() ?? "jpeg";
+        filepath = `doenit_photos/${photo_id}`;
+        webview_path = `data:image/${ext};base64,${file.data}`;
+      }
 
-      return { ok: true, value: { id: photo_id, filepath: file_uri.uri, webview_path } };
+      return { ok: true, value: { id: photo_id, filepath, webview_path } };
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);
       return { ok: false, error: message };

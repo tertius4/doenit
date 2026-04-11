@@ -14,7 +14,8 @@
 
 <button
   type="submit"
-  class="absolute z-2 bottom-4 right-4 flex justify-center text-alt bg-primary items-center aspect-square rounded-full h-13 w-13 p-3"
+  class="absolute z-2 flex justify-center text-alt bg-primary items-center aspect-square rounded-full size-13 p-3"
+  style="bottom: max(16px, env(safe-area-inset-bottom)); right: max(16px, env(safe-area-inset-right));"
   aria-label={t("create_new_item")}
   disabled={loading || !!navigating.to}
 >

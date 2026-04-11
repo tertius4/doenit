@@ -5,15 +5,15 @@
 
   /**
    * @typedef {Object} Props
-   * @prop {Logic.MainPageTask} task - The task to display.
+   * @prop {AL.MainPageTask} task - The task to display.
    * @prop {boolean} is_selected - Whether the task is currently selected.
    * @prop {(checked: boolean) => void} [oncheck] - Callback function to call when the checkbox is toggled.
    * @prop {() => void} [onclick] - Callback function to call when the task is clicked.
    * @prop {() => void} [onlongpress] - Callback function to call when the task is long-pressed.
    */
 
-  /** @type {Props} */
-  const { task, is_selected, onlongpress, onclick, oncheck } = $props();
+  /** @type {Props & Record<string, any>} */
+  const { task, is_selected, onlongpress, onclick, oncheck, ...rest } = $props();
 
   let checked = $state(false);
 
@@ -31,14 +31,17 @@
 <TaskContainer
   {onlongpress}
   {onclick}
-  {id}
-  class={{
-    "border grid grid-cols-[auto_1fr] gap-2": true,
-    "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
-    "bg-error/20 border-error text-alt": is_past && !is_selected,
-    "bg-primary/20 border-primary text-alt": is_selected,
-    "bg-card border-default": !is_selected && !is_past && !is_ongoing,
-  }}
+  id="task-{task.id}"
+  class={[
+    {
+      "border grid grid-cols-[auto_1fr] gap-2": true,
+      "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
+      "bg-error/20 border-error text-alt": is_past && !is_selected,
+      "bg-primary/20 border-primary text-alt": is_selected,
+      "bg-card border-default": !is_selected && !is_past && !is_ongoing,
+    },
+    rest.class || "",
+  ]}
 >
   <InputCheckbox {checked} onchange={handleClick} class="my-auto" />
   <div>
@@ -53,7 +56,7 @@
             "bg-success text-alt": is_ongoing && !is_selected,
             "bg-error text-alt": is_past && !is_selected,
             "bg-primary text-alt": is_selected,
-            "bg-card border-default": !is_selected && !is_past && !is_ongoing,
+            "bg-surface border-default": !is_selected && !is_past && !is_ongoing,
           }}
         >
           {#if pill.pre_icon}

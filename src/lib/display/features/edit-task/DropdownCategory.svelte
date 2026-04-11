@@ -13,10 +13,10 @@
 
   let { category_id = $bindable() } = $props();
 
-  /** @type {Logic.CategoryListItem[]} */
+  /** @type {AL.CategoryListItem[]} */
   let categories = $state([]);
 
-  onMount(View.categories.listAssignTask(categories));
+  onMount(() => View.categories.listAssignTask(categories)());
 
   let is_open = $state(false);
   let is_adding = $state(false);
@@ -63,12 +63,12 @@
     <div
       class="aspect-square h-12 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
     >
-      <Icon name="chevron-down" class="text-muted pointer-events-none {is_open ? '-rotate-180' : ''}" />
+      <Icon name="chevron-down" class="pointer-events-none {is_open ? '-rotate-180' : ''}" />
     </div>
   {/if}
 </div>
 
-<Modal bind:is_open class="space-y-4">
+<Modal bind:is_open class="*:space-y-4">
   <ModalHeader>{t("choose_category")}</ModalHeader>
 
   <div class="space-y-1">

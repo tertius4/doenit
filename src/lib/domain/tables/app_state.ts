@@ -16,7 +16,7 @@ export class AppStateTable {
         return { ok: true, value: existing.toJSON() as DB.AppState };
       }
 
-      const app_info = await App.getInfo();
+      const app_info = await App.getInfo().catch(() => ({ version: "unknown" }));
       const created = await this.collection.insert({
         id: "current",
         device_id: crypto.randomUUID(),

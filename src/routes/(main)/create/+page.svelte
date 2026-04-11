@@ -25,9 +25,17 @@
     await goto(`/`);
     return { ok: true };
   }
+
+  /**
+   * @returns {AsyncResult}
+   */
+  async function handleCancel() {
+    await goto(`/`);
+    return { ok: true };
+  }
 </script>
 
-<SaveChanges changed={task} onsave={handleCreate} />
+<SaveChanges changed={task} onsave={handleCreate} oncancel={handleCancel} />
 <div class="mb-20">
   <EditTask {task} onsubmit={handleCreate} />
 </div>

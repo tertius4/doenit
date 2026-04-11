@@ -35,7 +35,7 @@
    *
    * @param {Event} event
    */
-  function handleChange(event) {
+  function handleInput(event) {
     if (timeout) clearTimeout(timeout);
 
     timeout = setTimeout(() => {
@@ -51,7 +51,7 @@
     use:init
     type="text"
     {value}
-    onchange={handleChange}
+    oninput={handleInput}
     class={[
       "bg-card border border-default p-2 h-12 w-full rounded-lg placeholder:text-muted outline-none focus:ring-1 ring-primary",
       rest.class ?? "",

@@ -12,8 +12,12 @@ import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import java.util.Set;
 import com.getcapacitor.Bridge;
+import com.getcapacitor.Plugin;
+import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
+import ee.forgr.capacitor.social.login.SocialLoginPlugin;
+import ee.forgr.capacitor.social.login.GoogleProvider;
 
-public class MainActivity extends BridgeActivity {
+public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
 
     /**
      * Called when the activity is first created (the app is opened).
@@ -89,6 +93,29 @@ public class MainActivity extends BridgeActivity {
 
         Bridge bridge = getBridge();
         Utils.navigateToRoute(bridge, intent);
+    }
+
+    @Override
+    public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {
+        // Required by ModifiedMainActivityForSocialLoginPlugin to enable scopes support
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (
+            requestCode >= GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MIN &&
+            requestCode < GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MAX
+        ) {
+            Bridge bridge = getBridge();
+            if (bridge != null) {
+                Plugin plugin = bridge.getPlugin("SocialLogin").getInstance();
+                if (plugin instanceof SocialLoginPlugin) {
+                    ((SocialLoginPlugin) plugin).handleGoogleLoginIntent(requestCode, data);
+                }
+            }
+        }
     }
 
     private void checkForPendingTaskUpdates() {

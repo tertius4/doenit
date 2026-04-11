@@ -31,6 +31,7 @@
     open = false;
 
     if (onsubmit) onsubmit(result.value.id);
+    name = "";
   }
 
   function handleClose() {
@@ -38,7 +39,7 @@
   }
 </script>
 
-<Modal bind:is_open={open} onclose={handleClose} onsubmit={saveCategory} class="space-y-4" {...rest}>
+<Modal bind:is_open={open} onclose={handleClose} onsubmit={saveCategory} class="*:space-y-4" {...rest}>
   <ModalHeader>{is_creating ? t("create_new_category") : t("edit_category")}</ModalHeader>
   <InputText
     value={name}

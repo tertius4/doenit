@@ -23,14 +23,14 @@ declare global {
       theme: "light" | "dark" | "system";
       notifications_enabled: boolean;
       present_task_reminder_enabled: boolean;
-      present_task_reminder_time: string; // e.g. "09:00"
+      present_task_reminder_time: string | null; // e.g. "09:00"
       past_task_reminder_enabled: boolean;
-      past_task_reminder_time: string; // e.g. "09:00"
+      past_task_reminder_time: string | null; // e.g. "09:00"
 
       automatic_backup: boolean;
 
       text_size: "sm" | "md" | "lg";
-      language: "af" | "en";
+      language?: "af" | "en";
     }
 
     interface Permissions {
@@ -168,6 +168,7 @@ declare global {
     interface MainPageTask {
       id: string;
       name: string;
+      category_id?: string;
       is_ongoing: boolean;
       is_past: boolean;
       onclick: () => void;

@@ -1,11 +1,11 @@
 <script>
+  import ButtonLanguage from "$display/features/settings/ButtonLanguage.svelte";
   import Accordion from "$display/comps/button/Accordion.svelte";
-  import ButtonLanguage from "./comps/ButtonLanguage.svelte";
+  import ButtonTextSize from "./comps/ButtonTextSize.svelte";
   import { context } from "$logic/context.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import Api from "$logic/api";
   import t from "$display/translate";
-  import ButtonTextSize from "./comps/ButtonTextSize.svelte";
+  import Api from "$logic/api";
 
   const is_dark = $derived(context.settings.theme === "dark");
   const is_af = $derived(context.settings.language === "af");

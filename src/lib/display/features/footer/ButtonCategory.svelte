@@ -10,9 +10,17 @@
    * Handles the selection of a category.
    * @param {Event} [event]
    */
-  function onselect(event) {
+  function handleSelect(event) {
     event?.stopPropagation();
 
+    handleCheckboxChange(is_selected);
+  }
+
+  /**
+   *
+   * @param {boolean} is_selected
+   */
+  function handleCheckboxChange(is_selected) {
     selected_tasks.clear();
     if (is_selected) {
       selected_categories.delete(id);
@@ -29,9 +37,9 @@
     "bg-surface": !is_selected,
     "bg-card": is_selected,
   }}
-  onclick={onselect}
+  onclick={handleSelect}
 >
-  <InputCheckbox checked={is_selected} onchange={() => onselect()} />
+  <InputCheckbox checked={is_selected} onchange={() => handleCheckboxChange(!is_selected)} />
   <div class="w-full text-left my-auto">
     {name}
   </div>

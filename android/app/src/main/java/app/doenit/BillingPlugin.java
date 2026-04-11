@@ -11,6 +11,8 @@ import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryProductDetailsParams.Product;
 import com.android.billingclient.api.QueryProductDetailsParams.Product.Builder;
 import com.android.billingclient.api.AcknowledgePurchaseParams;
+import com.android.billingclient.api.PendingPurchasesParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails;
 import com.android.billingclient.api.ProductDetails.PricingPhase;
 
@@ -51,7 +53,7 @@ public class BillingPlugin extends Plugin {
 
         BillingClient.Builder builder = BillingClient.newBuilder(activity);
         builder.setListener(this::handlePurchaseUpdate);
-        builder.enablePendingPurchases();
+        builder.enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build());
         billing_client = builder.build();
 
         if (billing_client == null) {
@@ -282,8 +284,8 @@ public class BillingPlugin extends Plugin {
 
         billing_client.queryProductDetailsAsync(
                 params,
-                (result, details_list) -> {
-                    handleProductDetailsResponse(call, result, details_list);
+                (result, query_result) -> {
+                    handleProductDetailsResponse(call, result, query_result.getProductDetailsList());
                 });
     }
 
@@ -414,10 +416,10 @@ public class BillingPlugin extends Plugin {
 
         billing_client.queryProductDetailsAsync(
                 params,
-                (result, details_list) -> {
+                (result, query_result) -> {
                     handleStartPurchaseResponse(
                             result,
-                            details_list,
+                            query_result.getProductDetailsList(),
                             product_id,
                             account_id);
                 });
@@ -570,12 +572,12 @@ public class BillingPlugin extends Plugin {
 
         billing_client.queryProductDetailsAsync(
                 params,
-                (details_result, details_list) -> {
+                (details_result, query_result) -> {
                     resolvePurchasesWithDetails(
                             call,
                             filtered,
                             details_result,
-                            details_list);
+                            query_result.getProductDetailsList());
                 });
     }
 

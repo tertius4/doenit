@@ -75,7 +75,7 @@
     tabindex="-1"
     class={[
       "z-10 pointer-events-none",
-      !value && "pl-4 text-muted translate-y-[160%]",
+      !value && "pl-3.5 text-muted translate-y-[160%]",
       !!value && "z-50 relative font-semibold",
       invalid && "text-error",
     ]}

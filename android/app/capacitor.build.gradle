@@ -22,7 +22,8 @@ dependencies {
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-push-notifications')
     implementation project(':capacitor-share')
-    implementation "com.android.billingclient:billing:7.1.1"
+    implementation project(':capgo-capacitor-social-login')
+    implementation "com.android.billingclient:billing:8.3.0"
 }
 
 

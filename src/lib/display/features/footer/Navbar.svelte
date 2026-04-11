@@ -67,10 +67,11 @@
       href="/settings"
       draggable={false}
       class={{
-        "absolute bottom-0 right-0 p-6": true,
+        "absolute p-6": true,
         "bg-card": page.url.pathname === "/settings",
         "hover:bg-surface focus:bg-surface": page.url.pathname !== "/settings",
       }}
+      style="bottom: env(safe-area-inset-bottom); right: env(safe-area-inset-right);"
     >
       <Icon name="settings" class="w-5 h-5" />
     </a>

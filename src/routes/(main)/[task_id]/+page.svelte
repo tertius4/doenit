@@ -3,26 +3,15 @@
   import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
   import EditTask from "$display/features/edit-task/EditTask.svelte";
-  import alert from "$display/toast/toast.svelte";
   import { goto } from "$app/navigation";
   import t from "$display/translate";
-  import { page } from "$app/state";
   import Api from "$logic/api";
 
-  const task = $state(await getTask());
+  const { data } = $props();
+
+  // svelte-ignore state_referenced_locally
+  let task = $state(data.task);
   let archived = $state(!!task.archived);
-
-  /**
-   * @returns {Promise<DB.Task>}
-   */
-  async function getTask() {
-    const result = await Api.task.getTaskById(page.params.item_id);
-    if (result.ok) return result.value;
-
-    await goto("/create", { replaceState: true });
-    alert.error(result.error);
-    throw "redirected";
-  }
 
   /**
    * @param {DB.Task} task
@@ -48,13 +37,28 @@
     return { ok: true };
   }
 
-  async function handleSelectTask() {
-    archived = !archived;
+  /**
+   * @param {boolean} value
+   */
+  async function handleSelectTask(value) {
+    archived = value;
+  }
+
+  /**
+   * @returns {AsyncResult}
+   */
+  async function handleCancel() {
+    await goto(`/`);
+    return { ok: true };
   }
 </script>
 
-<ButtonDelete ondelete={deleteTask} class="fixed top-4.5 right-4.5 " />
-<SaveChanges task_id={task.id} changed={task} onsave={handleUpdateTask} />
+<ButtonDelete
+  ondelete={deleteTask}
+  class="fixed p-4"
+  style="top: env(safe-area-inset-top); right: env(safe-area-inset-right);"
+/>
+<SaveChanges task_id={task.id} changed={task} onsave={handleUpdateTask} oncancel={handleCancel} />
 
 <div class="mb-20">
   <EditTask {task} onsubmit={handleUpdateTask} />
@@ -62,6 +66,6 @@
   <div class="h-12 flex">
     <div class="font-bold text-left my-auto w-full">{t("complete")}</div>
 
-    <InputCheckbox onchange={handleSelectTask} checked={!!task.archived} />
+    <InputCheckbox onchange={handleSelectTask} checked={!!archived} />
   </div>
 </div>

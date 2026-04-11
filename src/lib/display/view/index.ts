@@ -6,6 +6,7 @@ import * as db from "./db.js";
 export default class View {
   static readonly categories = {
     categoryList: categories.categoryList,
+    hotbarCategoryList: categories.hotbarCategoryList,
     listAssignTask: categories.listAssignTask,
   };
 

@@ -7,8 +7,10 @@
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import View from "$display/view";
-  import { normalize } from "$lib";
+  import { normalize, wait } from "$lib";
   import Api from "$logic/api";
+  import { fade } from "svelte/transition";
+  import toast from "$display/toast/toast.svelte";
 
   selected_tasks.clear();
 
@@ -17,8 +19,8 @@
 
   /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
-  
-  const tasks = $derived(filterTasks(all_tasks, search_text.value));
+
+  const tasks = $derived(filterTasks(all_tasks, normalized_search, selected_categories));
 
   onMount(View.main_page.taskList(all_tasks));
 
@@ -53,14 +55,34 @@
   /**
    * @param {AL.MainPageTask[]} tasks
    * @param {string} search_text
+   * @param {Set<string>} selected_categories
    * @returns {AL.MainPageTask[]}
    */
-  function filterTasks(tasks, search_text) {
+  function filterTasks(tasks, search_text, selected_categories) {
     return tasks.filter((task) => {
-      if (!search_text?.trim().length) return true;
-
-      return normalize(task.name).includes(normalized_search);
+      const matches_search = normalize(task.name).includes(search_text);
+      const matches_category = !selected_categories.size || selected_categories.has(task.category_id || "default");
+      return matches_search && matches_category;
     });
+  }
+
+  /**
+   * @param {AL.MainPageTask} task
+   */
+  async function handleComplete(task) {
+    const task_element = document.getElementById(`task-${task.id}`);
+    console.log("task_element", task_element);
+    if (task_element) task_element.className += " animate-complete";
+    await wait(200);
+    const result = await Api.task.complete(task.id);
+    if (!result.ok) return toast.error(result.error);
+
+    // Remove animation
+    if (task_element) task_element.className = task_element.className.replace(" animate-complete", "");
+
+    selected_tasks.delete(task.id);
+
+    return { ok: true };
   }
 </script>
 
@@ -70,11 +92,11 @@
       {task}
       is_selected={selected_tasks.has(task.id)}
       onclick={() => handleClick(task)}
-      oncheck={() => Api.task.complete(task.id)}
+      oncheck={() => handleComplete(task)}
       onlongpress={() => handleLongPress(task)}
     />
   {:else}
-    <div class="flex flex-col items-center gap-4 py-12">
+    <div class="flex flex-col items-center gap-4 py-12" in:fade={{ delay: 150 }}>
       <span class="text-lg">
         {#if !selected_categories.size}
           {t("empty_list")}

@@ -16,3 +16,12 @@
     {@render children()}
   </button>
 </div>
+
+<style>
+  .animate-complete {
+    /* Transition slide to the right and fade out */
+    translate: 20% 0;
+    opacity: 0%;
+    transition: all 150ms ease-out;
+  }
+</style>

@@ -1,24 +1,22 @@
 <script>
-  import t from "$display/translate";
   import TagCategory from "./TagCategory.svelte";
   import { onMount } from "svelte";
   import View from "$display/view";
+  import { slide } from "svelte/transition";
 
   /** @type {AL.CategoryListItem[]} */
-  let category_list = $state([]);
+  let categories = $state([]);
 
-  onMount(View.categories.categoryList(category_list));
+  onMount(View.categories.hotbarCategoryList(categories));
 </script>
 
-{#if !!category_list.length}
-  <nav class="bg-surface border-t border-default p-2 flex gap-1 overflow-x-auto scrollbar-none">
-    <TagCategory
-      disable_edit
-      category={{ id: "default", name: t("DEFAULT_NAME"), task_count: /* TODO */0 }}
-    />
-
-    {#each category_list as category (category.id)}
-      <TagCategory {category} />
+{#if !!categories.length}
+  <nav
+    transition:slide
+    class="w-screen overflow-hidden p-2 bg-surface border-t border-default flex gap-1 overflow-x-auto scrollbar-none"
+  >
+    {#each categories as category (category.id)}
+      <TagCategory {category} disable_edit={category.id === "default"} />
     {/each}
   </nav>
 {/if}

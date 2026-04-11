@@ -68,7 +68,7 @@
 <div class="relative">
   <button
     class={{
-      "bg-card text-left border border-default p-2 w-full rounded-lg appearance-none outline-none": true,
+      "bg-card text-left border border-default p-2 w-full rounded-lg appearance-none outline-none h-12": true,
       "text-muted": !interval,
       "text-normal": interval,
     }}

@@ -44,13 +44,17 @@
       {/each}
     </div>
   </div>
-  <button
-    class="fixed bottom-0 w-full bg-primary text-alt h-12 flex items-center gap-1 px-4"
-    onclick={() => (is_adding = true)}
-  >
-    <Icon name="plus" class="m-auto text-xl" />
-    <span class="w-full flex p-2 cursor-pointer text-left font-semibold">{t("create_new_category")}</span>
-  </button>
+  <div class="fixed bottom-0 w-full bg-primary text-alt" style="bottom: env(safe-area-inset-bottom);">
+    <button
+      class="h-12 flex items-center gap-1 px-4 w-full cursor-pointer"
+      type="button"
+      style="bottom: env(safe-area-inset-bottom, 16px);"
+      onclick={() => (is_adding = true)}
+    >
+      <Icon name="plus" class="m-auto text-xl" />
+      <span class="w-full flex p-2 pointer-events-none text-left font-semibold">{t("create_new_category")}</span>
+    </button>
+  </div>
 </Drawer>
 
 <button

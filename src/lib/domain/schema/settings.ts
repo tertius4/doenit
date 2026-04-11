@@ -16,13 +16,13 @@ export const settings: RxJsonSchema<DB.Settings> = {
     user_id: { type: "string" },
     theme: { type: "string" },
     notifications_enabled: { type: "boolean" },
-    language: { type: "string" },
+    language: { type: ["string", "null"] },
 
     automatic_backup: { type: "boolean" },
     past_task_reminder_enabled: { type: "boolean" },
-    past_task_reminder_time: { type: "string" },
+    past_task_reminder_time: { type: ["string", "null"] },
     present_task_reminder_enabled: { type: "boolean" },
-    present_task_reminder_time: { type: "string" },
+    present_task_reminder_time: { type: ["string", "null"] },
 
     text_size: { type: "string" },
   },

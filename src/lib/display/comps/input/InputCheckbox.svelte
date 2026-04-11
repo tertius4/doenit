@@ -18,6 +18,8 @@
    * @param {Event} event
    */
   async function onclick(event) {
+    event.stopPropagation();
+    
     onchange(!checked);
   }
 </script>

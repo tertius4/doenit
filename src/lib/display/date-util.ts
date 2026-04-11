@@ -1,20 +1,21 @@
 export default class DateUtil {
-  static format(date: Date, format: string) {
+  static format(date: Date, format: string, options: { locale?: string } = {}): string {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       return "";
     }
 
+    const locale = options?.locale || "af-ZA";
     const tokens: Record<string, string> = {
       YY: String(date.getFullYear()).slice(-2),
       YYYY: date.getFullYear().toString(),
       M: "" + (date.getMonth() + 1),
       MM: String(date.getMonth() + 1).padStart(2, "0"),
-      MMM: date.toLocaleDateString("en", { month: "short" }),
-      MMMM: date.toLocaleDateString("en", { month: "long" }),
+      MMM: date.toLocaleDateString(locale, { month: "short" }),
+      MMMM: date.toLocaleDateString(locale, { month: "long" }),
       D: "" + date.getDate(),
       DD: String(date.getDate()).padStart(2, "0"),
-      ddd: date.toLocaleDateString("en", { weekday: "short" }),
-      dddd: date.toLocaleDateString("en", { weekday: "long" }),
+      ddd: date.toLocaleDateString(locale, { weekday: "short" }),
+      dddd: date.toLocaleDateString(locale, { weekday: "long" }),
       H: "" + date.getHours(),
       HH: String(date.getHours()).padStart(2, "0"),
       m: "" + date.getMinutes(),
@@ -45,11 +46,10 @@ export default class DateUtil {
     if (!start || !end) return false;
 
     const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
     const s = new Date(start);
     s.setHours(0, 0, 0, 0);
     const e = new Date(end);
-    e.setHours(0, 0, 0, 0);
+    e.setHours(23, 59, 59, 999);
 
     return d >= s && d <= e;
   }

@@ -75,7 +75,7 @@
   }
 </script>
 
-<div class="border border-default h-11 bg-card rounded-lg w-full flex">
+<div class="border border-default h-12 bg-card rounded-lg w-full flex">
   <button type="button" onclick={() => (is_open = !is_open)} class="w-full flex items-center justify-between p-2">
     {#if !start_date && !end_date}
       <span class="text-muted">{t("datepicker_choose_dates")}</span>
@@ -97,15 +97,15 @@
   {/if}
 </div>
 
-<Modal bind:is_open close_button={false} class="space-y-2">
+<Modal bind:is_open close_button={false} class="*:space-y-2">
   <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
   <div>
     <Calendar is_range_enabled={enable_range} bind:start_date bind:end_date ondateselected={handleSelection} />
   </div>
 
   <div class="flex items-center gap-2">
-    <InputTime value={start_time} onchange={(value) => (start_time = value)} placeholder={t("start_date")} />
-    <InputTime value={end_time} onchange={(value) => (end_time = value)} placeholder={t("due_date")} />
+    <InputTime value={start_time} onchange={(value) => (start_time = value)} placeholder={t("choose_start_time")} />
+    <InputTime value={end_time} onchange={(value) => (end_time = value)} placeholder={t("choose_end_time")} />
   </div>
 
   <Button

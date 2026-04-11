@@ -15,18 +15,18 @@
   });
 
   $effect(() => {
-    document.documentElement.style.setProperty("--base-size", `var(--${context.settings.text_size})`);
+    document.documentElement.style.setProperty("--base-size", `var(--${context.settings.text_size || "md"})`);
   });
 </script>
 
-<div
+<main
   class="h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
 >
   <Heading />
 
-  <main class="max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow overflow-y-auto p-2">
+  <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
     {@render children()}
-  </main>
+  </div>
 
   <Footer />
-</div>
+</main>

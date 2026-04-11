@@ -1,6 +1,7 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
+import { context } from "$logic/context.svelte";
 
 /**
  *
@@ -48,8 +49,8 @@ function formatTask(task, categoryMap, today) {
   const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
   const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
 
-  const is_ongoing = DateUtil.isDateInRange(today, startDate, dueDate);
-  const is_past = dueDate ? dueDate < today && !is_ongoing : false;
+  const is_ongoing = DateUtil.isDateInRange(today, startDate || dueDate, dueDate || startDate);
+  const is_past = calculateIsPast(today, startDate, dueDate, is_ongoing);
 
   /** @type {AL.MainPageTask['pills']} */
   const pills = [];
@@ -78,6 +79,7 @@ function formatTask(task, categoryMap, today) {
     name: task.name,
     is_ongoing,
     is_past,
+    category_id: task.category_id,
     onclick: () => {},
     onlongpress: () => {},
     pills,
@@ -94,13 +96,31 @@ function formatDateRange(startDate, dueDate) {
   const date = dueDate ?? startDate;
   if (!date) return "";
 
+  const locale = context.settings.language === "en" ? "en-GB" : "af-ZA";
   if (!startDate || !dueDate || DateUtil.isSameDay(startDate, dueDate)) {
-    return DateUtil.format(date, "D MMM. YYYY");
+    return DateUtil.format(date, "D MMM. YYYY", { locale });
   }
 
   if (startDate.getFullYear() === dueDate.getFullYear() && startDate.getMonth() === dueDate.getMonth()) {
-    return `${DateUtil.format(startDate, "D")}-${DateUtil.format(dueDate, "D MMM. YYYY")}`;
+    return `${DateUtil.format(startDate, "D", { locale })}-${DateUtil.format(dueDate, "D MMM. YYYY", { locale })}`;
   }
 
-  return `${DateUtil.format(startDate, "D MMM")} - ${DateUtil.format(dueDate, "D MMM. YYYY")}`;
+  return `${DateUtil.format(startDate, "D MMM", { locale })} - ${DateUtil.format(dueDate, "D MMM. YYYY", { locale })}`;
+}
+
+/**
+ *
+ * @param {Date} today
+ * @param {Date | null} startDate
+ * @param {Date | null} dueDate
+ * @param {boolean} is_ongoing
+ * @returns {boolean}
+ */
+function calculateIsPast(today, startDate, dueDate, is_ongoing) {
+  if (is_ongoing) return false;
+
+  const date = dueDate ?? startDate;
+  if (!date) return false;
+
+  return date < today;
 }

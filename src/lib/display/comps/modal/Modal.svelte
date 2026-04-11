@@ -13,11 +13,10 @@
    * @property {boolean} [close_on_outside_click=true]
    * @property {function(Event=): void} [onclose]
    * @property {function(Event=): void} [onsubmit] - If provided, the modal will render a form and call this function on submit.
-   * @property {string | Record<string, string>} [class]
    * @property {import("svelte").Snippet} [children]
    */
 
-  /** @type {Props} */
+  /** @type {Props & Record<string, any>} */
   let { is_open = $bindable(true), ...props } = $props();
   // svelte-ignore state_referenced_locally
   const {
@@ -26,7 +25,6 @@
     onsubmit,
     onclose,
     children,
-    class: class_name,
     ...rest
   } = props;
 
@@ -86,7 +84,7 @@
       aria-modal="true"
       {@attach closeOnEsc}
       role="dialog"
-      class={["relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4", class_name || ""]}
+      class={["relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4", rest.class || ""]}
     >
       <CloseButton class="absolute top-2 right-2" hidden={!close_button} onclose={handleClose} />
       <form onsubmit={handleSubmit}>

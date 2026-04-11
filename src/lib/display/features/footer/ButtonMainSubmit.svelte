@@ -3,16 +3,23 @@
   import { navigating, page } from "$app/state";
   import { goto } from "$app/navigation";
 
+  /**
+   * @typedef {Object} Props
+   */
+
+  /** @type {Props & Record<string, any>} */
+  const { ...rest } = $props();
+
   /** @type {Record<string, string>}*/
   const ICON_CHART = {
     "/(main)": "plus",
-    "/(main)/create": "check",
-    "/(main)/complete": "home",
-    "/(main)/categories": "home",
-    "/(main)/daily-summary": "home",
-    "/(main)/subscriptions": "home",
-    "/(main)/settings": "home",
-    "/(main)/[item_id]": "check",
+    // "/(main)/create": "check",
+    // "/(main)/complete": "home",
+    // "/(main)/categories": "home",
+    // "/(main)/daily-summary": "home",
+    // "/(main)/subscriptions": "home",
+    // "/(main)/settings": "home",
+    // "/(main)/[task_id]": "check",
   };
 
   const page_id = $derived(page.route.id ?? "");
@@ -26,11 +33,14 @@
   <button
     {type}
     {form}
-    class={{
-      "flex justify-center items-center aspect-square rounded-full h-15 w-15 p-3": true,
-      "bg-primary": page.data.is_home,
-      "bg-card": !page.data.is_home,
-    }}
+    class={[
+      {
+        "flex ml-auto justify-center items-center aspect-square rounded-full h-15 w-15 p-3": true,
+        "bg-primary": page.data.is_home,
+        "bg-card": !page.data.is_home,
+      },
+      rest.class || "",
+    ]}
     {onclick}
     aria-label={page.data.is_task_page ? "Submit form" : page.data.is_home ? "Create new item" : "Go to home"}
   >

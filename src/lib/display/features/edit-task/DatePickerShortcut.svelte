@@ -22,7 +22,7 @@
   <div class="flex gap-2 mt-2" transition:slide>
     <button
       type="button"
-      class="bg-card p-1 rounded-lg border border-default w-full text-sm"
+      class="bg-card p-1 rounded-lg border border-default w-full text-sm h-12"
       onclick={() => onchange(DateUtil.format(today, "YYYY-MM-DD"))}
     >
       <span>{t("today")}</span>
@@ -30,7 +30,7 @@
     </button>
     <button
       type="button"
-      class="bg-card p-1 rounded-lg border border-default w-full text-sm"
+      class="bg-card p-1 rounded-lg border border-default w-full text-sm h-12"
       onclick={() => onchange(DateUtil.format(tomorrow, "YYYY-MM-DD"))}
     >
       <span>{t("tomorrow")}</span>
@@ -38,7 +38,7 @@
     </button>
     <button
       type="button"
-      class="bg-card p-1 rounded-lg border border-default w-full text-sm"
+      class="bg-card p-1 rounded-lg border border-default w-full text-sm h-12"
       onclick={() => onchange(DateUtil.format(in_a_week, "YYYY-MM-DD"))}
     >
       <span>{t("in_a_week")}</span>
@@ -46,7 +46,7 @@
     </button>
     <button
       type="button"
-      class="bg-card p-1 rounded-lg border border-default w-full text-sm"
+      class="bg-card p-1 rounded-lg border border-default w-full text-sm h-12"
       onclick={() => onchange(DateUtil.format(in_a_month, "YYYY-MM-DD"))}
     >
       <span>{t("in_a_month")}</span>

@@ -22,7 +22,7 @@ export function taskList(list) {
  */
 async function subscribeTaskList() {
   const tasks$ = DB.task.subscribe$({
-    selector: { archived: { $eq: true }, soft_deleted: { $ne: true } },
+    selector: { $or: [{ archived: { $eq: true } }, { completed: { $gt: 0 } }], soft_deleted: { $ne: true } },
     sort: [{ completed_at: "desc" }],
   });
   const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });

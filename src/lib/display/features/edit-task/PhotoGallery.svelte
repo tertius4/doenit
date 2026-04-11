@@ -8,6 +8,7 @@
   import Photos from "$services/photos.svelte";
   import Modal, { ModalHeader } from "$display/comps/modal";
   import toast from "$display/toast/toast.svelte";
+  import Drawer from "$display/comps/Drawer.svelte";
 
   /**
    * @typedef {Object} Props
@@ -35,6 +36,11 @@
     } else {
       photos = [];
     }
+  });
+
+  onMount(async () => {
+    const { defineCustomElements } = await import("@ionic/pwa-elements/loader");
+    defineCustomElements(window);
   });
 
   onMount(() => {
@@ -80,7 +86,7 @@
     is_loading = true;
     const result = await Photos.addPhoto(source);
     if (!result.ok) {
-      toast.error(result.error)
+      toast.error(result.error);
       is_loading = false;
       return;
     }
@@ -132,7 +138,8 @@
       type="button"
       onclick={openPhotosPrompt}
       disabled={is_loading}
-      class="absolute z-2 bottom-4 left-4 flex justify-center bg-card items-center aspect-square rounded-full h-13 w-13 p-3 disabled:opacity-50"
+      class="absolute z-2 flex justify-center bg-card items-center aspect-square rounded-full h-13 w-13 p-3 disabled:opacity-50"
+      style="bottom: max(16px, env(safe-area-inset-bottom)); left: max(16px, env(safe-area-inset-left));"
     >
       <Icon name="camera" />
     </button>
@@ -146,7 +153,7 @@
           <button
             type="button"
             onclick={() => viewPhoto(photo)}
-            class="w-full h-full rounded-lg overflow-hidden bg-card border border-line"
+            class="w-full h-full rounded-lg overflow-hidden bg-card border border-default border-line"
           >
             <img src={photo.webview_path} alt="Attachment" class="w-full h-full object-cover" />
           </button>
@@ -167,36 +174,31 @@
 </div>
 
 {#if is_prompting}
-  <button
-    class="fixed h-screen w-screen inset-0 bg-black/20 z-9"
-    type="button"
-    aria-label={t("close")}
-    onclick={() => {
-      is_prompting = false;
-    }}
-  ></button>
-
-  <div transition:slide class="fixed bottom-0 left-0 right-0 bg-page z-10 p-2 space-y-2 border-t border-default">
-    <h2 class="font-bold text-lg">{t("add_photo")}</h2>
-    <button
-      type="button"
-      onclick={() => addPhoto(CameraSource.Photos)}
-      disabled={is_loading}
-      class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
-    >
-      <Icon name="gallery" />
-      <span>{t("gallery")}</span>
-    </button>
-    <button
-      type="button"
-      onclick={() => addPhoto(CameraSource.Camera)}
-      disabled={is_loading}
-      class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
-    >
-      <Icon name="camera" />
-      <span>{t("take_photo")}</span>
-    </button>
-  </div>
+  <Drawer is_open={is_prompting} onclose={() => (is_prompting = false)}>
+    <div class="max-w-250 mx-auto space-y-2 p-4">
+      <h2 class="font-bold text-lg">{t("add_photo")}</h2>
+      <div class="flex gap-4">
+        <button
+          type="button"
+          onclick={() => addPhoto(CameraSource.Photos)}
+          disabled={is_loading}
+          class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
+        >
+          <Icon name="gallery" />
+          <span class="font-medium">{t("gallery")}</span>
+        </button>
+        <button
+          type="button"
+          onclick={() => addPhoto(CameraSource.Camera)}
+          disabled={is_loading}
+          class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
+        >
+          <Icon name="camera" />
+          <span class="font-medium">{t("take_photo")}</span>
+        </button>
+      </div>
+    </div>
+  </Drawer>
 {/if}
 
 {#if is_fullscreen}
@@ -231,7 +233,7 @@
   </div>
 {/if}
 
-<Modal bind:is_open={is_deleting_photo}>
+<Modal bind:is_open={is_deleting_photo} class="max-w-80! *:space-y-4">
   <ModalHeader>{t("delete_photo")}</ModalHeader>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={removePhoto}>
     <Icon name="trash" class="h-full" />

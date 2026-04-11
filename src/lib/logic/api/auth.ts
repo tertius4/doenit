@@ -2,6 +2,7 @@ import auth from "$services/social-login";
 import { apiLogger } from "$lib";
 import DB from "$domain/db";
 import { config } from "$lib/config";
+import { initApp } from "$logic/context.svelte";
 
 export const signIn = apiLogger(signInHandler);
 export const signOut = apiLogger(signOutHandler);
@@ -38,6 +39,8 @@ async function signInHandler(): AsyncResult {
   const session_result = await DB.session.update({ user_id: user.id });
   if (!session_result.ok) return session_result;
 
+  await initApp(user.id);
+
   return { ok: true };
 }
 
@@ -50,6 +53,8 @@ async function signOutHandler(): AsyncResult {
 
   const session_result = await DB.session.update({ user_id: null });
   if (!session_result.ok) return session_result;
+
+  await initApp(null);
 
   return { ok: true };
 }

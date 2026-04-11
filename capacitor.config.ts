@@ -27,13 +27,6 @@ const config: CapacitorConfig = {
       skipNativeAuth: false,
       providers: ["google.com"],
     },
-    GoogleAuth: {
-      clientId: process.env.PUBLIC_GOOGLE_AUTH || "",
-      scopes: ["profile", "email"],
-    },
-    EdgeToEdge: {
-      backgroundColor: "#2b2f31",
-    },
     SocialLogin: {
       providers: {
         google: true,
@@ -52,7 +45,6 @@ const config: CapacitorConfig = {
       releaseType: "AAB",
       signingType: "jarsigner",
     },
-    adjustMarginsForEdgeToEdge: "auto"
   },
 };
 

@@ -8,6 +8,7 @@
 
   const { onclick = () => {} } = $props();
 
+  const can_share = $state(await Share.canShare());
   const multiple = $derived(selected_tasks.size > 1);
 
   async function handleShare() {
@@ -15,6 +16,10 @@
       ids: [...selected_tasks.values()],
     });
     if (!result.ok) return toast.error(result.error);
+
+    if (!Share.canShare()) {
+      return toast.error(t("sharing_not_supported"));
+    }
 
     await Share.share({ title: "Deel Taak", text: result.value, dialogTitle: "Deel Taak" });
 
@@ -26,6 +31,7 @@
 
 <button
   type="button"
+  hidden={!can_share.value}
   aria-label="Share Task"
   onclick={handleShare}
   class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"

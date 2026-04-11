@@ -1,4 +1,4 @@
-import { deepEqual, apiLogger, syncApiLogger } from "$lib";
+import { deepEqual, apiLogger, syncApiLogger, getNextRepeatDates } from "$lib";
 import { tempMediaManager } from "$logic/temp-media";
 import DateUtil from "$display/date-util";
 import t from "$lib/display/translate";
@@ -23,7 +23,11 @@ export const deleteAll = apiLogger(deleteAllHandler);
  * @returns {Promise<boolean>}
  */
 async function isTaskUpdatedHandler(task_id, updated_data) {
-  const original_task = !!task_id ? await DB.task.findById(task_id) : getNewTask();
+  const result = !!task_id ? await DB.task.findById(task_id) : { ok: true, value: getNewTask() };
+  if (!result.ok) return false;
+
+  const original_task = result.value;
+
   return !deepEqual(original_task, updated_data);
 }
 
@@ -62,7 +66,7 @@ async function getTaskByIdHandler(task_id) {
     const task_result = await DB.task.findById(task_id);
     if (!task_result.ok) return task_result;
 
-    const task = task_result.value;
+    const task = JSON.parse(JSON.stringify(task_result.value));
     if (!task) return { ok: false, error: t("task_not_found") };
 
     return { ok: true, value: task };
@@ -186,17 +190,31 @@ async function completeTaskHandler(task_id) {
     }
 
     const task = task_result.value;
+    const next_repeat = getNextRepeatDates(task);
+
     if (task.archived) {
       task.completed = 0;
       task.archived = false;
       task.completed_at = null;
+    } else if (next_repeat.is_repeat_task) {
+      task.archived = true;
+      task.completed += 1;
+      task.start_date = next_repeat.start_date;
+      task.due_date = next_repeat.due_date;
+      task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
     } else {
-      task.completed++;
+      task.completed += 1;
       task.archived = true;
       task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
     }
 
-    return DB.task.update(task_id, task);
+    const result = await DB.task.update(task_id, task);
+    if (next_repeat.is_repeat_task) {
+      // For the animation.
+      setTimeout(() => DB.task.update(task_id, { archived: false }), 300);
+    }
+
+    return result;
   } catch (error) {
     logger.error("Error completing task:", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
@@ -288,7 +306,7 @@ async function deleteAllHandler({ ids }) {
     const tasks_to_update = [];
 
     for (const task of tasks) {
-      const is_repeat_task = task.repeat_interval && task.due_date;
+      const is_repeat_task = task.repeat_interval && (task.due_date || task.start_date);
 
       if (!task.archived || !is_repeat_task) {
         tasks_to_delete.push(task.id);

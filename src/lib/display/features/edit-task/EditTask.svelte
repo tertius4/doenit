@@ -81,7 +81,7 @@
 
   <div>
     <div class="grid grid-cols-[40px_auto_128px] py-2 border-y border-default">
-      <Icon name="important" class="m-auto" />
+      <Icon name="important" size={20} class="m-auto" />
       <div class="flex flex-col">
         <span class="font-semibold">{t("is_this_important")}</span>
         <span class="italic">{t("this_will_appear_higher")}</span>
@@ -97,7 +97,7 @@
           task.important = !task.important;
         }}
       >
-        <Icon name="important" />
+        <Icon name="important" size={20} />
         <span>{t("important")}</span>
       </Button>
     </div>

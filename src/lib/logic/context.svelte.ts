@@ -1,7 +1,7 @@
 import { App } from "@capacitor/app";
 import { Device } from "@capacitor/device";
 import db from "$lib/domain/db";
-import { map, Subscription } from "rxjs";
+import { Subscription } from "rxjs";
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
@@ -92,56 +92,60 @@ function subscribeForUser(user_id: string | null) {
   );
 }
 
-export async function initApp() {
-  const result = await db.session.get();
-  const initial_user_id = (result.ok && result.value.user_id) || null;
+/**
+ * Call on app open (no argument) or explicitly after sign-in / sign-out (pass user_id or null).
+ * - App open: reads the session, initialises app state, then wires subscriptions.
+ * - Sign-in / sign-out: skips app-state init and re-wires subscriptions for the new user.
+ */
+export async function initApp(user_id?: string | null) {
+  const is_app_open = user_id === undefined;
 
-  const settings_result = await db.settings.findById(initial_user_id || 'device')
+  let resolved_user_id: string | null;
+  if (is_app_open) {
+    const result = await db.session.get();
+    resolved_user_id = (result.ok && result.value.user_id) || null;
+  } else {
+    resolved_user_id = user_id;
+  }
+
+  // Ensure the correct settings document exists before subscribing.
+  const settings_result = await db.settings.getSettings(resolved_user_id ?? undefined);
   if (!settings_result.ok) {
     console.error("Failed to load settings:", settings_result.error);
-  } else if (!settings_result.value) {
-    console.warn("No settings found for user/device, creating default");
-    const create_result = await db.settings.create({
-      id: initial_user_id || "device",
-    });
-    if (!create_result.ok) {
-      console.error("Failed to create default settings:", create_result.error);
-    }
   }
 
+  subscribeForUser(resolved_user_id);
 
-  // Subscribe to session changes and re-wire user-scoped subscriptions each time
-  db.session.collection.findOne("current").$.pipe(map((doc) => doc?.toJSON() ?? null)).subscribe((session) => {
-    subscribeForUser(session?.user_id ?? null);
-  });
+  if (is_app_open) {
+    const app_state_result = await db.app_state.getDevice();
+    if (!app_state_result.ok) {
+      console.error("Failed to get app state:", app_state_result.error);
+    } else {
+      const now = new Date().toISOString();
+      let app_version = app_state_result.value.app_version;
+      let device_id = app_state_result.value.device_id;
 
-  // Also set up initial non-user subscriptions
-  subscribeForUser(initial_user_id);
+      try {
+        const [app_info, device_info] = await Promise.all([
+          App.getInfo().catch(() => ({ version: "unknown" })),
+          Device.getId(),
+        ]);
+        app_version = app_info.version;
+        device_id = device_info.identifier;
+      } catch {
+        // Running in browser / web — skip native APIs
+      }
 
-  const app_state_result = await db.app_state.getDevice();
-  if (!app_state_result.ok) {
-    console.error("Failed to get app state:", app_state_result.error);
-  } else {
-    const now = new Date().toISOString();
-    let app_version = app_state_result.value.app_version;
-    let device_id = app_state_result.value.device_id;
-
-    try {
-      const [app_info, device_info] = await Promise.all([App.getInfo(), Device.getId()]);
-      app_version = app_info.version;
-      device_id = device_info.identifier;
-    } catch {
-      // Running in browser / web — skip native APIs
+      await db.app_state.update({
+        device_id,
+        app_version,
+        last_opened_at: now,
+        open_count: app_state_result.value.open_count + 1,
+      });
     }
 
-    await db.app_state.update({
-      device_id,
-      app_version,
-      last_opened_at: now,
-      open_count: app_state_result.value.open_count + 1,
+    db.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
+      context.app_state = app_state;
     });
   }
-  db.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
-    context.app_state = app_state;
-  });
 }

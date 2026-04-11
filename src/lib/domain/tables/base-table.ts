@@ -38,7 +38,7 @@ export default class BaseTable<T> {
   async findById(id: string): AsyncResult<T | null> {
     try {
       const doc = await this.collection.findOne(id).exec();
-      const value = doc ? (doc.toJSON() as T) : null;
+      const value = doc ? (JSON.parse(JSON.stringify(doc.toJSON())) as T) : null;
       return { ok: true, value } as Result<T | null>;
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);

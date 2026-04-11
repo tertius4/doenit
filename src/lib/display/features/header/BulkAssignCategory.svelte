@@ -43,7 +43,7 @@
 
 <button
   type="button"
-  aria-label="Share Task"
+  aria-label={t("bulk_assign_category")}
   onclick={() => (is_open = true)}
   class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
 >
@@ -51,9 +51,10 @@
   <Icon name="categories" />
 </button>
 
-<Modal bind:is_open>
+<Modal bind:is_open class="*:space-y-4">
   <ModalHeader>{t("choose_category")}</ModalHeader>
-  <div class="mb-4 space-y-0.5">
+
+  <div class="space-y-1">
     {#each categories as category, i}
       {@const is_selected = category.id === category_id}
 

@@ -39,7 +39,7 @@
   {/if}
 </div>
 
-<Modal bind:is_open={is_deleting} onclose={() => (is_deleting = false)} class="space-y-4" onsubmit={deleteAll}>
+<Modal bind:is_open={is_deleting} onclose={() => (is_deleting = false)} class="*:space-y-4" onsubmit={deleteAll}>
   <ModalHeader>{t("delete")}</ModalHeader>
   <p>
     {selected_tasks.size > 1 ? t("delete_confirmation_multiple") : t("delete_confirmation_single")}

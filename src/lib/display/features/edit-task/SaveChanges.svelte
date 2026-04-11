@@ -13,7 +13,7 @@
   /**
    * @typedef {Object} Props
    * @property {((task: DB.Task | Domain.Task) => AsyncResult)} onsave
-   * @property {() => Result | AsyncResult} [oncancel]
+   * @property {() => (Result | AsyncResult)} [oncancel]
    * @property {string} [task_id] - The ID of the original task (undefined if new)
    * @property {DB.Task | Domain.Task} changed - The changed object to compare against the original.
    */
@@ -56,15 +56,15 @@
 </script>
 
 <Modal bind:is_open>
-  <ModalHeader>{t("save_changes")}</ModalHeader>
+  <ModalHeader>{t("save_changes")}?</ModalHeader>
 
   <footer class="flex w-full items-center justify-between mt-4">
     <button
       type="button"
-      class="flex gap-1 items-center h-12 px-4 py-2 bg-card border border-default text-alt rounded-lg"
+      class="flex gap-1 items-center h-12 px-4 py-2 bg-card border border-default rounded-lg"
       onclick={handleDiscard}
     >
-      <Icon name="trash" />
+      <Icon name="trash" size={20} />
       <span>{t("discard")}</span>
     </button>
     <button
@@ -72,7 +72,7 @@
       class="flex gap-1 items-center h-12 px-4 py-2 bg-primary text-alt rounded-lg ml-auto"
       onclick={handleSave}
     >
-      <Icon name="save" />
+      <Icon name="save" size={20} />
       <span>{t("save")}</span>
     </button>
   </footer>
