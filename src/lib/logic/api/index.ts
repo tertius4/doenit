@@ -2,6 +2,8 @@ import * as task from "./task";
 import * as categories from "./categories";
 import * as settings from "./settings";
 import * as auth from "./auth";
+import * as contacts from "./contacts";
+import * as groups from "./groups";
 
 export default class Api {
   static readonly settings = {
@@ -32,5 +34,19 @@ export default class Api {
   static readonly auth = {
     signIn: auth.signIn,
     signOut: auth.signOut,
+  };
+
+  static readonly contacts = {
+    save: contacts.save,
+    delete: contacts.remove,
+  };
+
+  static readonly groups = {
+    save: groups.save,
+    delete: groups.remove,
+    addContact: groups.addContact,
+    removeContact: groups.removeContact,
+    getGroupContacts: groups.getGroupContacts,
+    getContacts: groups.getContacts,
   };
 }

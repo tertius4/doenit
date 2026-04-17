@@ -195,6 +195,10 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     create_category: "Skep Kategorie",
     create_new_category: "Nuwe kategorie",
     edit_category: "Wysig Kategorie",
+    create_new_contact: "Nuwe kontak",
+    edit_contact: "Wysig kontak",
+    enter_contact_name: "Voer kontaknaam in",
+    enter_contact_email: "Voer e-posadres in",
     edit_category_name: "Wysig naam",
     categories_selected: "{{count}} Kategorieë geselekteer",
     category_selected: "1 Kategorie geselekteer",
@@ -224,6 +228,15 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     cannot_invite_yourself: "Jy kan nie jouself uitnooi nie",
     sync_success: "Take gesinkroniseer",
     sync_error: "Sinkronisasie fout",
+    create_new_group: "Nuwe groep",
+    edit_group: "Wysig groep",
+    enter_group_name: "Voer groepnaam in",
+    enter_group_description: "Beskrywing (opsioneel)",
+    group_members: "Lede",
+    add_member: "Voeg lid by",
+    leave_group: "Verlaat groep",
+    remove_from_group: "Verwyder van groep",
+    no_contacts_to_add: "Geen kontakte om by te voeg nie",
     left_group: "Groep Verlaat",
     user_left_group: '{{user_name}} het die groep "{{room_name}}" verlaat',
     user_not_found: "Gebruiker nie gevind nie",
@@ -556,6 +569,11 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     you: "Jy",
     offline: "U is tans vanlyn",
+
+    // Bottombar
+    all_tasks: "Alle take",
+    groups: "Groepe",
+    contact_list: "Kontaklys",
   },
 
   en: {
@@ -728,6 +746,10 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     create_category: "Create Category",
     create_new_category: "Create category",
     edit_category: "Edit Category",
+    create_new_contact: "New contact",
+    edit_contact: "Edit contact",
+    enter_contact_name: "Enter contact name",
+    enter_contact_email: "Enter email address",
     edit_category_name: "Edit name",
     categories_selected: "{{count}} Categories selected",
     category_selected: "1 Category selected",
@@ -756,6 +778,15 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     cannot_invite_yourself: "You cannot invite yourself",
     sync_success: "Tasks synchronized",
     sync_error: "Synchronization error",
+    create_new_group: "New group",
+    edit_group: "Edit group",
+    enter_group_name: "Enter group name",
+    enter_group_description: "Description (optional)",
+    group_members: "Members",
+    add_member: "Add member",
+    leave_group: "Leave group",
+    remove_from_group: "Remove from group",
+    no_contacts_to_add: "No contacts to add",
     left_group: "Left Group",
     user_left_group: '{{user_name}} have left the group "{{room_name}}"',
     user_not_found: "User not found",
@@ -1088,5 +1119,10 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     you: "You",
     offline: "You are offline",
+
+    // Bottombar
+    all_tasks: "All Tasks",
+    groups: "Groups",
+    contact_list: "Contact List",
   },
 };

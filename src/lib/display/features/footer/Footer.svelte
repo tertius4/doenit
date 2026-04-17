@@ -5,6 +5,7 @@
   import Hotbar from "$display/features/footer/Hotbar.svelte";
   import { page } from "$app/state";
   import Icon from "$display/comps/Icon.svelte";
+  import t from "$display/translate";
 </script>
 
 <ButtonMainSubmit class="mb-4 mr-4" />
@@ -27,7 +28,7 @@
         <div class:bg-card={page.url.pathname === "/"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
           <Icon name="users" class="w-5 h-5 mb-1" />
         </div>
-        Alle take
+        <span>{t('all_tasks')}</span>
       </a>
 
       <a
@@ -38,7 +39,7 @@
         <div class:bg-card={page.url.pathname === "/groups"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
           <Icon name="users" class="w-5 h-5 mb-1" />
         </div>
-        Groepe
+        <span>{t('groups')}</span>
       </a>
 
       <a
@@ -49,7 +50,7 @@
         <div class:bg-card={page.url.pathname === "/contacts"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
           <Icon name="users" class="w-5 h-5 mb-1" />
         </div>
-        Kontaklyste
+        <span>{t('contact_list')}</span>
       </a>
     </div>
   {/if}

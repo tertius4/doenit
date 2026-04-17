@@ -24,7 +24,8 @@
     "/(main)/categories": t("categories"),
     "/(main)/settings": t("settings"),
     "/(main)/subscriptions": t("doenit_plus"),
-    "/(main)/daily-summary": t("daily_summary"),
+    "/(main)/groups": t("groups"),
+    "/(main)/contacts": t("contact_list"),
   });
 
   const search_text = getContext("search_text");

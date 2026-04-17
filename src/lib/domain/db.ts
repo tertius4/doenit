@@ -18,6 +18,9 @@ class DBClass {
   private _session: tables.session | undefined;
   private _app_state: tables.app_state | undefined;
   private _user_state: tables.user_state | undefined;
+  private _contact: tables.contact | undefined;
+  private _group: tables.group | undefined;
+  private _group_contact: tables.group_contact | undefined;
 
   async init() {
     if (this.is_initialized) return;
@@ -32,6 +35,9 @@ class DBClass {
     this._session = new tables.session(db.collections.session);
     this._app_state = new tables.app_state(db.collections.app_state);
     this._user_state = new tables.user_state(db.collections.user_state);
+    this._contact = new tables.contact(db.collections.contact);
+    this._group = new tables.group(db.collections.group);
+    this._group_contact = new tables.group_contact(db.collections.group_contact);
     this.is_initialized = true;
   }
 
@@ -74,6 +80,21 @@ class DBClass {
     if (!this._user_state) throw new Error("DB not initialized");
     return this._user_state;
   }
+
+  get contact() {
+    if (!this._contact) throw new Error("DB not initialized");
+    return this._contact;
+  }
+
+  get group() {
+    if (!this._group) throw new Error("DB not initialized");
+    return this._group;
+  }
+
+  get group_contact() {
+    if (!this._group_contact) throw new Error("DB not initialized");
+    return this._group_contact;
+  }
 }
 
 const DB = new DBClass();
@@ -104,6 +125,10 @@ async function initDB() {
     session: { schema: schema.session },
     app_state: { schema: schema.app_state },
     user_state: { schema: schema.user_state },
+
+    contact: { schema: schema.contact },
+    group: { schema: schema.group },
+    group_contact: { schema: schema.group_contact },
   });
 
   const task_needed = await collections.task.migrationNeeded();

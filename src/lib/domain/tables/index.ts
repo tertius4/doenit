@@ -6,3 +6,6 @@ export { SettingsTable as settings } from "./settings";
 export { SessionTable as session } from "./session";
 export { AppStateTable as app_state } from "./app_state";
 export { UserStateTable as user_state } from "./user_state";
+export { ContactTable as contact } from "./contact";
+export { GroupTable as group } from "./group";
+export { GroupContactTable as group_contact } from "./group_contact";

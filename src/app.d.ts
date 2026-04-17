@@ -79,6 +79,13 @@ declare global {
       name: string;
       avatar?: string;
       user_id: string;
+      email_address: string;
+    }
+
+    interface GroupContact {
+      group_id: string;
+      contact_id: string;
+      role: "admin" | "member";
     }
 
     interface Invite {
@@ -137,6 +144,7 @@ declare global {
     type Group = DB.SharedMetaData & Domain.Group;
     type Member = DB.SharedMetaData & Domain.Member;
     type Contact = DB.SharedMetaData & Domain.Contact;
+    type GroupContact = DB.SharedMetaData & Domain.GroupContact;
     type Invite = DB.SharedMetaData & Domain.Invite;
     // Basic User info - could be the device (before any logins).
     type User = Domain.User & DB.PrivateMetaData;
@@ -197,6 +205,21 @@ declare global {
       avatar?: string;
       id_token?: string;
       access_token?: string;
+    }
+
+    interface ContactListItem {
+      id: string;
+      name: string;
+      email_address: string;
+      avatar?: string;
+    }
+
+    interface GroupListItem {
+      id: string;
+      name: string;
+      owner_user_id: string;
+      users: string[];
+      member_names: string[];
     }
   }
 }

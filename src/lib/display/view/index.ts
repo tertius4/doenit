@@ -1,6 +1,8 @@
 import * as categories from "./categories.js";
 import * as main_page from "./main_page.js";
 import * as done_page from "./done-page.js";
+import * as groups from "./groups.js";
+import * as contacts from "./contacts.js";
 import * as db from "./db.js";
 
 export default class View {
@@ -22,5 +24,13 @@ export default class View {
     users: db.users,
     category: db.category,
     tasks: db.tasks
+  }
+
+  static readonly groups = {
+    getList: groups.getList,
+  }
+
+  static readonly contacts = {
+    getList: contacts.getList,
   }
 }
