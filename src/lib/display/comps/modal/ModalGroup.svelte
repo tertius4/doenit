@@ -41,9 +41,7 @@
   let all_contacts = $state([]);
 
   const is_creating = $derived(!saved_id);
-  const is_admin = $derived(
-    !saved_owner_user_id || saved_owner_user_id === (context.user?.id || "device")
-  );
+  const is_admin = $derived(!saved_owner_user_id || saved_owner_user_id === (context.user?.id || "device"));
 
   const member_contact_ids = $derived(new Set(members.map((m) => m.contact_id)));
   const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.id)));
@@ -72,7 +70,7 @@
   async function saveGroup() {
     error_message = "";
 
-    const result = await Api.groups.save({ id: saved_id, name, description: description || undefined });
+    const result = await Api.groups.save({ id: saved_id, name, description });
     if (!result.ok) return (error_message = result.error);
 
     saved_id = result.value.id;
@@ -80,7 +78,8 @@
 
     await loadMembers();
 
-    if (onsubmit) onsubmit(result.value.id);
+    if (onsubmit) await onsubmit(result.value.id);
+    open = false;
   }
 
   /** @param {string} contact_id */
@@ -151,7 +150,7 @@
     <div>
       <p class="font-semibold mb-2">{t("group_members")}</p>
 
-      {#if members.length === 0}
+      {#if !members.length}
         <p class="text-sm text-muted">&mdash;</p>
       {:else}
         <ul class="space-y-1">

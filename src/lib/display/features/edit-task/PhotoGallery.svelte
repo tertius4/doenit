@@ -234,7 +234,7 @@
 {/if}
 
 <Modal bind:is_open={is_deleting_photo} class="max-w-80! *:space-y-4">
-  <ModalHeader>{t("delete_photo")}</ModalHeader>
+  <ModalHeader>{t("delete_photo")}?</ModalHeader>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={removePhoto}>
     <Icon name="trash" class="h-full" />
     <span>{t("delete")}</span>

@@ -2,8 +2,18 @@
   import Footer from "$display/features/footer/Footer.svelte";
   import Heading from "$display/features/header/Heading.svelte";
   import { context } from "$logic/context.svelte";
-  import { setContext } from "svelte";
+  import { backHandler } from "$logic/navigation";
+  import { Capacitor } from "@capacitor/core";
+  import { App } from "@capacitor/app";
+  import { setContext, onMount } from "svelte";
   import "../../app.css";
+
+  onMount(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listener = App.addListener("backButton", () => backHandler.handle());
+    return () => listener.then((l) => l.remove());
+  });
 
   const search_text = $state({ value: "" });
   setContext("search_text", search_text);

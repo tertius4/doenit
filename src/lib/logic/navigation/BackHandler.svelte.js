@@ -35,15 +35,15 @@ class BackHandlerService {
 
   /**
    * Execute back handlers in priority order
-   * @returns {boolean} - true if handled, false if should use default behavior
+   * @returns {Promise<boolean>} - true if handled, false if should use default behavior
    */
-  handle() {
+  async handle() {
     const sorted = Array.from(this.handlers.values())
       .reverse()
       .sort((a, b) => b.priority - a.priority);
 
     for (const { handler } of sorted) {
-      const handled = handler();
+      const handled = await handler();
       if (handled) return true;
     }
 

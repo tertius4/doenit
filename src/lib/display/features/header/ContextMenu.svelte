@@ -2,11 +2,11 @@
   import BulkAssignCategory from "./BulkAssignCategory.svelte";
   import { selected_tasks } from "$display/selected.svelte";
   import ButtonShareTask from "./ButtonShareTask.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import { onNavigate } from "$app/navigation";
   import { slide } from "svelte/transition";
   import { on } from "svelte/events";
-  import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import { onNavigate } from "$app/navigation";
 
   let { show = $bindable() } = $props();
 
@@ -38,39 +38,44 @@
   {@attach clickedOutside}
   id="context-menu"
   transition:slide
-  class="absolute right-4 w-75 max-w-[90%] top-16 bg-surface rounded-lg shadow-lg border border-default z-50 p-2 space-y-2"
+  class="absolute right-4 w-72 max-w-[90%] top-16 bg-surface rounded-xl shadow-xl border border-default z-50 overflow-hidden"
 >
   {#if !!selected_tasks.size}
-    <ButtonShareTask onclick={() => (show = false)} />
-    <BulkAssignCategory onclose={closeBulkAssign} />
+    <div class="p-2 space-y-1 border-b border-default">
+      <ButtonShareTask onclick={() => (show = false)} />
+      <BulkAssignCategory onclose={closeBulkAssign} />
+    </div>
   {/if}
-  <a
-    aria-label={t("completed_tasks")}
-    href="/complete"
-    draggable="false"
-    class="rounded-lg bg-card border border-default font-medium flex gap-2 items-center p-4 w-full"
-  >
-    <Icon name="check" size={16} />
-    <span>{t("completed_tasks")}</span>
-  </a>
 
-  <a
-    aria-label={t("categories")}
-    draggable="false"
-    href="/categories"
-    class="rounded-lg bg-card border border-default font-medium flex gap-2 items-center p-4 w-full"
-  >
-    <Icon name="categories" size={16} />
-    <span>{t("categories")}</span>
-  </a>
+  <div class="p-2 space-y-0.5">
+    <a
+      aria-label={t("completed_tasks")}
+      href="/complete"
+      draggable="false"
+      class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+    >
+      <Icon name="check" size={16} />
+      <span>{t("completed_tasks")}</span>
+    </a>
 
-  <a
-    aria-label={t("settings")}
-    draggable="false"
-    href="/settings"
-    class="rounded-lg bg-card border border-default font-medium flex gap-2 items-center p-4 w-full"
-  >
-    <Icon name="settings" size={16} />
-    <span>{t("settings")}</span>
-  </a>
+    <a
+      aria-label={t("categories")}
+      draggable="false"
+      href="/categories"
+      class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+    >
+      <Icon name="categories" size={16} />
+      <span>{t("categories")}</span>
+    </a>
+
+    <a
+      aria-label={t("settings")}
+      draggable="false"
+      href="/settings"
+      class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+    >
+      <Icon name="settings" size={16} />
+      <span>{t("settings")}</span>
+    </a>
+  </div>
 </div>

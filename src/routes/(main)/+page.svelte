@@ -11,6 +11,7 @@
   import Api from "$logic/api";
   import { fade } from "svelte/transition";
   import toast from "$display/toast/toast.svelte";
+  import { navigating, page } from "$app/state";
 
   selected_tasks.clear();
 
@@ -118,3 +119,18 @@
     </div>
   {/each}
 </div>
+
+<!-- FAB -->
+<button
+  type="button"
+  onclick={() => goto("/create")}
+  class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
+  style="bottom: calc(136px + env(safe-area-inset-bottom)); "
+  aria-label="Add task"
+>
+  {#if navigating.to}
+    <Icon name="loading" class={{ "animate-spin text-2xl": true, "text-white": !!page.data.is_home }} />
+  {:else}
+    <Icon name="plus" class={{ "text-2xl": true, "text-white": !!page.data.is_home }} />
+  {/if}
+</button>

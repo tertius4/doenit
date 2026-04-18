@@ -98,14 +98,14 @@ function formatDateRange(startDate, dueDate) {
 
   const locale = context.settings.language === "en" ? "en-GB" : "af-ZA";
   if (!startDate || !dueDate || DateUtil.isSameDay(startDate, dueDate)) {
-    return DateUtil.format(date, "D MMM. YYYY", { locale });
+    return DateUtil.format(date, "D MMM YYYY", { locale });
   }
 
   if (startDate.getFullYear() === dueDate.getFullYear() && startDate.getMonth() === dueDate.getMonth()) {
-    return `${DateUtil.format(startDate, "D", { locale })}-${DateUtil.format(dueDate, "D MMM. YYYY", { locale })}`;
+    return `${DateUtil.format(startDate, "D", { locale })}-${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
   }
 
-  return `${DateUtil.format(startDate, "D MMM", { locale })} - ${DateUtil.format(dueDate, "D MMM. YYYY", { locale })}`;
+  return `${DateUtil.format(startDate, "D MMM", { locale })} - ${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
 }
 
 /**

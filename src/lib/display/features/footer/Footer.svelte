@@ -1,7 +1,5 @@
 <script>
   import ButtonMainSubmit from "$display/features/footer/ButtonMainSubmit.svelte";
-  import ButtonNavbar from "./ButtonNavbar.svelte";
-  import CategoryFilter from "./CategoryFilter.svelte";
   import Hotbar from "$display/features/footer/Hotbar.svelte";
   import { page } from "$app/state";
   import Icon from "$display/comps/Icon.svelte";
@@ -25,10 +23,13 @@
         draggable="false"
         class="flex flex-col font-medium justify-center items-center h-full w-fit mx-auto group px-2"
       >
-        <div class:bg-card={page.url.pathname === "/"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
-          <Icon name="users" class="w-5 h-5 mb-1" />
+        <div
+          class:bg-card={page.url.pathname === "/"}
+          class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors"
+        >
+          <Icon name="tasks" class="w-6 h-6 mb-1" />
         </div>
-        <span>{t('all_tasks')}</span>
+        <span>{t("all_tasks")}</span>
       </a>
 
       <a
@@ -36,10 +37,13 @@
         draggable="false"
         class="flex flex-col font-medium justify-center items-center h-full w-fit mx-auto group px-2"
       >
-        <div class:bg-card={page.url.pathname === "/groups"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
+        <div
+          class:bg-card={page.url.pathname === "/groups"}
+          class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors"
+        >
           <Icon name="users" class="w-5 h-5 mb-1" />
         </div>
-        <span>{t('groups')}</span>
+        <span>{t("groups")}</span>
       </a>
 
       <a
@@ -47,10 +51,13 @@
         draggable="false"
         class="flex flex-col font-medium justify-center items-center h-full w-fit mx-auto group px-2"
       >
-        <div class:bg-card={page.url.pathname === "/contacts"} class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors">
-          <Icon name="users" class="w-5 h-5 mb-1" />
+        <div
+          class:bg-card={page.url.pathname === "/contacts"}
+          class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors"
+        >
+          <Icon name="contacts" class="w-5 h-5 mb-1" />
         </div>
-        <span>{t('contact_list')}</span>
+        <span>{t("contact_list")}</span>
       </a>
     </div>
   {/if}

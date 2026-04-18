@@ -12,7 +12,7 @@
 
   /** @type {Record<string, string>}*/
   const ICON_CHART = {
-    "/(main)": "plus",
+    // "/(main)": "plus",
     // "/(main)/create": "check",
     // "/(main)/complete": "home",
     // "/(main)/categories": "home",
@@ -45,7 +45,7 @@
     aria-label={page.data.is_task_page ? "Submit form" : page.data.is_home ? "Create new item" : "Go to home"}
   >
     {#if navigating.to}
-      <Icon name="loading" class="animate-spin text-2xl" />
+      <Icon name="loading" class={{ "animate-spin text-2xl": true, "text-white": !!page.data.is_home }} />
     {:else}
       <Icon name={icon_name} class={{ "text-2xl": true, "text-white": !!page.data.is_home }} />
     {/if}

@@ -59,7 +59,7 @@
     placeholder={t("enter_contact_name")}
     onfocus={() => (error_message = "")}
     class={{
-      "placeholder:text-error! border-error! bg-error/20!": !!error_message,
+      "placeholder:text-error! border-error! bg-error/20!": !name && !!error_message,
     }}
   />
 
@@ -69,6 +69,9 @@
     maxlength="200"
     placeholder={t("enter_contact_email")}
     onfocus={() => (error_message = "")}
+    class={{
+      "placeholder:text-error! border-error! bg-error/20!": !email_address && !!error_message,
+    }}
   />
 
   {#if error_message}

@@ -46,8 +46,8 @@ declare global {
       description?: string;
       completed: number;
       completed_at: string | null;
-      due_date: string | null;
-      start_date: string | null;
+      due_date: string | null; // e.g. "2024-12-31 23:59"
+      start_date: string | null;  // e.g. "2024-12-01 09:00"
       repeat_interval: string;
       repeat_specific_days: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
       repeat_interval_number: number;
