@@ -27,6 +27,7 @@ android/app.prod.keystore
 android/app/google-services.json
 android/app/google-services.dev.json
 android/app/google-services.prod.json
+google-services.json
 
 # Vite
 vite.config.js.timestamp-*

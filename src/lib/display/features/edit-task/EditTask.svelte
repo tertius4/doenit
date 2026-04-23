@@ -103,7 +103,7 @@
     </div>
   </div>
 
-  {#if config.PHOTOS_ENABLED}
+  {#if config.photos_enabled}
     <div>
       <PhotoGallery bind:photo_ids={task.photo_ids} />
     </div>

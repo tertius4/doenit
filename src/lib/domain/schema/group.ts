@@ -12,9 +12,13 @@ export const group: RxJsonSchema<DB.Group> = {
     created_at: { type: "string" },
     updated_at: { type: "string" },
     soft_deleted: { type: "boolean" },
-    dirty: { type: "boolean" },
     version: { type: "number" },
-    owner_user_id: { type: "string" },
+    owner_id: { type: "string" },
+    device_id: {
+      type: "string",
+      description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker",
+    },
+    scope_id: { type: ["string", "null"] },
 
     name: { type: "string" },
     description: { type: "string" },

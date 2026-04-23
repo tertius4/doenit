@@ -8,6 +8,9 @@
   import { backHandler } from "$logic/navigation";
   import { onMount } from "svelte";
   import { context } from "$logic/context.svelte";
+  import t from "$display/translate";
+  import Api from "$logic/api";
+  import toast from "$display/toast/toast.svelte";
 
   /** @type {AL.GroupListItem[]} */
   let groups = $state([]);
@@ -23,6 +26,17 @@
   });
 
   onMount(View.groups.getList(groups));
+
+  async function handleSignIn() {
+    const result = await Api.auth.signIn();
+    if (!result.ok) {
+      if (result.error === "USER_CANCELED") {
+        return;
+      }
+
+      toast.error("Inteken fout", result.error || t("something_went_wrong"));
+    }
+  }
 </script>
 
 {#if is_logged_in}

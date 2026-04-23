@@ -2,6 +2,7 @@ export {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDoc,
@@ -13,6 +14,9 @@ export {
   orderBy,
   limit,
   onSnapshot,
+  arrayUnion,
+  arrayRemove,
   type WhereFilterOp,
   getFirestore,
+  initializeFirestore,
 } from "firebase/firestore";

@@ -9,16 +9,15 @@ export const contact: RxJsonSchema<DB.Contact> = {
   description: "All the contacts in the system",
   properties: {
     id: { type: "string", maxLength: 50 },
+
     created_at: { type: "string" },
     updated_at: { type: "string" },
-    soft_deleted: { type: "boolean" },
-    dirty: { type: "boolean" },
-    version: { type: "number" },
-    owner_user_id: { type: "string" },
+
+    owner_id: { type: "string" },
 
     name: { type: "string" },
     avatar: { type: "string" },
-    user_id: { type: "string" },
+    user_id: { type: ["string", "null"] },
     email_address: { type: "string" },
   },
 };

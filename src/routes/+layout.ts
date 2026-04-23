@@ -4,6 +4,8 @@ import alert from "$display/toast/toast.svelte";
 import { initApp } from "$logic/context.svelte";
 import { config } from "$lib/config";
 import auth from "$services/social-login.js";
+import { syncEngine } from "$lib/domain/sync/engine";
+import firestore from "$services/firestore";
 
 export const ssr = false;
 
@@ -17,6 +19,10 @@ export async function load({ url, params }) {
     await auth.initialize({ web_client_id: config.google_web_client_id }); // Ensure auth is initialized to clear any internal state
     return; // window.close() is called internally
   }
+
+  // Initialize Firebase before any DB or sync operations
+  firestore.init();
+  syncEngine.init();
 
   try {
     await DB.init();

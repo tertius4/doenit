@@ -8,4 +8,4 @@ export { app_state } from "./app_state";
 export { user_state } from "./user_state";
 export { contact } from "./contact";
 export { group } from "./group";
-export { group_contact } from "./group_contact";
+export { member } from "./member";

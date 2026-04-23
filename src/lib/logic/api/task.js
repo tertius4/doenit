@@ -48,9 +48,10 @@ function getNewTaskHandler(overrides = {}) {
     repeat_interval: "",
     repeat_interval_number: 1,
     category_id: undefined,
-    assigned_user_email: undefined,
+    assigned_user_id: undefined,
     photo_ids: [],
     archived: false,
+    description: "",
     ...overrides,
   };
 }
@@ -123,7 +124,7 @@ async function updateTaskHandler(task) {
 
       if (!category_result.value) {
         task.category_id = undefined;
-        task.assigned_user_email = undefined;
+        task.assigned_user_id = undefined;
       }
     }
 

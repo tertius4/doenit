@@ -46,7 +46,7 @@ export default class Api {
     delete: groups.remove,
     addContact: groups.addContact,
     removeContact: groups.removeContact,
-    getGroupContacts: groups.getGroupContacts,
+    getMembers: groups.getMembers,
     getContacts: groups.getContacts,
   };
 }

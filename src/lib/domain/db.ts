@@ -10,6 +10,7 @@ import * as tables from "./tables";
 
 class DBClass {
   private is_initialized = false;
+
   private _category: tables.category | undefined;
   private _user: tables.user | undefined;
   private _task: tables.task | undefined;
@@ -20,7 +21,7 @@ class DBClass {
   private _user_state: tables.user_state | undefined;
   private _contact: tables.contact | undefined;
   private _group: tables.group | undefined;
-  private _group_contact: tables.group_contact | undefined;
+  private _member: tables.member | undefined;
 
   async init() {
     if (this.is_initialized) return;
@@ -37,7 +38,7 @@ class DBClass {
     this._user_state = new tables.user_state(db.collections.user_state);
     this._contact = new tables.contact(db.collections.contact);
     this._group = new tables.group(db.collections.group);
-    this._group_contact = new tables.group_contact(db.collections.group_contact);
+    this._member = new tables.member(db.collections.member);
     this.is_initialized = true;
   }
 
@@ -91,9 +92,9 @@ class DBClass {
     return this._group;
   }
 
-  get group_contact() {
-    if (!this._group_contact) throw new Error("DB not initialized");
-    return this._group_contact;
+  get member() {
+    if (!this._member) throw new Error("DB not initialized");
+    return this._member;
   }
 }
 
@@ -128,21 +129,17 @@ async function initDB() {
 
     contact: { schema: schema.contact },
     group: { schema: schema.group },
-    group_contact: { schema: schema.group_contact },
+    member: { schema: schema.member },
   });
 
-  const task_needed = await collections.task.migrationNeeded();
-  if (task_needed) {
-    console.log("Task migration needed - starting migration");
-    await collections.task.migratePromise(1000);
-    console.log("Task migration completed");
-  }
-
-  const category_needed = await collections.category.migrationNeeded();
-  if (category_needed) {
-    console.log("Category migration needed - starting migration");
-    await collections.category.migratePromise(1000);
-    console.log("Category migration completed");
+  for (const name of ["settings", "category", "task", "user", "contact", "group", "member"] as const) {
+    const col = collections[name] as any;
+    const needed = await col.migrationNeeded();
+    if (needed) {
+      console.log(`${name} migration needed - starting migration`);
+      await col.migratePromise(1000);
+      console.log(`${name} migration completed`);
+    }
   }
 
   return DB;

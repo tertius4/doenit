@@ -21,15 +21,15 @@ export function getList(list) {
  */
 async function subscribeGroupList() {
   const groups$ = DB.group.subscribe$({ selector: { soft_deleted: { $ne: true } }, sort: [{ name: "asc" }] });
-  const group_contacts$ = DB.group_contact.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const members$ = DB.member.subscribe$({ selector: { soft_deleted: { $ne: true } } });
   const contacts$ = DB.contact.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  return combineLatest([groups$, group_contacts$, contacts$]).pipe(
-    map(([groups, group_contacts, contacts]) => {
+  return combineLatest([groups$, members$, contacts$]).pipe(
+    map(([groups, members, contacts]) => {
       const contact_map = new Map(contacts.map((c) => [c.id, c]));
 
       return groups.map((group) => {
-        const member_names = group_contacts
+        const member_names = members
           .filter((gc) => gc.group_id === group.id)
           .map((gc) => contact_map.get(gc.contact_id)?.name)
           .filter(/** @param {string | undefined} n */ (n) => !!n);

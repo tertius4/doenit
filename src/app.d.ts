@@ -13,6 +13,7 @@ declare global {
     interface User {
       email_address: string;
       google_id: string;
+      firebase_uid?: string;
       name: string;
       avatar?: string;
     }
@@ -47,16 +48,16 @@ declare global {
       completed: number;
       completed_at: string | null;
       due_date: string | null; // e.g. "2024-12-31 23:59"
-      start_date: string | null;  // e.g. "2024-12-01 09:00"
+      start_date: string | null; // e.g. "2024-12-01 09:00"
       repeat_interval: string;
       repeat_specific_days: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
       repeat_interval_number: number;
       important: boolean;
-      assigned_user_email?: string;
+      assigned_user_id?: string;
       photo_ids?: string[];
 
       category_id?: string;
-      group_id?: string;
+      // No group_id; Scope_id will be same as group_id
     }
 
     interface Category {
@@ -69,9 +70,8 @@ declare global {
     }
 
     interface Member {
+      // Already exists to a scope_id (=group_id)
       user_id: string;
-      group_id: string;
-
       role: "admin" | "member";
     }
 
@@ -82,14 +82,10 @@ declare global {
       email_address: string;
     }
 
-    interface GroupContact {
-      group_id: string;
-      contact_id: string;
-      role: "admin" | "member";
-    }
-
     interface Invite {
       from_email_address: string;
+      from_name: string;
+
       to_email_address: string;
 
       to_user_id?: string;
@@ -98,11 +94,13 @@ declare global {
   }
 
   namespace DB {
+    // Indicates who is logged in.
     interface Session {
       id: "current";
       user_id: string | null;
     }
 
+    // Device info and app usage stats - not user specific.
     interface AppState {
       id: "current";
       device_id: string;
@@ -112,6 +110,7 @@ declare global {
       updated_at: string;
     }
 
+    // User-specific app state, like last opened category, last sync time, etc.
     interface UserState {
       user_id: string;
       last_opened_at: string;
@@ -123,35 +122,43 @@ declare global {
       updated_at: string;
     }
 
-    interface SharedMetaData {
+    interface MetaDataShared {
       id: string;
+
       created_at: string;
       updated_at: string;
+
       version: number;
+      device_id: string;
+
+      owner_id: string;
+      scope_id: string | null; // Will be same as group_id.
+
       soft_deleted?: boolean;
-      dirty: boolean;
-      owner_user_id: string;
     }
 
-    interface PrivateMetaData {
+    interface MetaDataPrivate {
       id: string;
+
       created_at: string;
       updated_at: string;
+
+      owner_id: string;
     }
 
-    type Task = DB.SharedMetaData & Domain.Task;
-    type Category = DB.SharedMetaData & Domain.Category;
-    type Group = DB.SharedMetaData & Domain.Group;
-    type Member = DB.SharedMetaData & Domain.Member;
-    type Contact = DB.SharedMetaData & Domain.Contact;
-    type GroupContact = DB.SharedMetaData & Domain.GroupContact;
-    type Invite = DB.SharedMetaData & Domain.Invite;
+    type Group = DB.MetaDataShared & Domain.Group;
+    type Task = DB.MetaDataShared & Domain.Task;
+    type Category = DB.MetaDataShared & Domain.Category;
+
+    // Join table between Group and Contact
+    type Member = DB.MetaDataShared & Domain.Member;
+    type Contact = DB.MetaDataPrivate & Domain.Contact;
+
+    type Invite = DB.MetaDataShared & Domain.Invite;
     // Basic User info - could be the device (before any logins).
-    type User = Domain.User & DB.PrivateMetaData;
-    // User preferences
-    type Settings = DB.PrivateMetaData & Domain.Settings;
-    // Server controlled - private data
-    type Permissions = DB.PrivateMetaData & Domain.Permissions;
+    type User = DB.MetaDataShared & Domain.User;
+    // User preferences - could be the device (before any logins).
+    type Settings = DB.MetaDataPrivate & Domain.Settings;
   }
 
   type Result<T = void> = T extends void

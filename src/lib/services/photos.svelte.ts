@@ -10,7 +10,7 @@ class PhotoService {
    * Ensure the photo directory exists
    */
   private async ensureDirectory(): AsyncResult {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
       await Filesystem.mkdir({
@@ -36,7 +36,7 @@ class PhotoService {
    * @param source - Camera or gallery
    */
   async addPhoto(source: CameraSource = CameraSource.Prompt): AsyncResult<AL.TaskPhoto> {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
       const photo = await Camera.getPhoto({
@@ -87,7 +87,7 @@ class PhotoService {
    * Load a photo from filesystem
    */
   async loadPhoto(photo_id: string): AsyncResult<AL.TaskPhoto> {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
       let filepath: string;
@@ -121,7 +121,7 @@ class PhotoService {
    * Load multiple photos
    */
   async loadPhotos(photo_ids: string[]): AsyncResult<AL.TaskPhoto[]> {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     const all_photos = await Promise.all(photo_ids.map((id) => this.loadPhoto(id)));
 
@@ -137,7 +137,7 @@ class PhotoService {
    * Delete a photo from filesystem
    */
   async deletePhoto(photo_id: string): AsyncResult {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
       await Filesystem.deleteFile({
@@ -167,7 +167,7 @@ class PhotoService {
    * Should be called periodically
    */
   async cleanupOrphanedPhotos(photo_ids: string[]): AsyncResult {
-    if (!config.PHOTOS_ENABLED) return { ok: false, error: "Photos are not enabled" };
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
       const all_photo_ids = await this.getAllPhotoIds();

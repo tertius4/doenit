@@ -1,30 +1,29 @@
 import type { RxJsonSchema } from "rxdb";
 
-export const user: RxJsonSchema<DB.User> = {
+export const member: RxJsonSchema<DB.Member> = {
   primaryKey: "id",
   required: [],
   type: "object",
-  version: 0,
-  title: "user",
-  description: "All the users logged in on this device",
+  version: 1,
+  title: "member",
+  description: "Join table linking groups and contacts",
   properties: {
     id: { type: "string", maxLength: 50 },
     created_at: { type: "string" },
     updated_at: { type: "string" },
+    soft_deleted: { type: "boolean" },
+
     version: { type: "number" },
-
-    name: { type: "string" },
-    avatar: { type: "string" },
-    email_address: { type: "string" },
-    google_id: { type: "string" },
-    firebase_uid: { type: "string" },
-
     device_id: {
       type: "string",
       description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker",
     },
+
     owner_id: { type: "string" },
     scope_id: { type: ["string", "null"] },
-    soft_deleted: { type: "boolean" },
+
+    user_id: { type: "string" }, // Can only add contacts who are "accepted" contacts -> thus have a user_id.
+
+    role: { type: "string", enum: ["admin", "member"] },
   },
 };

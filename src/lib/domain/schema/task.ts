@@ -13,7 +13,6 @@ export const task: RxJsonSchema<DB.Task> = {
     created_at: { type: "string" },
     updated_at: { type: "string" },
     soft_deleted: { type: "boolean" },
-    dirty: { type: "boolean" },
     version: { type: "number" },
 
     name: { type: "string" },
@@ -27,9 +26,13 @@ export const task: RxJsonSchema<DB.Task> = {
     repeat_interval_number: { type: "number" },
     important: { type: "boolean" },
     category_id: { type: ["string", "null"] },
-    assigned_user_email: { type: ["string", "null"] },
+    assigned_user_id: { type: ["string", "null"] },
     photo_ids: { type: "array", items: { type: "string" } },
-    group_id: { type: ["string", "null"] },
-    owner_user_id: { type: "string" },
+    owner_id: { type: "string" },
+    device_id: {
+      type: "string",
+      description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker",
+    },
+    scope_id: { type: ["string", "null"] },
   },
 };

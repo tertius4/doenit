@@ -9,18 +9,15 @@ export const category: RxJsonSchema<DB.Category> = {
   description: "All the categories in the system",
   properties: {
     id: { type: "string", maxLength: 50 },
-    archived: { type: "boolean" },
     created_at: { type: "string" },
     updated_at: { type: "string" },
     soft_deleted: { type: "boolean" },
-    dirty: { type: "boolean" },
     version: { type: "number" },
 
     name: { type: "string" },
-    owner_user_id: {
-      type: "string",
-      description:
-        "If there are multiple users on the same device. This field indicates which user this category belongs to.",
-    },
+
+    owner_id: { type: "string" },
+    device_id: { type: "string", description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker" },
+    scope_id: { type: ["string", "null"] },
   },
 };

@@ -50,7 +50,7 @@
     if (!saved_id) return;
 
     const [members_result, contacts_result] = await Promise.all([
-      Api.groups.getGroupContacts(saved_id),
+      Api.groups.getMembers(saved_id),
       Api.groups.getContacts(),
     ]);
 
