@@ -1,7 +1,6 @@
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
-import { syncEngine } from "$lib/domain/sync/engine";
 
 export const save = apiLogger(saveGroupHandler);
 export const remove = apiLogger(deleteGroupHandler);

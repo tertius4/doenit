@@ -4,7 +4,6 @@ import alert from "$display/toast/toast.svelte";
 import { initApp } from "$logic/context.svelte";
 import { config } from "$lib/config";
 import auth from "$services/social-login.js";
-import { syncEngine } from "$lib/domain/sync/engine";
 import firestore from "$services/firestore";
 
 export const ssr = false;
@@ -22,7 +21,6 @@ export async function load({ url, params }) {
 
   // Initialize Firebase before any DB or sync operations
   firestore.init();
-  syncEngine.init();
 
   try {
     await DB.init();
