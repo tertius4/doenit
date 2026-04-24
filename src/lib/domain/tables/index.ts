@@ -9,3 +9,4 @@ export { UserStateTable as user_state } from "./user_state";
 export { ContactTable as contact } from "./contact";
 export { GroupTable as group } from "./group";
 export { MemberTable as member } from "./member";
+export { SyncQueueTable as sync_queue } from "./sync_queue";

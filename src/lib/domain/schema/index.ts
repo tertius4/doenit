@@ -9,3 +9,4 @@ export { user_state } from "./user_state";
 export { contact } from "./contact";
 export { group } from "./group";
 export { member } from "./member";
+export { sync_queue } from "./sync_queue";

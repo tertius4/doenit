@@ -22,6 +22,7 @@ class DBClass {
   private _contact: tables.contact | undefined;
   private _group: tables.group | undefined;
   private _member: tables.member | undefined;
+  private _sync_queue: tables.sync_queue | undefined;
 
   async init() {
     if (this.is_initialized) return;
@@ -39,6 +40,7 @@ class DBClass {
     this._contact = new tables.contact(db.collections.contact);
     this._group = new tables.group(db.collections.group);
     this._member = new tables.member(db.collections.member);
+    this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
     this.is_initialized = true;
   }
 
@@ -96,6 +98,11 @@ class DBClass {
     if (!this._member) throw new Error("DB not initialized");
     return this._member;
   }
+
+  get sync_queue() {
+    if (!this._sync_queue) throw new Error("DB not initialized");
+    return this._sync_queue;
+  }
 }
 
 const DB = new DBClass();
@@ -130,6 +137,7 @@ async function initDB() {
     contact: { schema: schema.contact },
     group: { schema: schema.group },
     member: { schema: schema.member },
+    sync_queue: { schema: schema.sync_queue },
   });
 
   for (const name of ["settings", "category", "task", "user", "contact", "group", "member"] as const) {

@@ -15,10 +15,6 @@ async function saveContactHandler({ id, name, email_address, avatar }: Partial<D
       return { ok: false, error: t("contact_email_required") };
     }
 
-    if (!email_address.trim().toLowerCase().endsWith("@gmail.com")) {
-      return { ok: false, error: t("email_must_be_gmail") };
-    }
-
     if (id) {
       return DB.contact.update(id, { name, email_address, avatar });
     } else {
@@ -26,7 +22,7 @@ async function saveContactHandler({ id, name, email_address, avatar }: Partial<D
         name: name || "",
         email_address: email_address || "",
         avatar,
-        user_id: id || "",
+        user_id: null,
       });
     }
   } catch (err) {
@@ -41,7 +37,7 @@ async function deleteContactHandler(id: string): AsyncResult {
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Contact not found" };
 
-    await DB.contact.update(id, { soft_deleted: true });
+    await DB.contact.remove(id);
     return { ok: true };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);

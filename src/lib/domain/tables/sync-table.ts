@@ -3,32 +3,33 @@ import BaseTable from "./base-table";
 import { context } from "$logic/context.svelte";
 import { err } from "$lib";
 
-export default class Table<T> extends BaseTable<T & DB.SharedMetaData> {
-  constructor(collection: RxCollection<T & DB.SharedMetaData>) {
+export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
+  constructor(collection: RxCollection<T & DB.MetaDataShared>) {
     super(collection);
   }
 
-  async create(item: T): AsyncResult<T & DB.SharedMetaData> {
+  async create(item: T): AsyncResult<T & DB.MetaDataShared> {
     try {
       if (!item) throw new Error("[Table] Item is required");
 
+      const date = new Date().toISOString();
       return super.create({
         id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: date,
+        updated_at: date,
         soft_deleted: false,
         version: 0,
-        dirty: false,
-
+        owner_id: context.user?.id || "device",
+        device_id: context.app_state.device_id,
         ...item,
-      } as T & DB.SharedMetaData);
+      } as T & DB.MetaDataShared);
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return err(message) as Result<T & DB.SharedMetaData>;
+      return err(message) as Result<T & DB.MetaDataShared>;
     }
   }
 
-  async createMany(items: T[]): AsyncResult<(T & DB.SharedMetaData)[]> {
+  async createMany(items: T[]): AsyncResult<(T & DB.MetaDataShared)[]> {
     try {
       if (!items.length) return { ok: true, value: [] };
 
@@ -38,11 +39,11 @@ export default class Table<T> extends BaseTable<T & DB.SharedMetaData> {
         created_at: date,
         updated_at: date,
         soft_deleted: false,
-        owner_user_id: context.user?.id || "device",
         version: 0,
-        dirty: false,
+        owner_id: context.user?.id || "device",
+        device_id: context.app_state.device_id,
         ...item,
-      })) as (T & DB.SharedMetaData)[];
+      })) as (T & DB.MetaDataShared)[];
 
       return super.createMany(new_items);
     } catch (e) {
@@ -51,7 +52,7 @@ export default class Table<T> extends BaseTable<T & DB.SharedMetaData> {
     }
   }
 
-  async update(id: string, changes: Partial<T>): AsyncResult<T & DB.SharedMetaData> {
+  async update(id: string, changes: Partial<T>): AsyncResult<T & DB.MetaDataShared> {
     if (!Object.keys(changes).length) throw new Error("[Table] No changes provided");
 
     const doc = await this.collection.findOne(id).exec();
@@ -61,10 +62,18 @@ export default class Table<T> extends BaseTable<T & DB.SharedMetaData> {
       return super.update(id, {
         ...changes,
         updated_at: new Date().toISOString(),
-      } as Partial<T & DB.SharedMetaData>);
+      } as Partial<T & DB.MetaDataShared>);
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message } as Result<T & DB.SharedMetaData>;
+      return { ok: false, error: message } as Result<T & DB.MetaDataShared>;
     }
+  }
+
+  async remove(id: string): AsyncResult {
+    return super.remove(id);
+  }
+
+  async removeMany(ids: string[]): AsyncResult {
+    return super.removeMany(ids);
   }
 }

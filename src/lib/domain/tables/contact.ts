@@ -1,4 +1,4 @@
-import Table from "./sync-table";
+import Table from "./local-table";
 
 export class ContactTable extends Table<Domain.Contact> {
   async create(item: Domain.Contact): AsyncResult<DB.Contact> {
@@ -6,6 +6,8 @@ export class ContactTable extends Table<Domain.Contact> {
   }
 
   async update(id: string, changes: Partial<DB.Contact>): AsyncResult<DB.Contact> {
-    return super.update(id, changes);
+    const result = await super.update(id, changes) as Result<DB.Contact>;
+    
+    return result
   }
 }

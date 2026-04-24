@@ -75,10 +75,21 @@ declare global {
       role: "admin" | "member";
     }
 
+    interface SyncQueueItem {
+      collection: string;
+      entity_id: string;
+      scope_id: string;
+
+      op: "upsert" | "delete";
+
+      attempts: number;
+      last_attempt_at?: number;
+    }
+
     interface Contact {
       name: string;
       avatar?: string;
-      user_id: string;
+      user_id: string | null;
       email_address: string;
     }
 
@@ -159,6 +170,7 @@ declare global {
     type User = DB.MetaDataShared & Domain.User;
     // User preferences - could be the device (before any logins).
     type Settings = DB.MetaDataPrivate & Domain.Settings;
+    type SyncQueueItem = DB.MetaDataPrivate & Domain.SyncQueueItem;
   }
 
   type Result<T = void> = T extends void
