@@ -45,7 +45,7 @@
       <CardGroup
         id={group.id}
         name={group.name}
-        owner_user_id={group.owner_user_id}
+        owner_id={group.owner_id}
         member_names={group.member_names}
       />
     {/each}

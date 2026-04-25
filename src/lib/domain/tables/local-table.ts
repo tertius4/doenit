@@ -1,4 +1,5 @@
-import type { RxCollection } from "$lib/logic/chunk/rxdb";
+import type { MangoQuery, RxCollection } from "$lib/logic/chunk/rxdb";
+import { context } from "$logic/context.svelte";
 import BaseTable from "./base-table";
 
 export default class Table<T> extends BaseTable<T & DB.MetaDataPrivate> {
@@ -34,5 +35,15 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataPrivate> {
       updated_at: new Date().toISOString(),
       ...changes,
     } as Partial<T & DB.MetaDataPrivate>);
+  }
+
+  async updateMany(
+    updates: { id: string; changes: Partial<T & DB.MetaDataPrivate> }[],
+  ): AsyncResult<(T & DB.MetaDataPrivate)[]> {
+    return super.updateMany(updates) as AsyncResult<(T & DB.MetaDataPrivate)[]>;
+  }
+
+  async findMany(query?: MangoQuery<T & DB.MetaDataPrivate>): AsyncResult<(T & DB.MetaDataPrivate)[]> {
+    return super.findMany(query) as AsyncResult<(T & DB.MetaDataPrivate)[]>;
   }
 }

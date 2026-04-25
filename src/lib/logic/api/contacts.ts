@@ -23,6 +23,7 @@ async function saveContactHandler({ id, name, email_address, avatar }: Partial<D
         email_address: email_address || "",
         avatar,
         user_id: null,
+        
       });
     }
   } catch (err) {

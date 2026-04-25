@@ -4,7 +4,7 @@ export const member: RxJsonSchema<DB.Member> = {
   primaryKey: "id",
   required: [],
   type: "object",
-  version: 1,
+  version: 0,
   title: "member",
   description: "Join table linking groups and contacts",
   properties: {

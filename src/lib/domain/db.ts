@@ -8,6 +8,20 @@ import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv";
 import * as schema from "./schema";
 import * as tables from "./tables";
 
+type tables =
+  | tables.task
+  | tables.category
+  | tables.user
+  | tables.permissions
+  | tables.settings
+  // | tables.session
+  // | tables.app_state
+  // | tables.user_state
+  | tables.contact
+  | tables.group
+  | tables.member
+  | tables.sync_queue;
+
 class DBClass {
   private is_initialized = false;
 
@@ -42,6 +56,24 @@ class DBClass {
     this._member = new tables.member(db.collections.member);
     this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
     this.is_initialized = true;
+  }
+
+  getCollection<T extends tables>(name: T["collection"]["name"]): T | undefined {
+    const map: Record<string, any> = {
+      task: this._task,
+      category: this._category,
+      user: this._user,
+      permissions: this._permissions,
+      settings: this._settings,
+      // session: this._session,
+      // app_state: this._app_state,
+      // user_state: this._user_state,
+      contact: this._contact,
+      group: this._group,
+      member: this._member,
+      sync_queue: this._sync_queue,
+    };
+    return map[name];
   }
 
   get task() {

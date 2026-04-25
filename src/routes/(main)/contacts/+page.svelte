@@ -29,6 +29,7 @@
   onMount(View.contacts.getList(contacts));
 
   async function handleSignIn() {
+    // TODO: Move sign in to shared
     is_loading = true;
     const result = await Api.auth.signIn();
     is_loading = false;

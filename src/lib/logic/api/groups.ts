@@ -17,7 +17,7 @@ async function saveGroupHandler({ id, name, description }: Partial<DB.Group>): A
       return DB.group.create({
         name: name || "",
         description,
-        owner_user_id: context.user?.id || "device",
+        owner_id: context.user?.id || "device",
       } as any);
     }
   } catch (err) {
@@ -46,7 +46,7 @@ async function addContactHandler(group_id: string, contact_id: string): AsyncRes
       group_id,
       contact_id,
       role: "member",
-      owner_user_id: context.user?.id || "device",
+      owner_id: context.user?.id || "device",
     } as any);
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
@@ -98,7 +98,6 @@ async function getMembersHandler(group_id: string): AsyncResult<(DB.Member & { c
 async function getContactsHandler(): AsyncResult<DB.Contact[]> {
   try {
     return DB.contact.findMany({
-      selector: { soft_deleted: { $ne: true } },
       sort: [{ name: "asc" }],
     });
   } catch (err) {

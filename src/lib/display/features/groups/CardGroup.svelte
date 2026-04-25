@@ -9,13 +9,13 @@
    * @typedef {Object} Props
    * @property {string} id
    * @property {string} name
-   * @property {string} owner_user_id
+   * @property {string} owner_id
    * @property {string} [description]
    * @property {string[]} [member_names]
    */
 
   /** @type {Props} */
-  const { id, name, description, owner_user_id, member_names = [] } = $props();
+  const { id, name, description, owner_id, member_names = [] } = $props();
 
   let is_editing = $state(false);
 
@@ -49,4 +49,4 @@
   </div>
 </div>
 
-<ModalGroup bind:open={is_editing} {id} {name} {description} {owner_user_id} />
+<ModalGroup bind:open={is_editing} {id} {name} {description} {owner_id} />

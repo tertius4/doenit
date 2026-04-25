@@ -10,7 +10,7 @@ export class SyncQueueTable extends Table<Domain.SyncQueueItem> {
     return super.create(item) as AsyncResult<DB.SyncQueueItem>;
   }
 
-  async update(id: string, changes: Partial<Domain.SyncQueueItem>): AsyncResult<DB.SyncQueueItem> {
+  async update(id: string, changes: Partial<DB.SyncQueueItem>): AsyncResult<DB.SyncQueueItem> {
     return super.update(id, changes) as AsyncResult<DB.SyncQueueItem>;
   }
 }

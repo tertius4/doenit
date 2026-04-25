@@ -7,12 +7,18 @@
   import { App } from "@capacitor/app";
   import { setContext, onMount } from "svelte";
   import "../../app.css";
+  import syncEngine from "$domain/sync/SyncEngine";
 
   onMount(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const listener = App.addListener("backButton", () => backHandler.handle());
     return () => listener.then((l) => l.remove());
+  });
+  onMount(() => {
+    syncEngine.requestTick();
+    window.addEventListener("online", () => syncEngine.requestTick());
+    setInterval(() => syncEngine.requestTick(), 1000 * 60);
   });
 
   const search_text = $state({ value: "" });

@@ -30,7 +30,5 @@ async function subscribeContactList() {
     };
   };
 
-  return DB.contact
-    .subscribe$({ selector: { soft_deleted: { $ne: true } }, sort: [{ name: "asc" }] })
-    .pipe(map((contacts) => contacts.map(formatContact)));
+  return DB.contact.subscribe$({ sort: [{ name: "asc" }] }).pipe(map((contacts) => contacts.map(formatContact)));
 }

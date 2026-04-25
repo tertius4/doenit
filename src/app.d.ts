@@ -76,7 +76,7 @@ declare global {
     }
 
     interface SyncQueueItem {
-      collection: string;
+      table_name: string;
       entity_id: string;
       scope_id: string;
 
@@ -236,7 +236,7 @@ declare global {
     interface GroupListItem {
       id: string;
       name: string;
-      owner_user_id: string;
+      owner_id: string;
       users: string[];
       member_names: string[];
     }

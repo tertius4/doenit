@@ -16,7 +16,7 @@
    * @typedef {Object} Props
    * @prop {boolean} [open=false] - Whether the modal is open.
    * @prop {string} [id] - The ID of the group to edit (undefined if creating a new group).
-   * @prop {string} [owner_user_id] - The owner/admin user ID of the group.
+   * @prop {string} [owner_id] - The owner/admin user ID of the group.
    * @prop {string} [name] - The name of the group.
    * @prop {string} [description] - The description of the group.
    * @prop {(id: string) => *} [onsubmit] - Callback when a group is created/saved.
@@ -24,14 +24,14 @@
    */
 
   /** @type {Props & Record<string, any>} */
-  let { open = $bindable(false), id, owner_user_id, name = "", description = "", ...props } = $props();
+  let { open = $bindable(false), id, owner_id, name = "", description = "", ...props } = $props();
   // svelte-ignore state_referenced_locally
   const { onsubmit, onclose, ...rest } = props;
 
   // svelte-ignore state_referenced_locally
   let saved_id = $state(id);
   // svelte-ignore state_referenced_locally
-  let saved_owner_user_id = $state(owner_user_id);
+  let saved_owner_user_id = $state(owner_id);
 
   let error_message = $state("");
 
@@ -74,7 +74,7 @@
     if (!result.ok) return (error_message = result.error);
 
     saved_id = result.value.id;
-    saved_owner_user_id = result.value.owner_user_id;
+    saved_owner_user_id = result.value.owner_id;
 
     await loadMembers();
 
@@ -100,7 +100,7 @@
   function handleClose() {
     error_message = "";
     saved_id = id;
-    saved_owner_user_id = owner_user_id;
+    saved_owner_user_id = owner_id;
     if (onclose) onclose();
   }
 

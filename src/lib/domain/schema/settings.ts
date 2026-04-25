@@ -10,6 +10,8 @@ export const settings: RxJsonSchema<DB.Settings> = {
   properties: {
     id: { type: "string", maxLength: 50 },
 
+    owner_id: { type: "string" },
+
     created_at: { type: "string" },
     updated_at: { type: "string" },
 
