@@ -23,7 +23,8 @@ export default class View {
   static readonly db = {
     users: db.users,
     category: db.category,
-    tasks: db.tasks
+    tasks: db.tasks,
+    sync_queues: db.sync_queues,
   }
 
   static readonly groups = {

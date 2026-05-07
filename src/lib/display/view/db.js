@@ -51,3 +51,21 @@ export function tasks(list) {
 
   return () => subscription?.unsubscribe();
 }
+
+
+/**
+ * @param {Record<string, any>[]} list
+ * @returns {() => void}
+ */
+export function sync_queues(list) {
+  /** @type {Subscription} */
+  let subscription = DB.sync_queue
+    .subscribe$()
+    .pipe(
+      map((sync_queues) => sync_queues),
+      tap((data) => (list = data)),
+    )
+    .subscribe();
+
+  return () => subscription?.unsubscribe();
+}

@@ -12,6 +12,7 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataPrivate> {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      owner_id: context.user?.id || "device",
       ...item,
     } as T & DB.MetaDataPrivate);
   }
@@ -24,6 +25,7 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataPrivate> {
       id: crypto.randomUUID(),
       created_at: date,
       updated_at: date,
+      owner_id: context.user?.id || "device",
       ...item,
     })) as (T & DB.MetaDataPrivate)[];
 

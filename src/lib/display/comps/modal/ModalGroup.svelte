@@ -9,10 +9,6 @@
   import toast from "$display/toast/toast.svelte";
 
   /**
-   * @typedef {{ id: string; contact_id: string; contact: DB.Contact | null }} GroupMember
-   */
-
-  /**
    * @typedef {Object} Props
    * @prop {boolean} [open=false] - Whether the modal is open.
    * @prop {string} [id] - The ID of the group to edit (undefined if creating a new group).
@@ -35,7 +31,6 @@
 
   let error_message = $state("");
 
-  /** @type {GroupMember[]} */
   let members = $state([]);
   /** @type {DB.Contact[]} */
   let all_contacts = $state([]);
@@ -90,7 +85,6 @@
     await loadMembers();
   }
 
-  /** @param {GroupMember} member */
   async function removeMember(member) {
     const result = await Api.groups.removeContact(member.id);
     if (!result.ok) return toast.error(result.error);

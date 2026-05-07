@@ -1,9 +1,8 @@
-import { getFirestore, initializeFirestore } from "$lib/logic/chunk/firebase-firestore";
+import { getFirestore, initializeFirestore, collection, doc, getDocs, orderBy, query, setDoc, where } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
 import { getAuth } from "$lib/logic/chunk/firebase-auth";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
-import { collection, doc, getDocs, orderBy, query, setDoc, where } from "firebase/firestore/lite";
 
 export type RemoteDoc = DB.MetaDataShared & { scope_id: string; collection: string };
 

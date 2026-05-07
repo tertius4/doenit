@@ -54,10 +54,10 @@
 >
   <div class="absolute top-0 left-0 right-0 bottom-0 rounded-md {bg_tint_classes}"></div>
   {#if toast.title}
-    <div class="pointer-events-none select-none font-semibold">{toast.title}</div>
+    <div class="font-semibold">{toast.title}</div>
   {/if}
 
-  <div class="pointer-events-none select-none text-sm opacity-90">{toast.body}</div>
+  <div class="text-sm opacity-90">{toast.body}</div>
 
   <button type="button" class="absolute top-0 right-0 p-1 text-alt" onclick={async () => await Toast.remove(toast.id)}>
     <Icon name="times" size={18} />

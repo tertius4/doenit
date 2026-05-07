@@ -43,8 +43,8 @@ async function deleteGroupHandler(id: string): AsyncResult {
 async function addContactHandler(group_id: string, contact_id: string): AsyncResult<DB.Member> {
   try {
     return DB.member.create({
-      group_id,
-      contact_id,
+      scope_id: group_id,
+      user_id: contact_id,
       role: "member",
       owner_id: context.user?.id || "device",
     } as any);

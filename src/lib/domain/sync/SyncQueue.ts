@@ -103,17 +103,11 @@ export const SyncQueue = {
           { attempts: 0 },
           // Early retries (1–4): minimum 30 s delay between attempts
           {
-            $and: [
-              { attempts: { $gt: 0, $lt: 5 } },
-              { last_attempt_at: { $lt: now - 30_000 } },
-            ],
+            $and: [{ attempts: { $gt: 0, $lt: 5 } }, { last_attempt_at: { $lt: now - 30_000 } }],
           },
           // Later retries (≥5): full exponential backoff
           {
-            $and: [
-              { attempts: { $gte: 5 } },
-              { last_attempt_at: { $lt: now - this.backoffTime(5) } },
-            ],
+            $and: [{ attempts: { $gte: 5 } }, { last_attempt_at: { $lt: now - this.backoffTime(5) } }],
           },
         ],
       },
