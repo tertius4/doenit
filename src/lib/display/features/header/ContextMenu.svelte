@@ -1,5 +1,6 @@
 <script>
   import BulkAssignCategory from "./BulkAssignCategory.svelte";
+  import { PUBLIC_DEV_EMAILS } from "$env/static/public";
   import { selected_tasks } from "$display/selected.svelte";
   import ButtonShareTask from "./ButtonShareTask.svelte";
   import Icon from "$display/comps/Icon.svelte";
@@ -7,6 +8,7 @@
   import { slide } from "svelte/transition";
   import { on } from "svelte/events";
   import t from "$display/translate";
+  import { context } from "$logic/context.svelte";
 
   let { show = $bindable() } = $props();
 
@@ -77,5 +79,17 @@
       <Icon name="settings" size={16} />
       <span>{t("settings")}</span>
     </a>
+
+    {#if context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address)}
+      <a
+        aria-label={t("database")}
+        draggable="false"
+        href="/db"
+        class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+      >
+        <Icon name="database" size={16} />
+        <span>{t("database")}</span>
+      </a>
+    {/if}
   </div>
 </div>

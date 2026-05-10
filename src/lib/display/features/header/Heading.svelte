@@ -8,7 +8,7 @@
   import { fade, slide } from "svelte/transition";
   import { backHandler } from "$logic/navigation";
   import ButtonMore from "./ButtonMore.svelte";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
+  import { BACK_BUTTON_FUNCTION, capitalize } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
 
@@ -26,6 +26,8 @@
     "/(main)/subscriptions": t("doenit_plus"),
     "/(main)/groups": t("groups"),
     "/(main)/contacts": t("contact_list"),
+    "/db/[collection]": capitalize(t("database")),
+    "/db": capitalize(t("database")),
   });
 
   const search_text = getContext("search_text");
@@ -36,6 +38,7 @@
     page.url;
 
     untrack(() => {
+      if (!search_text) return;
       show_searchbar = false;
       search_text.value = "";
     });

@@ -3,14 +3,15 @@
    * @typedef {Object} Props
    * @property {string} name - The name of the icon to display.
    * @property {string | Record<string, boolean>} [class] - Additional CSS classes to apply to the icon.
+   * @property {string} [style] - Additional inline styles to apply to the icon.
    * @property {number} [size=28] - The size of the icon in pixels.
    */
 
   /** @type {Props}*/
-  const { name, class: className = "", size = 28 } = $props();
+  const { name, style, class: className = "", size = 28 } = $props();
 </script>
 
-<svg aria-hidden="true" width={size} height={size} class={className}>
+<svg aria-hidden="true" width={size} height={size} class={className} {style}>
   <use href="#{name}" />
 </svg>
 
@@ -503,5 +504,10 @@
   </symbol>
   <symbol id="vertical-ellipsis" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v.01M12 12v.01M12 18v.01" />
+  </symbol>
+  <symbol id="database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"></path>
+    <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path>
   </symbol>
 </svg>

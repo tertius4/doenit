@@ -579,6 +579,9 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     all_tasks: "Alle take",
     groups: "Groepe",
     contact_list: "Kontaklys",
+
+    // Database
+    database: "databasis",
   },
 
   en: {
@@ -1134,5 +1137,8 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     all_tasks: "All Tasks",
     groups: "Groups",
     contact_list: "Contact List",
+
+    // Database
+    database: "database",
   },
 };

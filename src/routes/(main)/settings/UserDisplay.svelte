@@ -79,19 +79,25 @@
     <button
       aria-label={t("sign_out")}
       type="button"
-      class="flex justify-start gap-4 w-full"
+      class="relative h-13 flex justify-start w-full"
       onclick={() => (is_open = true)}
     >
       {#if context.user.avatar}
         <img
           src={context.user.avatar}
           alt={t("profile")}
-          class="w-13 h-13 my-auto rounded-full"
+          class="my-auto rounded-full absolute inset-0 z-1 size-13"
           referrerpolicy="no-referrer"
+          onerror={(e) => {
+            if (e.target instanceof HTMLElement) {
+              e.target.style.display = "none";
+            }
+          }}
         />
+        <Icon name="user" class="my-auto rounded-full absolute inset-0 z-0 size-13 border-2" />
       {/if}
 
-      <div class="space-y-0.5">
+      <div class="space-y-0.5 ml-17">
         <h2 class="text-left text-2xl font-semibold">
           {context.user.name}
         </h2>
