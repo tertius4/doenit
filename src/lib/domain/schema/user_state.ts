@@ -3,12 +3,24 @@ import type { RxJsonSchema } from "rxdb";
 export const user_state: RxJsonSchema<DB.UserState> = {
   title: "user_state",
   version: 0,
-  primaryKey: "user_id",
+  primaryKey: "id",
   type: "object",
   properties: {
+    id: {
+      type: "string",
+      maxLength: 100,
+    },
     user_id: {
       type: "string",
       maxLength: 100,
+    },
+    active_scopes: {
+      type: "array",
+      items: { type: "string" },
+    },
+    sync_cursors: {
+      type: "object",
+      additionalProperties: { type: "string" },
     },
     last_opened_at: {
       type: "string",
@@ -38,5 +50,5 @@ export const user_state: RxJsonSchema<DB.UserState> = {
       format: "date-time",
     },
   },
-  required: ["user_id", "open_count", "rate_prompt_count", "has_rated", "updated_at"],
+  required: ["id", "user_id", "open_count", "rate_prompt_count", "has_rated", "updated_at"],
 };

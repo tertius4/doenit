@@ -1,6 +1,7 @@
 <script>
   import CardContact from "$display/features/contacts/CardContact.svelte";
-  import ModalContact from "$display/comps/modal/ModalContact.svelte";
+  import CardInvite from "$display/features/contacts/CardInvite.svelte";
+  import ModalSendInvite from "$display/comps/modal/ModalSendInvite.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { goto } from "$app/navigation";
   import View from "$display/view";
@@ -15,10 +16,16 @@
   /** @type {AL.ContactListItem[]} */
   let contacts = $state([]);
 
-  let show_create_modal = $state(false);
+  /** @type {AL.ContactInviteListItem[]} */
+  let invites = $state([]);
+
+  let show_invite_modal = $state(false);
   let is_loading = $state(false);
 
   const is_logged_in = $derived(!!context.user?.id);
+
+  const pending_invites = $derived(invites.filter((i) => i.status === "pending"));
+  const other_invites = $derived(invites.filter((i) => i.status !== "pending" && i.status !== "cancelled"));
 
   onMount(() => {
     const token = backHandler.register(() => goto(`/`), -1);
@@ -27,42 +34,89 @@
   });
 
   onMount(View.contacts.getList(contacts));
+  onMount(View.contacts.getInviteList(invites));
+
+  onMount(() => {
+    if (context.user?.id) Api.invites.pull();
+  });
 
   async function handleSignIn() {
-    // TODO: Move sign in to shared
     is_loading = true;
     const result = await Api.auth.signIn();
     is_loading = false;
 
     if (!result.ok) {
-      if (result.error === "USER_CANCELED") {
-        return;
-      }
-
+      if (result.error === "USER_CANCELED") return;
       toast.error("Inteken fout", result.error || t("something_went_wrong"));
     }
   }
 </script>
 
 {#if is_logged_in}
-  <div class="flex flex-col space-y-2 pt-2">
-    {#each contacts as contact (contact.id)}
-      <CardContact id={contact.id} name={contact.name} email_address={contact.email_address} avatar={contact.avatar} />
-    {/each}
+  <div class="flex flex-col gap-4 pt-2 pb-24">
+    {#if pending_invites.length > 0}
+      <section class="flex flex-col gap-1">
+        <p class="text-xs font-semibold uppercase text-muted px-1">Pending Invites</p>
+        {#each pending_invites as invite (invite.id)}
+          <CardInvite
+            id={invite.id}
+            other_email={invite.other_email}
+            status={invite.status}
+            is_incoming={invite.is_incoming}
+          />
+        {/each}
+      </section>
+    {/if}
+
+    {#if contacts.length > 0}
+      <section class="flex flex-col gap-1">
+        <p class="text-xs font-semibold uppercase text-muted px-1">Contacts</p>
+        {#each contacts as contact (contact.id)}
+          <CardContact
+            id={contact.id}
+            firebase_uid={contact.firebase_uid}
+            name={contact.name}
+            email_address={contact.email_address}
+            avatar_url={contact.avatar_url}
+          />
+        {/each}
+      </section>
+    {/if}
+
+    {#if other_invites.length > 0}
+      <section class="flex flex-col gap-1">
+        <p class="text-xs font-semibold uppercase text-muted px-1">Invite History</p>
+        {#each other_invites as invite (invite.id)}
+          <CardInvite
+            id={invite.id}
+            other_email={invite.other_email}
+            status={invite.status}
+            is_incoming={invite.is_incoming}
+          />
+        {/each}
+      </section>
+    {/if}
+
+    {#if contacts.length === 0 && pending_invites.length === 0}
+      <div class="flex flex-col items-center justify-center gap-3 pt-16 text-center">
+        <Icon name="contacts" size={48} class="text-muted opacity-40" />
+        <p class="text-muted text-sm">No contacts yet. Send an invite to get started.</p>
+      </div>
+    {/if}
   </div>
 
   <!-- FAB -->
   <button
     type="button"
-    onclick={() => (show_create_modal = true)}
+    onclick={() => (show_invite_modal = true)}
     class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
-    style="bottom: calc(80px + env(safe-area-inset-bottom)); "
-    aria-label="Add contact"
+    style="bottom: calc(80px + env(safe-area-inset-bottom));"
+    aria-label="Send invite"
   >
     <Icon name="user-plus" size={28} class="text-white" />
   </button>
 
-  <ModalContact bind:open={show_create_modal} />
+  <ModalSendInvite bind:open={show_invite_modal} />
 {:else}
   <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
     <Icon name="user" size={48} class="text-muted opacity-40" />

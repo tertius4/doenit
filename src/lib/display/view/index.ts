@@ -33,5 +33,6 @@ export default class View {
 
   static readonly contacts = {
     getList: contacts.getList,
+    getInviteList: contacts.getInviteList,
   }
 }

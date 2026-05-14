@@ -6,8 +6,10 @@ export class ContactTable extends Table<Domain.Contact> {
   }
 
   async update(id: string, changes: Partial<DB.Contact>): AsyncResult<DB.Contact> {
-    const result = await super.update(id, changes) as Result<DB.Contact>;
-    
-    return result
+    return super.update(id, changes) as AsyncResult<DB.Contact>;
+  }
+
+  async findByRelationshipId(relationship_id: string): AsyncResult<DB.Contact | null> {
+    return super.findOne({ selector: { relationship_id } });
   }
 }

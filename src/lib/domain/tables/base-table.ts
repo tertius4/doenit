@@ -22,6 +22,14 @@ export default class BaseTable<T> {
     }
   }
 
+  /**
+   * Write a document received from a remote pull directly into RxDB.
+   * Does NOT enqueue to SyncQueue — use this in MergeEngine to avoid push-pull loops.
+   */
+  async createRaw(item: T): AsyncResult<T> {
+    return this.create(item);
+  }
+
   async createMany(items: T[]): AsyncResult<T[]> {
     if (!items.length) return { ok: true, value: [] } as Result<T[]>;
 
@@ -93,6 +101,14 @@ export default class BaseTable<T> {
       const message = error instanceof Error ? error.message : JSON.stringify(error);
       return { ok: false, error: message } as Result<T>;
     }
+  }
+
+  /**
+   * Apply a partial update received from a remote pull directly into RxDB.
+   * Does NOT enqueue to SyncQueue — use this in MergeEngine to avoid push-pull loops.
+   */
+  async updateRaw(id: string, changes: Partial<T>): AsyncResult<T> {
+    return this.update(id, changes);
   }
 
   async updateMany(updates: { id: string; changes: Partial<T> }[]): AsyncResult {

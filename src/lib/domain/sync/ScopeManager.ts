@@ -1,19 +1,40 @@
 import DB from "$domain/db";
+import firestore from "$services/firestore";
 
 class ScopeManager {
-  async getUserScopes() {
-    const group_result = await DB.group.findMany({
-      selector: { soft_deleted: { $ne: true } },
-    });
+  /**
+   * Attaches a real-time Firestore listener for the current user's active scopes.
+   * Fires immediately and on every membership change (including when coming back online).
+   * Returns an unsubscribe function — call it when the listener is no longer needed.
+   * Returns a no-op if no user is logged in.
+   */
+  async watchUserScopes(callback: (scopes: string[]) => void): Promise<() => void> {
+    const session_result = await DB.session.get();
+    const user_id = session_result.ok ? session_result.value.user_id : null;
+    if (!user_id) return () => {};
 
-    if (!group_result.ok) {
-      throw new Error(`Failed to fetch groups: ${group_result.error}`);
-    }
+    console.log("Watching scopes for user_id", user_id);
+    const user = await DB.user.findById(user_id);
+    if (!user.ok || !user.value) return () => {};
 
-    const groups = group_result.value;
-    const scopes = groups.map(({ id }) => id);
+    const firebase_uid = user.value.firebase_uid;
+    if (!firebase_uid) return () => {};
 
-    return scopes;
+    return firestore.subscribeScopes(firebase_uid, callback);
+  }
+
+  async getUserScopes(): Promise<string[]> {
+    const session_result = await DB.session.get();
+    const user_id = session_result.ok ? session_result.value.user_id : null;
+    if (!user_id) return [];
+
+    console.log("[ScopeManager] Fetching scopes for user_id:", user_id);
+
+    const state_result = await DB.user_state.get(user_id);
+    if (!state_result.ok) return [];
+
+    console.log("[ScopeManager] Fetched user scopes:", state_result);
+    return state_result.value.active_scopes ?? [];
   }
 }
 

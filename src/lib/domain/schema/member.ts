@@ -22,7 +22,7 @@ export const member: RxJsonSchema<DB.Member> = {
     owner_id: { type: "string" },
     scope_id: { type: ["string", "null"] },
 
-    user_id: { type: "string" }, // Can only add contacts who are "accepted" contacts -> thus have a user_id.
+    firebase_uid: { type: "string" }, // firebase_uid of the user. Can only add contacts who are "accepted" contacts -> thus have a firebase_uid.
 
     role: { type: "string", enum: ["admin", "member"] },
   },

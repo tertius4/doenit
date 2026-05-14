@@ -8,6 +8,7 @@
   import { setContext, onMount } from "svelte";
   import "../../app.css";
   import syncEngine from "$domain/sync/SyncEngine";
+  import { MembershipService } from "$domain/sync/MembershipService";
 
   onMount(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -15,7 +16,9 @@
     const listener = App.addListener("backButton", () => backHandler.handle());
     return () => listener.then((l) => l.remove());
   });
-  onMount(() => {
+  
+  onMount(async () => {
+    await MembershipService.sync(context.user_state.user_id, context.user?.firebase_uid ?? context.user_state.user_id);
     syncEngine.requestTick();
     window.addEventListener("online", () => syncEngine.requestTick());
     setInterval(() => syncEngine.requestTick(), 1000 * 60);

@@ -31,6 +31,7 @@
 
   let error_message = $state("");
 
+  /** @type {DB.Member[]} */
   let members = $state([]);
   /** @type {DB.Contact[]} */
   let all_contacts = $state([]);
@@ -38,8 +39,8 @@
   const is_creating = $derived(!saved_id);
   const is_admin = $derived(!saved_owner_user_id || saved_owner_user_id === (context.user?.id || "device"));
 
-  const member_contact_ids = $derived(new Set(members.map((m) => m.contact_id)));
-  const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.id)));
+  const member_contact_ids = $derived(new Set(members.map((m) => m.firebase_uid)));
+  const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.firebase_uid)));
 
   async function loadMembers() {
     if (!saved_id) return;
@@ -80,13 +81,13 @@
   /** @param {string} contact_id */
   async function addMember(contact_id) {
     if (!saved_id) return;
-    const result = await Api.groups.addContact(saved_id, contact_id);
+    const result = await Api.groups.addMember(saved_id, contact_id);
     if (!result.ok) return toast.error(result.error);
     await loadMembers();
   }
 
   async function removeMember(member) {
-    const result = await Api.groups.removeContact(member.id);
+    const result = await Api.groups.removeMember(member.id);
     if (!result.ok) return toast.error(result.error);
     await loadMembers();
   }
@@ -184,7 +185,7 @@
             {#each available_contacts as contact (contact.id)}
               <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
                 <span class="grow truncate text-sm">{contact.name}</span>
-                <span class="text-xs text-muted truncate">{contact.email_address}</span>
+                <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
                 <button
                   type="button"
                   title={t("add_member")}

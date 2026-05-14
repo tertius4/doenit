@@ -16,6 +16,9 @@
 
 <h2 class="text-xl font-bold mb-4">DB Collections</h2>
 <ul class="flex flex-col gap-1">
+  <li>
+    <a href="/db/context" class="text-purple-400 hover:underline font-semibold">⚡ Context / State view</a>
+  </li>
   {#each names as name}
     <li>
       <a href="/db/{name}" class="text-blue-400 hover:underline">{name}</a>

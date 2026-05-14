@@ -18,6 +18,7 @@ type tables =
   // | tables.app_state
   // | tables.user_state
   | tables.contact
+  | tables.contact_invite
   | tables.group
   | tables.member
   | tables.sync_queue;
@@ -34,6 +35,7 @@ class DBClass {
   private _app_state: tables.app_state | undefined;
   private _user_state: tables.user_state | undefined;
   private _contact: tables.contact | undefined;
+  private _contact_invite: tables.contact_invite | undefined;
   private _group: tables.group | undefined;
   private _member: tables.member | undefined;
   private _sync_queue: tables.sync_queue | undefined;
@@ -52,28 +54,34 @@ class DBClass {
     this._app_state = new tables.app_state(db.collections.app_state);
     this._user_state = new tables.user_state(db.collections.user_state);
     this._contact = new tables.contact(db.collections.contact);
+    this._contact_invite = new tables.contact_invite(db.collections.contact_invite);
     this._group = new tables.group(db.collections.group);
     this._member = new tables.member(db.collections.member);
     this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
     this.is_initialized = true;
   }
 
-  getCollection<T extends tables>(name: T["collection"]["name"]): T | undefined {
-    const map: Record<string, any> = {
+  private get _collectionMap(): Record<string, any> {
+    return {
       task: this._task,
       category: this._category,
       user: this._user,
       permissions: this._permissions,
       settings: this._settings,
-      // session: this._session,
-      // app_state: this._app_state,
-      // user_state: this._user_state,
       contact: this._contact,
+      contact_invite: this._contact_invite,
       group: this._group,
       member: this._member,
       sync_queue: this._sync_queue,
     };
-    return map[name];
+  }
+
+  get collectionNames(): string[] {
+    return Object.keys(this._collectionMap);
+  }
+
+  getCollection<T extends tables>(name: T["collection"]["name"]): T | undefined {
+    return this._collectionMap[name];
   }
 
   get task() {
@@ -119,6 +127,11 @@ class DBClass {
   get contact() {
     if (!this._contact) throw new Error("DB not initialized");
     return this._contact;
+  }
+
+  get contact_invite() {
+    if (!this._contact_invite) throw new Error("DB not initialized");
+    return this._contact_invite;
   }
 
   get group() {
@@ -167,12 +180,13 @@ async function initDB() {
     user_state: { schema: schema.user_state },
 
     contact: { schema: schema.contact },
+    contact_invite: { schema: schema.contact_invite },
     group: { schema: schema.group },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },
   });
 
-  for (const name of ["settings", "category", "task", "user", "contact", "group", "member"] as const) {
+  for (const name of ["settings", "category", "task", "user", "contact", "contact_invite", "group", "member", "user_state"] as const) {
     const col = collections[name] as any;
     const needed = await col.migrationNeeded();
     if (needed) {

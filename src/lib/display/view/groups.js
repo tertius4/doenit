@@ -26,13 +26,13 @@ async function subscribeGroupList() {
 
   return combineLatest([groups$, members$, contacts$]).pipe(
     map(([groups, members, contacts]) => {
-      const contact_map = new Map(contacts.map((c) => [c.user_id, c]));
+      const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c]));
 
       return groups.map((group) => {
         const member_names = members
           .filter((member) => member.scope_id === group.id)
-          .map((member) => contact_map.get(member.user_id)?.name)
-          .filter(/** @param {string | undefined} n */ (n) => !!n);
+          .map((member) => contact_map.get(member.firebase_uid)?.name)
+          .filter(/** @param {string | null | undefined} n */ (n) => !!n);
 
         return {
           id: group.id,

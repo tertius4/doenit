@@ -1,5 +1,6 @@
 <script>
   import { goto } from "$app/navigation";
+  import DB from "$domain/db";
   import { BACK_BUTTON_FUNCTION } from "$lib";
   import { backHandler } from "$logic/navigation/BackHandler.svelte.js";
   import { onMount } from "svelte";
@@ -17,5 +18,26 @@
 {#if data.error}
   <pre class="text-red-400 text-sm">{data.error}</pre>
 {:else}
-  <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(data.records, null, 2)}</pre>
+  <div class="space-y-2">
+    {#each data.records as record}
+      <div class="p-2 border border-default rounded">
+        <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(record, null, 2)}</pre>
+        <div class="flex items-center">
+          <button
+            type="button"
+            class="bg-amber-900 ml-auto px-2 py-1 rounded"
+            onclick={() => {
+              if (confirm("Are you sure you want to delete this record?")) {
+                DB.getCollection(data.collection)?.remove(record.id);
+              }
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    {:else}
+      <p class="text-sm text-muted">&mdash; No records found &mdash;</p>
+    {/each}
+  </div>
 {/if}

@@ -4,6 +4,7 @@ import * as settings from "./settings";
 import * as auth from "./auth";
 import * as contacts from "./contacts";
 import * as groups from "./groups";
+import * as invites from "./invites";
 
 export default class Api {
   static readonly settings = {
@@ -37,15 +38,22 @@ export default class Api {
   };
 
   static readonly contacts = {
-    save: contacts.save,
     delete: contacts.remove,
+  };
+
+  static readonly invites = {
+    send: invites.send,
+    accept: invites.accept,
+    reject: invites.reject,
+    cancel: invites.cancel,
+    pull: invites.pull,
   };
 
   static readonly groups = {
     save: groups.save,
     delete: groups.remove,
-    addContact: groups.addContact,
-    removeContact: groups.removeContact,
+    addMember: groups.addMember,
+    removeMember: groups.removeMember,
     getMembers: groups.getMembers,
     getContacts: groups.getContacts,
   };

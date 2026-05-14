@@ -50,6 +50,7 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
       if (!result.ok) return result;
 
       const doc = result.value as T & DB.MetaDataShared;
+      console.log("created", this.collection.name, doc);
       await this.afterWrite(doc);
 
       return { ok: true, value: doc } as Result<T & DB.MetaDataShared>;
@@ -164,6 +165,12 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   private async afterWrite(doc: T & DB.MetaDataShared) {
     if (!doc.scope_id) return;
 
+    console.log("efe", {
+      table_name: this.collection.name,
+      entity_id: doc.id,
+      scope_id: doc.scope_id,
+      op: doc.soft_deleted ? "delete" : "upsert",
+    });
     await SyncQueue.enqueue({
       table_name: this.collection.name,
       entity_id: doc.id,

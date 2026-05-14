@@ -71,7 +71,7 @@ declare global {
 
     interface Member {
       // Already exists to a scope_id (=group_id)
-      user_id: string;
+      firebase_uid: string;
       role: "admin" | "member";
     }
 
@@ -87,20 +87,20 @@ declare global {
     }
 
     interface Contact {
-      name: string;
-      avatar?: string;
-      user_id: string | null;
-      email_address: string;
+      user_id: string;
+      firebase_uid: string;
+      relationship_id: string;
+      name: string | null;
+      avatar_url: string | null;
+      email_address: string | null;
     }
 
-    interface Invite {
-      from_email_address: string;
-      from_name: string;
-
-      to_email_address: string;
-
-      to_user_id?: string;
-      status: "pending" | "accepted" | "rejected";
+    interface ContactInvite {
+      relationship_id: string;
+      from_firebase_uid: string;
+      to_firebase_uid: string;
+      status: "pending" | "accepted" | "rejected" | "cancelled";
+      responded_at: string | null;
     }
   }
 
@@ -123,7 +123,10 @@ declare global {
 
     // User-specific app state, like last opened category, last sync time, etc.
     interface UserState {
+      id: string; // primary key — same value as user_id
       user_id: string;
+      active_scopes: string[];
+      sync_cursors: Record<string, string>; // scope_id → ISO timestamp
       last_opened_at: string;
       open_count: number;
       last_rate_prompt_at: string;
@@ -165,7 +168,18 @@ declare global {
     type Member = DB.MetaDataShared & Domain.Member;
     type Contact = DB.MetaDataPrivate & Domain.Contact;
 
-    type Invite = DB.MetaDataShared & Domain.Invite;
+    interface ContactInvite {
+      id: string;
+      relationship_id: string;
+      from_firebase_uid: string;
+      from_email: string;
+      to_firebase_uid: string;
+      to_email: string;
+      status: "pending" | "accepted" | "rejected" | "cancelled";
+      created_at: string;
+      updated_at: string;
+      responded_at: string | null;
+    }
     // Basic User info - could be the device (before any logins).
     type User = DB.MetaDataShared & Domain.User;
     // User preferences - could be the device (before any logins).
@@ -228,9 +242,23 @@ declare global {
 
     interface ContactListItem {
       id: string;
-      name: string;
-      email_address: string;
-      avatar?: string;
+      firebase_uid: string;
+      relationship_id: string;
+      name: string | null;
+      email_address: string | null;
+      avatar_url: string | null;
+    }
+
+    interface ContactInviteListItem {
+      id: string;
+      relationship_id: string;
+      from_firebase_uid: string;
+      from_email: string;
+      to_firebase_uid: string;
+      to_email: string;
+      status: "pending" | "accepted" | "rejected" | "cancelled";
+      is_incoming: boolean;
+      other_email: string;
     }
 
     interface GroupListItem {

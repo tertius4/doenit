@@ -1,12 +1,12 @@
 import { App } from "@capacitor/app";
 import { Device } from "@capacitor/device";
-import db from "$lib/domain/db";
+import DB from "$lib/domain/db";
+import scopeManager from "$lib/domain/sync/ScopeManager";
 import { Subscription } from "rxjs";
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
   _settings: DB.Settings | null = $state(null);
-  private _permissions: DB.Permissions | null = $state(null);
   private _app_state: DB.AppState | null = $state(null);
   private _user_state: DB.UserState | null = $state(null);
 
@@ -25,15 +25,6 @@ class ContextClass {
 
   set settings(value: DB.Settings | null) {
     this._settings = value;
-  }
-
-  get permissions(): DB.Permissions {
-    if (!this._permissions) throw Error("Permissions not loaded");
-    return this._permissions;
-  }
-
-  set permissions(value: DB.Permissions | null) {
-    this._permissions = value;
   }
 
   get app_state(): DB.AppState {
@@ -58,14 +49,26 @@ class ContextClass {
 export const context = $state(new ContextClass());
 
 let _user_subscriptions: Subscription | null = null;
+let _scope_unsubscribe: (() => void) | null = null;
 
 function subscribeForUser(user_id: string | null) {
   _user_subscriptions?.unsubscribe();
   _user_subscriptions = new Subscription();
 
+  _scope_unsubscribe?.();
+  _scope_unsubscribe = null;
+
   if (user_id) {
+    scopeManager
+      .watchUserScopes(async (scopes) => {
+        await DB.user_state.upsert({ id: user_id, user_id, active_scopes: scopes });
+      })
+      .then((unsub) => {
+        _scope_unsubscribe = unsub;
+      });
+
     _user_subscriptions.add(
-      db.user.subscribeOne$(user_id).subscribe((user) => {
+      DB.user.subscribeOne$(user_id).subscribe((user) => {
         context.user = user;
       }),
     );
@@ -74,19 +77,14 @@ function subscribeForUser(user_id: string | null) {
   }
 
   _user_subscriptions.add(
-    db.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
+    DB.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
       context.settings = settings;
     }),
   );
 
+  console.log("ND!!:", user_id)
   _user_subscriptions.add(
-    db.permissions.subscribeOne$(user_id || "device").subscribe((permissions) => {
-      context.permissions = permissions;
-    }),
-  );
-
-  _user_subscriptions.add(
-    db.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
+    DB.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
       context.user_state = user_state;
     }),
   );
@@ -102,22 +100,28 @@ export async function initApp(user_id?: string | null) {
 
   let resolved_user_id: string | null;
   if (is_app_open) {
-    const result = await db.session.get();
+    const result = await DB.session.get();
     resolved_user_id = (result.ok && result.value.user_id) || null;
   } else {
     resolved_user_id = user_id;
   }
 
   // Ensure the correct settings document exists before subscribing.
-  const settings_result = await db.settings.getSettings(resolved_user_id ?? undefined);
+  const settings_result = await DB.settings.getSettings(resolved_user_id ?? undefined);
   if (!settings_result.ok) {
     console.error("Failed to load settings:", settings_result.error);
+  }
+
+  // Ensure user state document exists before subscribing.
+  const user_state_result = await DB.user_state.get(resolved_user_id || "device");
+  if (!user_state_result.ok) {
+    console.error("Failed to load user state:", user_state_result.error);
   }
 
   subscribeForUser(resolved_user_id);
 
   if (is_app_open) {
-    const app_state_result = await db.app_state.getDevice();
+    const app_state_result = await DB.app_state.getDevice();
     if (!app_state_result.ok) {
       console.error("Failed to get app state:", app_state_result.error);
     } else {
@@ -136,7 +140,7 @@ export async function initApp(user_id?: string | null) {
         // Running in browser / web — skip native APIs
       }
 
-      await db.app_state.update({
+      await DB.app_state.update({
         device_id,
         app_version,
         last_opened_at: now,
@@ -144,7 +148,7 @@ export async function initApp(user_id?: string | null) {
       });
     }
 
-    db.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
+    DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
       context.app_state = app_state;
     });
   }
