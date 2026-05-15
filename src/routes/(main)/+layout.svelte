@@ -17,11 +17,16 @@
     return () => listener.then((l) => l.remove());
   });
   
-  onMount(async () => {
-    await MembershipService.sync(context.user_state.user_id, context.user?.firebase_uid ?? context.user_state.user_id);
-    syncEngine.requestTick();
+  onMount(() => {
+    let stopRealtimeSync = () => {};
+
+    MembershipService.sync(context.user_state.user_id, context.user?.firebase_uid ?? context.user_state.user_id).then(() => {
+      syncEngine.requestTick();
+      stopRealtimeSync = syncEngine.startRealtimeSync(context.user_state.active_scopes ?? []);
+    });
+
     window.addEventListener("online", () => syncEngine.requestTick());
-    setInterval(() => syncEngine.requestTick(), 1000 * 60);
+    return () => stopRealtimeSync?.();
   });
 
   const search_text = $state({ value: "" });

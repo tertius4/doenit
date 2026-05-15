@@ -114,6 +114,20 @@ class Firestore {
   }
 
   /**
+   * Attaches a real-time listener to a scope's items collection.
+   * Only fires when documents with updated_at > since are written remotely.
+   * Returns an unsubscribe function — call it to stop listening.
+   */
+  subscribeItems(scope_id: string, since: string, callback: () => void): () => void {
+    const db = this.getDb();
+    const ref = collection(db, "scopes", scope_id, "items");
+    const q = query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"));
+    return onSnapshot(q, (snap) => {
+      if (snap.docChanges().length > 0) callback();
+    });
+  }
+
+  /**
    * Attaches a real-time listener to the user's Firestore memberships document.
    * Fires immediately with the current value (or [] if offline/missing), then on every change.
    * Returns an unsubscribe function — call it to stop listening.
