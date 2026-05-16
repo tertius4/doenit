@@ -3,6 +3,8 @@
   import ModalHeader from "./ModalHeader.svelte";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
+  import t from "$display/translate";
+  import Icon from "../Icon.svelte";
 
   /**
    * @typedef {Object} Props
@@ -43,14 +45,14 @@
 </script>
 
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={handleSend} class="*:space-y-4">
-  <ModalHeader>Send Invite</ModalHeader>
+  <ModalHeader>{t("send_invite")}</ModalHeader>
 
   <InputText
     value={email}
     onchange={(value) => (email = value)}
     focus_on_mount
     maxlength="200"
-    placeholder="Email address"
+    placeholder={t("email_address")}
     onfocus={() => (error_message = "")}
     class={{
       "placeholder:text-error! border-error! bg-error/20!": !email && !!error_message,
@@ -60,4 +62,9 @@
   {#if error_message}
     <p class="text-sm text-error">{error_message}</p>
   {/if}
+
+  <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto" type="submit">
+    <Icon name="send" size={20} />
+    <span class="font-medium">{t("send_invite")}</span>
+  </button>
 </Modal>

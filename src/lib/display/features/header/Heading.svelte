@@ -36,7 +36,7 @@
   });
 
   const title = $derived(TITLES[page.route.id || ""] ?? t("task_list"));
-  const { id, name, initials, description, owner_id } = $derived(page.data.group ?? {});
+  const { id, name, description, owner_id } = $derived(page.data.group ?? {});
 
   $effect(() => {
     page.url;
@@ -59,14 +59,6 @@
 
     return () => backHandler.unregister(token);
   });
-
-  function handleBackButton() {
-    const token = BACK_BUTTON_FUNCTION.value;
-    if (!token) return;
-
-    const func = backHandler.handlers.get(token);
-    if (func) func.handler();
-  }
 
   function handleClick() {
     if (!page.data.is_group_page) return;

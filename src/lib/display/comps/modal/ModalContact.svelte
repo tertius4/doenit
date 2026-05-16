@@ -56,7 +56,7 @@
     onchange={(value) => (name = value)}
     focus_on_mount
     maxlength="100"
-    placeholder={t("enter_contact_name")}
+    placeholder={t("contact_name")}
     onfocus={() => (error_message = "")}
     class={{
       "placeholder:text-error! border-error! bg-error/20!": !name && !!error_message,

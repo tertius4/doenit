@@ -8,7 +8,7 @@ export class TaskTable extends Table<Domain.Task> {
     item.name = item.name?.trim() || "";
     if (!item.name) return { ok: false, error: t("what_must_be_done") };
 
-    const date_format = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/; // YYYY-MM-DD HH:mm
+    const date_format = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/; // YYYY-MM-DD HH:mm
     // If date is set, ensure it's not in the past and the right format: YYYY-MM-DD HH:mm
     if (item.due_date !== undefined) {
       if (!!item.due_date && !date_format.test(item.due_date)) {
@@ -34,7 +34,7 @@ export class TaskTable extends Table<Domain.Task> {
 
     if (!changes.name) return { ok: false, error: t("what_must_be_done") };
 
-    const date_format = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/; // YYYY-MM-DD HH:mm
+    const date_format = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/; // YYYY-MM-DD HH:mm
     // If date is set, ensure it's not in the past and the right format: YYYY-MM-DD HH:mm
     if (changes.due_date !== undefined) {
       if (!!changes.due_date && !date_format.test(changes.due_date)) {

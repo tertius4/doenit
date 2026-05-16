@@ -53,14 +53,15 @@ export function listAssignTask(list) {
  */
 async function subscribeCategoryList() {
   const hash = new Map();
-  const tasks_result = await DB.task.findMany({ selector: { archived: false } });
+  const tasks_result = await DB.task.findMany({
+    selector: { soft_deleted: { $ne: true } },
+  });
 
   if (!tasks_result.ok) throw Error(tasks_result.error);
 
   const tasks = tasks_result.value;
   for (const task of tasks) {
     if (!task.category_id) continue;
-    if (task.archived) continue;
 
     const current_count = hash.get(task.category_id) || 0;
     hash.set(task.category_id, current_count + 1);
@@ -75,19 +76,20 @@ async function subscribeCategoryList() {
     };
   };
 
-  return DB.category.subscribe$({ sort: [{ name: "asc" }] }).pipe(map((cats) => cats.map(formatCategory)));
+  return DB.category
+    .subscribe$({ selector: { soft_deleted: { $ne: true } }, sort: [{ name: "asc" }] })
+    .pipe(map((cats) => cats.map(formatCategory)));
 }
 
 async function subscribeHotbarCategoryList() {
   const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
-  const tasks$ = DB.task.subscribe$({ selector: { archived: false } });
+  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
   return combineLatest([categories$, tasks$]).pipe(
     map(([cats, tasks]) => {
       const hash = new Map();
 
       for (const task of tasks) {
-        if (task.archived) continue;
         const category_id = task.category_id || "default";
 
         const current_count = hash.get(category_id) || 0;

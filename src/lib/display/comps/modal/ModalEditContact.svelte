@@ -3,6 +3,8 @@
   import ModalHeader from "./ModalHeader.svelte";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
+  import t from "$display/translate";
+  import Icon from "../Icon.svelte";
 
   /**
    * @typedef {Object} Props
@@ -17,6 +19,8 @@
   let name = $state(initial_name ?? "");
   let error_message = $state("");
   let is_loading = $state(false);
+
+  const is_creating = $derived(!contact_id);
 
   $effect(() => {
     if (open) {
@@ -45,18 +49,23 @@
 </script>
 
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={handleSave} class="*:space-y-4">
-  <ModalHeader>Edit Contact Name</ModalHeader>
+  <ModalHeader>{t("edit_contact")}</ModalHeader>
 
   <InputText
     value={name}
     onchange={(value) => (name = value)}
     focus_on_mount
     maxlength="100"
-    placeholder="Contact name"
+    placeholder={t("contact_name")}
     onfocus={() => (error_message = "")}
   />
 
   {#if error_message}
     <p class="text-sm text-error">{error_message}</p>
   {/if}
+
+  <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto" type="submit">
+    <Icon name={is_creating ? "plus" : "save"} size={20} />
+    <span>{is_creating ? t("create") : t("save")}</span>
+  </button>
 </Modal>

@@ -62,7 +62,8 @@ async function deleteCategoryHandler(id: string): AsyncResult {
   try {
     if (!id) return { ok: false, error: t("cannot_delete_default_category") };
 
-    await DB.category.remove(id);
+    const result = await DB.category.remove(id);
+    if (!result.ok) return result;
 
     return { ok: true };
   } catch (err) {

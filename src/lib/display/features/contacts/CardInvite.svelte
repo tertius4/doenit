@@ -3,6 +3,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import Api from "$logic/api";
   import toast from "$display/toast/toast.svelte";
+  import t from "$display/translate";
 
   /**
    * @typedef {Object} Props
@@ -31,10 +32,10 @@
   }
 
   const status_label = {
-    pending: "Pending",
-    accepted: "Accepted",
-    rejected: "Rejected",
-    cancelled: "Cancelled",
+    pending: t("pending"),
+    accepted: t("accepted"),
+    rejected: t("rejected"),
+    cancelled: t("cancelled"),
   };
 
   const status_class = {
@@ -54,7 +55,7 @@
       <div class="min-w-0">
         <p class="font-semibold truncate text-sm">{other_email}</p>
         <p class="text-xs {status_class[status]}">
-          {is_incoming ? "From" : "To"} · {status_label[status]}
+          {is_incoming ? t("invite_received") : t("invite_sent")} · {status_label[status]}
         </p>
       </div>
     </div>
@@ -68,7 +69,7 @@
             onclick={() => handleAction("accept")}
             class="rounded-md bg-primary px-3 py-1.5 text-sm text-white font-medium disabled:opacity-50"
           >
-            Accept
+            {t("accept")}
           </button>
           <button
             type="button"
@@ -76,7 +77,7 @@
             onclick={() => handleAction("reject")}
             class="rounded-md border border-default px-3 py-1.5 text-sm font-medium disabled:opacity-50"
           >
-            Reject
+            {t("reject")}
           </button>
         </div>
       {:else}
@@ -86,7 +87,7 @@
           onclick={() => handleAction("cancel")}
           class="rounded-md border border-default px-3 py-1.5 text-sm font-medium disabled:opacity-50"
         >
-          Cancel
+          {t("cancel")}
         </button>
       {/if}
     {/if}

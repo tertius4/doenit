@@ -36,7 +36,8 @@
   /** @type {DB.Contact[]} */
   let all_contacts = $state([]);
 
-  const is_creating = $derived(!saved_id);
+  const is_creating = $derived(!id);
+
   const is_admin = $derived(!saved_owner_user_id || saved_owner_user_id === (context.user?.id || "device"));
 
   const member_contact_ids = $derived(new Set(members.map((m) => m.firebase_uid)));
@@ -138,7 +139,7 @@
     <span>{is_creating ? t("create") : t("save")}</span>
   </button>
 
-  {#if saved_id}
+  {#if !is_creating}
     <hr class="border-default" />
 
     <!-- Current members -->

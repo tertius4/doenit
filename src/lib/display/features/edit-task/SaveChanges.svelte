@@ -42,7 +42,12 @@
 
   async function handleSave() {
     const result = await onsave(changed);
-    if (!result.ok) return toast.error(result.error);
+    if (!result.ok) {
+      if (t("what_must_be_done") !== result.error) {
+        toast.error(result.error);
+      }
+      return;
+    }
 
     is_open = false;
   }

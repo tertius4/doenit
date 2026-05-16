@@ -42,8 +42,10 @@
 
     const result = await onsubmit(JSON.parse(JSON.stringify(task)));
     if (!result.ok) {
-      toast.show({ body: result.error, type: "error", duration: 3000 });
-      name_invalid = t("what_must_be_done") === result.error;
+      if (!result.ok) {
+        name_invalid = t("what_must_be_done") === result.error;
+        if (!name_invalid) toast.error(result.error);
+      }
     }
 
     is_loading = false;
@@ -110,9 +112,15 @@
   </div>
 
   <div
-    class="absolute flex inset-0 justify-between items-center w-full h-fit z-10 bottom-0 top-auto px-2 pb-2"
+    class="absolute flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2 pb-2"
+    style="bottom: calc(0px + env(safe-area-inset-bottom));"
   >
-    <ButtonBack loading={is_loading} onclick={() => goto("/", { replaceState: true })} />
+    <ButtonBack
+      task_id={task.id}
+      changed={task}
+      loading={is_loading}
+      onclick={() => goto("/", { replaceState: true })}
+    />
 
     {#if config.photos_enabled}
       <div>

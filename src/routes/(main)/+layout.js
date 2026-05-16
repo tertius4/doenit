@@ -26,10 +26,7 @@ export async function load({ url, params, parent }) {
     : { ok: /** @type {false}  */ (false), error: "Group not found" };
   let group = undefined;
   if (result.ok) {
-    group = {
-      ...result.value,
-      initials: result.value.name ? getInitials(result.value.name, 1) : "G",
-    };
+    group = result.value;
   }
 
   return {

@@ -47,7 +47,8 @@
         name={group.name}
         description={group.description}
         owner_id={group.owner_id}
-        member_names={group.member_names}
+        task_count={group.task_count}
+        members={group.members}
       />
     {/each}
   </div>
@@ -57,7 +58,7 @@
     type="button"
     onclick={() => (show_create_modal = true)}
     class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
-    style="bottom: calc(80px + env(safe-area-inset-bottom)); "
+    style="bottom: calc(89px + env(safe-area-inset-bottom)); "
     aria-label="Add group"
   >
     <Icon name="new-group" size={28} class="text-white" />

@@ -266,8 +266,8 @@ declare global {
       name: string;
       description?: string;
       owner_id: string;
-      users: string[];
-      member_names: string[];
+      task_count: number;
+      members: { name: string; is_admin?: boolean }[];
     }
   }
 }

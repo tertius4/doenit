@@ -1,5 +1,5 @@
 <script>
-  import Task from "$display/features/task-list/Task.svelte";
+  import CardTask from "$display/features/task-list/CardTask.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { selected_tasks } from "$display/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
@@ -70,7 +70,7 @@
 
 <div class="space-y-1.5 mt-2">
   {#each tasks as task (task.id)}
-    <Task
+    <CardTask
       {task}
       is_selected={selected_tasks.has(task.id)}
       onclick={() => handleClick(task)}
@@ -97,7 +97,7 @@
   type="button"
   onclick={() => goto(`/create?scope_id=${group.id}&redirect=/groups/${group.id}`)}
   class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
-  style="bottom: calc(80px + env(safe-area-inset-bottom));"
+  style="bottom: calc(89px + env(safe-area-inset-bottom));"
   aria-label="Add task"
 >
   <Icon name="plus" class="text-2xl text-white" />

@@ -1,6 +1,6 @@
 <script>
   import { selected_categories, selected_tasks } from "$display/selected.svelte";
-  import Task from "$display/features/task-list/Task.svelte";
+  import CardTask from "$display/features/task-list/CardTask.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";
   import { Haptics } from "@capacitor/haptics";
@@ -89,7 +89,7 @@
 
 <div class="space-y-1.5">
   {#each tasks as task (task.id)}
-    <Task
+    <CardTask
       {task}
       is_selected={selected_tasks.has(task.id)}
       onclick={() => handleClick(task)}

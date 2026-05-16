@@ -63,7 +63,7 @@
   <div class="flex flex-col gap-4 pt-2 pb-24">
     {#if pending_invites.length > 0}
       <section class="flex flex-col gap-1">
-        <p class="text-xs font-semibold uppercase text-muted px-1">Pending Invites</p>
+        <p class="text-xs font-semibold uppercase text-muted px-1">{t("pending_invites")}</p>
         {#each pending_invites as invite (invite.id)}
           <CardInvite
             id={invite.id}
@@ -77,11 +77,10 @@
 
     {#if contacts.length > 0}
       <section class="flex flex-col gap-1">
-        <p class="text-xs font-semibold uppercase text-muted px-1">Contacts</p>
+        <p class="text-xs font-semibold uppercase text-muted px-1">{t("contacts")}</p>
         {#each contacts as contact (contact.id)}
           <CardContact
             id={contact.id}
-            firebase_uid={contact.firebase_uid}
             name={contact.name}
             email_address={contact.email_address}
             avatar_url={contact.avatar_url}
@@ -101,7 +100,7 @@
           class="text-xs flex font-semibold uppercase text-muted px-1 items-center w-full justify-between"
           onclick={() => (other_invites_open = !other_invites_open)}
         >
-          <span>Invite History</span>
+          <span>{t("invite_history")}</span>
           <Icon name="chevron-down" size={16} class="ml-1 {other_invites_open ? 'rotate-180' : ''}" />
         </button>
 
@@ -123,7 +122,7 @@
     {#if contacts.length === 0 && pending_invites.length === 0}
       <div class="flex flex-col items-center justify-center gap-3 pt-16 text-center">
         <Icon name="contacts" size={48} class="text-muted opacity-40" />
-        <p class="text-muted text-sm">No contacts yet. Send an invite to get started.</p>
+        <p class="text-muted text-sm">{t("no_contacts_yet")}</p>
       </div>
     {/if}
   </div>
@@ -133,8 +132,8 @@
     type="button"
     onclick={() => (show_invite_modal = true)}
     class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
-    style="bottom: calc(80px + env(safe-area-inset-bottom));"
-    aria-label="Send invite"
+    style="bottom: calc(89px + env(safe-area-inset-bottom));"
+    aria-label={t("send_invite")}
   >
     <Icon name="user-plus" size={28} class="text-white" />
   </button>

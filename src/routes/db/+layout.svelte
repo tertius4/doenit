@@ -26,11 +26,11 @@
 </script>
 
 <main
-  class="h-dvh relative grid grid-rows-[auto_1fr] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
+  class="h-dvh relative grid grid-rows-[auto_1fr] text-md text-normal bg-primary-900 **:select-none **:transition-all **:duration-300"
 >
   <Heading />
 
-  <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
+  <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-primary-900 overflow-y-auto p-2">
     {@render children()}
   </div>
 </main>
