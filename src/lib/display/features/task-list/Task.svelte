@@ -34,11 +34,11 @@
   id="task-{task.id}"
   class={[
     {
-      "border grid grid-cols-[auto_1fr] gap-2": true,
+      "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
       "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
       "bg-error/20 border-error text-alt": is_past && !is_selected,
       "bg-primary/20 border-primary text-alt": is_selected,
-      "bg-card border-default": !is_selected && !is_past && !is_ongoing,
+      "bg-surface": !is_selected && !is_past && !is_ongoing,
     },
     rest.class || "",
   ]}
@@ -56,7 +56,7 @@
             "bg-success text-alt": is_ongoing && !is_selected,
             "bg-error text-alt": is_past && !is_selected,
             "bg-primary text-alt": is_selected,
-            "bg-surface border-default": !is_selected && !is_past && !is_ongoing,
+            "bg-card border-default": !is_selected && !is_past && !is_ongoing,
           }}
         >
           {#if pill.pre_icon}

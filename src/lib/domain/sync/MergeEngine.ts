@@ -9,19 +9,15 @@ class MergeEngine {
     if (!doc_result.ok) throw new Error(`Document ${remote.id} not found in collection ${remote.collection}`);
     const local = doc_result.value;
 
-    
     delete remote.collection; // Only used for fetching, not stored in DB
-    console.log("remote", remote);
 
     if (!local) {
       const result = await collection.createRaw(remote);
-      console.log("Created new local document from remote:", result);
       return;
     }
 
     if (shouldApplyRemote(local as Record<string, any> & DB.MetaDataShared, remote)) {
       const result = await collection.updateRaw(remote.id, remote);
-      console.log("Updated local document from remote:", result);
     }
   }
 }

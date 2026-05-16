@@ -48,7 +48,7 @@ function getNewTaskHandler(overrides = {}) {
     repeat_interval: "",
     repeat_interval_number: 1,
     category_id: undefined,
-    assigned_user_id: undefined,
+    assigned_firebase_uid: undefined,
     photo_ids: [],
     archived: false,
     description: "",
@@ -124,7 +124,7 @@ async function updateTaskHandler(task) {
 
       if (!category_result.value) {
         task.category_id = undefined;
-        task.assigned_user_id = undefined;
+        task.assigned_firebase_uid = undefined;
       }
     }
 

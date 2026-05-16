@@ -26,10 +26,7 @@ export class PullProcessor {
         // Record time before fetching so the cursor doesn't skip concurrent writes
         const pullStartTime = new Date().toISOString();
 
-        console.log("since", since);
-        const remoteItems = await firestore.fetch(scope_id/* , since */);
-
-        console.log("remoteItems", remoteItems);
+        const remoteItems = await firestore.fetch(scope_id, since);
 
         for (const remote of remoteItems) {
           await mergeEngine.apply(remote);

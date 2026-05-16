@@ -39,6 +39,7 @@ export default class Api {
 
   static readonly contacts = {
     delete: contacts.remove,
+    update: contacts.update,
   };
 
   static readonly invites = {

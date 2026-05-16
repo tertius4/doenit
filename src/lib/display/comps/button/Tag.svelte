@@ -3,14 +3,14 @@
 
   /**
    * @typedef {Object} Props
-   * @property {boolean} is_selected
+   * @property {boolean} [is_selected]
    * @property {boolean} [round=false]
-   * @property {() => void} onclick
+   * @property {() => void} [onclick]
    * @property {import("svelte").Snippet} children
    */
 
   /** @type {Props & Record<string, any>} */
-  const { is_selected, round, onlongpress, onclick, children, ...rest } = $props();
+  const { is_selected = false, round = false, onlongpress, onclick = () => {}, children, ...rest } = $props();
 </script>
 
 <button
@@ -21,11 +21,11 @@
   {onclick}
   class={[
     {
-      "py-1 gap-1 border text-nowrap flex items-center justify-center w-fit rounded-full": true,
-      "bg-primary/20 border-primary text-alt": is_selected,
-      "bg-card border-default": !is_selected,
-      "px-3": !round,
-      "px-2 aspect-square": round,
+      "py-1 gap-1 text-nowrap flex items-center justify-center w-fit": true,
+      "bg-secondary-500 ring-secondary-600 ring-2 text-alt": is_selected,
+      "bg-card ring-primary-500": !is_selected,
+      "px-2 rounded-md": !round,
+      "px-2 aspect-square rounded-full": round,
     },
     rest.class || "",
   ]}

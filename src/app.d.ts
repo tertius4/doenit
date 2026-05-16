@@ -53,7 +53,7 @@ declare global {
       repeat_specific_days: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
       repeat_interval_number: number;
       important: boolean;
-      assigned_user_id?: string;
+      assigned_firebase_uid?: string;
       photo_ids?: string[];
 
       category_id?: string;

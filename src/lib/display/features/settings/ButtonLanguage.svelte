@@ -14,9 +14,9 @@
 <button
   class={[
     {
-      "flex items-center gap-2 h-12 p-1 rounded-lg border": true,
-      "bg-primary/40 border-primary text-alt": selected,
-      "bg-card border-default": !selected,
+      "flex items-center gap-2 h-12 p-1 ring transition-all duration-300 rounded-lg": true,
+      "bg-secondary-500 ring-secondary-600 ring-3 text-alt": selected,
+      "bg-card ring-primary-500": !selected,
     },
     rest.class || "",
   ]}

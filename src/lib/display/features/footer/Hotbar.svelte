@@ -13,7 +13,7 @@
 {#if !!categories.length}
   <nav
     transition:slide
-    class="w-screen overflow-hidden p-2 bg-surface border-t border-default flex gap-1 overflow-x-auto scrollbar-none"
+    class="w-screen overflow-hidden p-2 bg-surface border-t border-default flex gap-1.5 overflow-x-auto scrollbar-none"
   >
     {#each categories as category (category.id)}
       <TagCategory {category} disable_edit={category.id === "default"} />

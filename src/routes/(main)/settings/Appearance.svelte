@@ -58,7 +58,7 @@
   <div class="mb-6">
     <h3 class="mb-1">{t("language")}</h3>
 
-    <div class="flex gap-2">
+    <div class="grid grid-cols-2 gap-2 max-w-80">
       <ButtonLanguage
         selected={is_af}
         flag_src="flags/af.webp"
@@ -77,7 +77,7 @@
   <!-- Text size selector -->
   <div>
     <h3 class="mb-1">{t("text_size")}</h3>
-    <div class="flex gap-2">
+    <div class="grid grid-cols-3 gap-2 max-w-80">
       <ButtonTextSize class="text-[16px]" onclick={() => onchange({ text_size: "sm" })} selected={text_size === "sm"}>
         {t("small")}
       </ButtonTextSize>

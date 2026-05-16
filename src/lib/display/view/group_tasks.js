@@ -2,6 +2,7 @@ import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
+import t from "$lib/display/translate";
 
 /**
  * @param {string} group_id
@@ -29,13 +30,17 @@ async function subscribeGroupTaskList(group_id) {
     sort: [{ due_date: "asc" }],
   });
   const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const members$ = DB.member.subscribe$({ selector: { scope_id: group_id, soft_deleted: { $ne: true } } });
+  const contacts$ = DB.contact.subscribe$({});
 
-  return combineLatest([tasks$, categories$]).pipe(
-    map(([tasks, categories]) => {
+  return combineLatest([tasks$, categories$, members$, contacts$]).pipe(
+    map(([tasks, categories, members, contacts]) => {
       /** @type {Map<string, DB.Category>} */
       const categoryMap = new Map(categories.map((c) => [c.id, c]));
+      /** @type {Map<string, string>} */
+      const contactMap = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
       const today = new Date();
-      return tasks.map((task) => formatTask(task, categoryMap, today));
+      return tasks.map((task) => formatTask(task, categoryMap, contactMap, today));
     }),
   );
 }
@@ -43,10 +48,11 @@ async function subscribeGroupTaskList(group_id) {
 /**
  * @param {DB.Task} task
  * @param {Map<string, DB.Category>} categoryMap
+ * @param {Map<string, string>} contactMap
  * @param {Date} today
  * @returns {AL.MainPageTask}
  */
-function formatTask(task, categoryMap, today) {
+function formatTask(task, categoryMap, contactMap, today) {
   const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
   const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
 
@@ -68,6 +74,14 @@ function formatTask(task, categoryMap, today) {
   if (task.category_id) {
     const category = categoryMap.get(task.category_id);
     if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
+  }
+
+  if (task.assigned_firebase_uid) {
+    const my_uid = context.user?.firebase_uid;
+    const assignee = task.assigned_firebase_uid === my_uid
+      ? t("me")
+      : (contactMap.get(task.assigned_firebase_uid) ?? t("unassigned"));
+    pills.push({ type: "square", label: assignee, pre_icon: "user" });
   }
 
   /** @type {AL.MainPageTask['top_right_icons']} */

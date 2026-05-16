@@ -77,10 +77,8 @@
 
 <div class="bg-surface" style="padding-top: env(safe-area-inset-top);">
   <div class="relative flex items-center border-default border-b h-14">
-    <div class="shrink-0 z-1">
-      {#if !page.data.is_home}
-        <ButtonBack onclick={handleBackButton} />
-      {/if}
+    <div class="shrink-0 z-1 ml-2">
+      <img alt="logo" src="/logo.png" class="w-8" class:invisible={!title} />
     </div>
 
     <button
@@ -89,16 +87,6 @@
       class:pointer-events-none={!page.data.is_group_page}
       onclick={handleClick}
     >
-      {#if page.data.is_group_page}
-        <div
-          class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-lg"
-        >
-          {initials}
-        </div>
-      {:else}
-        <img alt="logo" src="/logo.png" class="w-8" class:invisible={!title} />
-      {/if}
-
       <div class="relative">
         <span class="text-transparent text-3xl font-bold px-2 line-clamp-1">{title}</span>
         {#key title}

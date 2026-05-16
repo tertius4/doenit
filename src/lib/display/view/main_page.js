@@ -24,7 +24,11 @@ export function taskList(list) {
  */
 async function subscribeTaskList() {
   const tasks$ = DB.task.subscribe$({
-    selector: { archived: { $eq: false }, soft_deleted: { $ne: true } },
+    selector: {
+      archived: { $eq: false },
+      soft_deleted: { $ne: true },
+      assigned_firebase_uid: { $in: [null, context.user?.firebase_uid] },
+    },
     sort: [{ due_date: "asc" }],
   });
   const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });

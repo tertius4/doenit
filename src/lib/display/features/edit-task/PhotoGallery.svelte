@@ -138,8 +138,7 @@
       type="button"
       onclick={openPhotosPrompt}
       disabled={is_loading}
-      class="absolute z-2 flex justify-center bg-card items-center aspect-square rounded-full h-13 w-13 p-3 disabled:opacity-50"
-      style="bottom: max(16px, env(safe-area-inset-bottom)); left: max(16px, env(safe-area-inset-left));"
+      class="flex justify-center bg-card items-center aspect-square rounded-full size-13 p-3 disabled:opacity-50"
     >
       <Icon name="camera" />
     </button>

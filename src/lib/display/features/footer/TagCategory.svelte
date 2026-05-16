@@ -52,11 +52,11 @@
         "rounded-full px-2  flex items-center justify-center": true,
         "h-fit aspect-square": category.task_count < 10,
         "h-full": category.task_count >= 10,
-        "bg-primary text-alt": is_selected,
+        "bg-secondary-600 text-alt": is_selected,
         "bg-surface text-muted": !is_selected,
       }}
     >
-      <span class=" font-light font-mono text-sm">{category.task_count}</span>
+      <span class="font-light font-mono text-sm">{category.task_count}</span>
     </div>
   {/if}
 </Tag>

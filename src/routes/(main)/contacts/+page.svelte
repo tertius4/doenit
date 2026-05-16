@@ -2,6 +2,7 @@
   import CardContact from "$display/features/contacts/CardContact.svelte";
   import CardInvite from "$display/features/contacts/CardInvite.svelte";
   import ModalSendInvite from "$display/comps/modal/ModalSendInvite.svelte";
+  import ModalEditContact from "$display/comps/modal/ModalEditContact.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { goto } from "$app/navigation";
   import View from "$display/view";
@@ -12,6 +13,7 @@
   import { onMount } from "svelte";
   import toast from "$display/toast/toast.svelte";
   import Api from "$logic/api";
+  import { slide } from "svelte/transition";
 
   /** @type {AL.ContactListItem[]} */
   let contacts = $state([]);
@@ -20,7 +22,12 @@
   let invites = $state([]);
 
   let show_invite_modal = $state(false);
+  let other_invites_open = $state(false);
   let is_loading = $state(false);
+
+  /** @type {{ id: string; name: string | null } | null} */
+  let editing_contact = $state(null);
+  let show_edit_modal = $state(false);
 
   const is_logged_in = $derived(!!context.user?.id);
 
@@ -78,6 +85,10 @@
             name={contact.name}
             email_address={contact.email_address}
             avatar_url={contact.avatar_url}
+            onclick={() => {
+              editing_contact = { id: contact.id, name: contact.name };
+              show_edit_modal = true;
+            }}
           />
         {/each}
       </section>
@@ -85,15 +96,27 @@
 
     {#if other_invites.length > 0}
       <section class="flex flex-col gap-1">
-        <p class="text-xs font-semibold uppercase text-muted px-1">Invite History</p>
-        {#each other_invites as invite (invite.id)}
-          <CardInvite
-            id={invite.id}
-            other_email={invite.other_email}
-            status={invite.status}
-            is_incoming={invite.is_incoming}
-          />
-        {/each}
+        <button
+          type="button"
+          class="text-xs flex font-semibold uppercase text-muted px-1 items-center w-full justify-between"
+          onclick={() => (other_invites_open = !other_invites_open)}
+        >
+          <span>Invite History</span>
+          <Icon name="chevron-down" size={16} class="ml-1 {other_invites_open ? 'rotate-180' : ''}" />
+        </button>
+
+        {#if other_invites_open}
+          <div transition:slide={{ axis: "y" }} class="flex flex-col gap-1">
+            {#each other_invites as invite (invite.id)}
+              <CardInvite
+                id={invite.id}
+                other_email={invite.other_email}
+                status={invite.status}
+                is_incoming={invite.is_incoming}
+              />
+            {/each}
+          </div>
+        {/if}
       </section>
     {/if}
 
@@ -117,6 +140,9 @@
   </button>
 
   <ModalSendInvite bind:open={show_invite_modal} />
+  {#if editing_contact}
+    <ModalEditContact bind:open={show_edit_modal} contact_id={editing_contact.id} initial_name={editing_contact.name} />
+  {/if}
 {:else}
   <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
     <Icon name="user" size={48} class="text-muted opacity-40" />

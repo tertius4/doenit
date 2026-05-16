@@ -17,7 +17,7 @@
 <button
   {...rest}
   type="button"
-  class="relative w-14 h-8 rounded-full transition-colors {value ? 'bg-primary' : 'bg-card'}"
+  class="relative w-14 h-8 rounded-full transition-colors {value ? 'bg-secondary-500' : 'bg-card'}"
   onclick={handleClick}
 >
   <div

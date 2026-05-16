@@ -1,8 +1,6 @@
 <script>
-  import toast from "$display/toast/toast.svelte";
   import { fly, slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
-  import Api from "$logic/api";
 
   /**
    * @typedef {Object} Props
@@ -10,11 +8,11 @@
    * @property {string | null} name
    * @property {string | null} email_address
    * @property {string | null} [avatar_url]
-   * @property {string} firebase_uid
+   * @property {() => void} [onclick]
    */
 
   /** @type {Props} */
-  const { name, email_address, firebase_uid, avatar_url } = $props();
+  const { name, email_address, avatar_url, onclick } = $props();
 
   /**
    * Handles image loading errors by hiding the image element.
@@ -31,7 +29,7 @@
 </script>
 
 <div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg ml-2 pl-2">
-  <div class="grid grid-cols-[40px_1fr] items-center">
+  <button type="button" {onclick} class="grid grid-cols-[40px_1fr] items-center w-full text-left">
     <div class="relative bg-card h-8 mr-2 aspect-square rounded-full overflow-hidden">
       {#if avatar_url}
         <img
@@ -43,7 +41,9 @@
           onerror={handleError}
         />
       {/if}
-      <div class="absolute inset-0 pointer-events-none h-full z-0 aspect-square p-1 flex justify-center items-center bg-card">
+      <div
+        class="absolute inset-0 pointer-events-none h-full z-0 aspect-square p-1 flex justify-center items-center bg-card"
+      >
         {#if name}
           <span class="text-sm font-semibold text-muted uppercase">
             {name.trim().charAt(0)}
@@ -55,10 +55,10 @@
     </div>
 
     <div class="py-3 pr-4 w-full truncate">
-      <p class="text-lg font-semibold truncate">{name}</p>
-      {#if email_address}
+      <p class="text-lg font-semibold truncate">{name ?? email_address ?? ""}</p>
+      {#if name && email_address}
         <p class="text-sm text-muted truncate">{email_address}</p>
       {/if}
     </div>
-  </div>
+  </button>
 </div>

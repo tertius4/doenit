@@ -98,6 +98,8 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     failed_to_update_widget: "Kon nie widget opdateer nie:",
     delete_tasks: "Verwyder take",
     assigned_to: "Toegewys aan",
+    unassigned: "Nie toegewys nie",
+    me: "Ek",
 
     // Task Actions & Buttons
     save_changes: "Stoor veranderinge",
@@ -657,6 +659,8 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     failed_to_update_widget: "Failed to update widget:",
     delete_tasks: "Delete tasks",
     assigned_to: "Assigned to",
+    unassigned: "Unassigned",
+    me: "Me",
 
     // Task Actions & Buttons
     save_changes: "Save changes",

@@ -109,14 +109,24 @@
   {/if}
 </div>
 
-<Modal bind:is_open class="max-w-80! *:space-y-2" onclose={() => (is_open = false)}>
+<Modal bind:is_open class="max-w-80! *:space-y-4" onclose={() => (is_open = false)}>
   <ModalHeader>{t("sign_out")}?</ModalHeader>
-  <div class="flex gap-1 w-full justify-between">
-    <button type="button" class="py-1 px-3 w-25 h-10 bg-card rounded-lg" onclick={() => (is_open = false)}>
-      {t("no")}
+  <div class="grid grid-cols-2 gap-4 w-full justify-between items-center">
+    <button
+      type="button"
+      class="flex items-center text-nowrap justify-center gap-1 py-1 px-3 h-12 bg-card rounded-lg"
+      onclick={() => (is_open = false)}
+    >
+      <Icon name="xmark" size={16} class="shrink-0  mb-0.75" />
+      <span class="font-medium leading-none">{t("no")}</span>
     </button>
-    <button type="button" class="py-1 px-3 w-25 h-10 bg-primary rounded-lg text-alt" onclick={handleSignOut}>
-      {t("sign_out")}
+    <button
+      type="button"
+      class="flex items-center text-nowrap justify-center gap-1 py-1 px-3 h-12 bg-secondary-500 rounded-lg text-alt"
+      onclick={handleSignOut}
+    >
+      <Icon name="sign-out" size={16} class="shrink-0  mb-0.75" />
+      <span class="font-medium leading-none">{t("sign_out")}</span>
     </button>
   </div>
 </Modal>

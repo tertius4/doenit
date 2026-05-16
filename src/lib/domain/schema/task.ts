@@ -2,7 +2,7 @@ import type { RxJsonSchema } from "rxdb";
 
 export const task: RxJsonSchema<DB.Task> = {
   title: "task",
-  version: 0,
+  version: 1,
   description: "describes a task",
   type: "object",
   required: ["id", "name", "archived", "created_at", "updated_at"],
@@ -26,7 +26,7 @@ export const task: RxJsonSchema<DB.Task> = {
     repeat_interval_number: { type: "number" },
     important: { type: "boolean" },
     category_id: { type: ["string", "null"] },
-    assigned_user_id: { type: ["string", "null"] },
+    assigned_firebase_uid: { type: ["string", "null"] },
     photo_ids: { type: "array", items: { type: "string" } },
     owner_id: { type: "string" },
     device_id: {

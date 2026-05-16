@@ -173,7 +173,12 @@ async function initDB() {
     user: { schema: schema.user },
     settings: { schema: schema.settings },
     permission: { schema: schema.permissions },
-    task: { schema: schema.task },
+    task: {
+      schema: schema.task,
+      migrationStrategies: {
+        1: (doc) => ({ ...doc, assigned_firebase_uid: doc.assigned_user_id ?? null }),
+      },
+    },
     category: { schema: schema.category },
     session: { schema: schema.session },
     app_state: { schema: schema.app_state },
