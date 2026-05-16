@@ -9,6 +9,7 @@ export const addMember = apiLogger(addMemberHandler);
 export const removeMember = apiLogger(removeMemberHandler);
 export const getMembers = apiLogger(getMembersHandler);
 export const getContacts = apiLogger(getContactsHandler);
+export const getById = apiLogger(getByIdHandler);
 
 async function saveGroupHandler({ id, name, description }: Partial<DB.Group>): AsyncResult<DB.Group> {
   try {
@@ -137,6 +138,19 @@ async function getContactsHandler(): AsyncResult<DB.Contact[]> {
     return DB.contact.findMany({
       sort: [{ name: "asc" }],
     });
+  } catch (err) {
+    const error = err instanceof Error ? err.message : JSON.stringify(err);
+    return { ok: false, error };
+  }
+}
+
+async function getByIdHandler(id: string): AsyncResult<DB.Group> {
+  try {
+    const result = await DB.group.findById(id);
+    if (!result.ok) return result;
+    if (!result.value) return { ok: false, error: "Group not found" };
+    
+    return { ok: true, value: result.value };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };

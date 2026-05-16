@@ -6,12 +6,15 @@
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import Api from "$logic/api";
+  import { page } from "$app/state";
 
   const { data } = $props();
 
   // svelte-ignore state_referenced_locally
   let task = $state(data.task);
   let archived = $state(!!task.archived);
+
+  const redirect_to = $derived(page.url.searchParams.get("redirect") || "/");
 
   /**
    * @param {DB.Task} task
@@ -22,7 +25,7 @@
     const result = await Api.task.updateTask(task);
     if (!result.ok) return result;
 
-    await goto("/");
+    await goto(redirect_to);
     return { ok: true };
   }
 
@@ -33,7 +36,7 @@
     const result = await Api.task.deleteTask(task.id);
     if (!result.ok) return result;
 
-    await goto("/");
+    await goto(redirect_to);
     return { ok: true };
   }
 
@@ -48,7 +51,7 @@
    * @returns {AsyncResult}
    */
   async function handleCancel() {
-    await goto(`/`);
+    await goto(redirect_to);
     return { ok: true };
   }
 </script>

@@ -190,8 +190,18 @@ function getNextDateValue(
 }
 
 export function capitalize(str: string): string {
-  if (typeof str !== "string" || str.length === 0) {
+  if (typeof str !== "string" || !str.length) {
     return str;
   }
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function getInitials(str: string, maxLength = 2): string {
+  if (typeof str !== "string" || !str.trim().length) {
+    return "";
+  }
+  
+  const words = str.trim().split(/\s+/);
+  const initials = words.map((word) => word.charAt(0).toUpperCase()).join("");
+  return initials.slice(0, maxLength);
 }

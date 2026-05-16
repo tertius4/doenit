@@ -1,9 +1,8 @@
 <script>
-  import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
-  import toast from "$display/toast/toast.svelte";
-  import { fly, slide } from "svelte/transition";
+  import { goto } from "$app/navigation";
+  import { slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
-  import Api from "$logic/api";
+  import { getInitials } from "$lib";
 
   /**
    * @typedef {Object} Props
@@ -15,38 +14,36 @@
    */
 
   /** @type {Props} */
-  const { id, name, description, owner_id, member_names = [] } = $props();
+  const { id, name, description, member_names = [] } = $props();
 
-  let is_editing = $state(false);
-
-  async function deleteGroup() {
-    const result = await Api.groups.delete(id);
-    if (!result.ok) toast.error(result.error);
-  }
+  const initials = $derived(getInitials(name));
 </script>
 
-<div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg">
-  <div class="grid grid-cols-[48px_1fr_48px] items-center justify-between">
-    <button type="button" class="h-full w-full flex justify-center items-center" onclick={() => (is_editing = true)}>
-      <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
-        <Icon name="edit" class="w-5 h-5" />
-      </div>
-    </button>
-
-    <div class="py-3 w-full truncate">
-      <p class="text-lg font-semibold truncate">{name}</p>
-      {#if description}
-        <p class="text-sm text-muted truncate">{description}</p>
-      {/if}
-      {#if member_names.length > 0}
-        <p class="text-xs text-muted truncate mt-0.5">{member_names.join(', ')}</p>
-      {/if}
-    </div>
-
-    <button class="h-full text-error flex items-center justify-center" type="button" onclick={deleteGroup}>
-      <Icon name="trash" class="w-5 h-5" />
-    </button>
+<button
+  type="button"
+  in:slide
+  onclick={() => goto(`/groups/${id}`)}
+  class="w-full flex items-center gap-3 bg-surface rounded-xl px-3 py-3 text-left active:bg-card transition-colors"
+>
+  <div
+    class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-lg"
+  >
+    {initials}
   </div>
-</div>
 
-<ModalGroup bind:open={is_editing} {id} {name} {description} {owner_id} />
+  <div class="flex-1 min-w-0">
+    <p class="font-semibold text-base truncate">{name}</p>
+    {#if description}
+      <p class="text-sm text-muted truncate">{description}</p>
+    {:else if member_names.length > 0}
+      <p class="text-sm text-muted truncate">{member_names.join(", ")}</p>
+    {/if}
+  </div>
+
+  <div class="flex flex-col items-end gap-1 shrink-0">
+    {#if member_names.length > 0}
+      <span class="text-xs text-muted">{member_names.length} lede</span>
+    {/if}
+    <Icon name="chevron-right" class="w-4 h-4 text-muted" />
+  </div>
+</button>

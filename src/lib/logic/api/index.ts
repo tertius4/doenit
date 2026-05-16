@@ -56,5 +56,6 @@ export default class Api {
     removeMember: groups.removeMember,
     getMembers: groups.getMembers,
     getContacts: groups.getContacts,
+    getById: groups.getById,
   };
 }

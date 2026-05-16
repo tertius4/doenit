@@ -264,6 +264,7 @@ declare global {
     interface GroupListItem {
       id: string;
       name: string;
+      description?: string;
       owner_id: string;
       users: string[];
       member_names: string[];

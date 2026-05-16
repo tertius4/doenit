@@ -33,7 +33,7 @@ async function isTaskUpdatedHandler(task_id, updated_data) {
 
 /**
  * Returns a new Domain.Task object with default values for creating a new task.
- * @param {Partial<Domain.Task>} [overrides={}] - Optional overrides for the default task data.
+ * @param {Partial<DB.Task>} [overrides={}] - Optional overrides for the default task data.
  * @returns {Domain.Task}
  */
 function getNewTaskHandler(overrides = {}) {

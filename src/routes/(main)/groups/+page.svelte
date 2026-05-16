@@ -45,6 +45,7 @@
       <CardGroup
         id={group.id}
         name={group.name}
+        description={group.description}
         owner_id={group.owner_id}
         member_names={group.member_names}
       />
@@ -59,7 +60,7 @@
     style="bottom: calc(80px + env(safe-area-inset-bottom)); "
     aria-label="Add group"
   >
-    <Icon name="users-plus" size={28} class="text-white" />
+    <Icon name="new-group" size={28} class="text-white" />
   </button>
 
   <ModalGroup bind:open={show_create_modal} />

@@ -8,7 +8,7 @@
 
 <ButtonMainSubmit class="mb-4 mr-4" />
 
-<nav class="shadow-t-sm">
+<nav class="shadow-t-sm border-t border-default">
   {#if page.data.is_home}
     <Hotbar />
   {/if}

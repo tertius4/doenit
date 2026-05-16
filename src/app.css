@@ -124,49 +124,109 @@
 @theme {
   /* v5 */
   /* Background layers */
-  --color-bg-0: hsl(204, 7%, 15%); /* page - use once */
-  --color-bg-1: hsl(204, 7%, 18%); /* surface - sit one page */
-  --color-bg-2: hsl(204, 7%, 22%); /* card - interactive */
+  --color-bg-0: var(--color-primary-900); /* page - use once */
+  --color-bg-1: var(--color-primary-800); /* surface - sit one page */
+  --color-bg-2: var(--color-primary-700); /* card - interactive */
 
   /* Borders */
-  --color-border-0: hsl(204, 7%, 30%);
-  --color-border-1: hsl(204, 7%, 45%);
+  --color-border-0: var(--color-primary-700);
+  --color-border-1: var(--color-primary-500);
 
   /* Text layers */
-  --color-text-0: hsl(28, 61%, 80%); /* strong */
-  --color-text-1: hsl(28, 40%, 70%); /* normal */
-  --color-text-2: hsl(28, 20%, 55%); /* muted */
-  --color-text-3: hsl(28, 20%, 95%); /* alt */
+  --color-text-0: #fcfcfc; /* strong */
+  --color-text-1: #e0e0e0; /* normal */
+  --color-text-2: #adadad; /* muted */
+  --color-text-3: #f0f0f0; /* alt */
 
   /* Brand / State colors */
-  --color-primary: hsl(204, 100%, 50%);
+  --color-primary: var(--color-secondary-500);
   --color-success: hsl(150, 70%, 35%);
   --color-warning: hsl(40, 80%, 60%);
   --color-error: hsl(0, 70%, 60%);
+
+  --color-primary-50: #fafafa;
+  --color-primary-100: #f4f4f5;
+  --color-primary-200: #e3e3e8;
+  --color-primary-300: #d3d3d9;
+  --color-primary-400: #9f9fac;
+  --color-primary-500: #6f6f7c;
+  --color-primary-600: #50505d;
+  --color-primary-700: #3d3d48;
+  --color-primary-800: #26262b;
+  --color-primary-900: #1e1e24;
+  --color-primary-950: #08080c;
+
+  --color-secondary-50: #eff9fc;
+  --color-secondary-100: #d7eff6;
+  --color-secondary-200: #b4dfed;
+  --color-secondary-300: #81c7df;
+  --color-secondary-400: #46a6ca;
+  --color-secondary-500: #2f97c1;
+  --color-secondary-600: #266f94;
+  --color-secondary-700: #255b79;
+  --color-secondary-800: #264c64;
+  --color-secondary-900: #244155;
+  --color-secondary-950: #132939;
+
+  --color-tertiary-50: #fef6ee;
+  --color-tertiary-100: #feead6;
+  --color-tertiary-200: #fbd2ad;
+  --color-tertiary-300: #f9b278;
+  --color-tertiary-400: #f58742;
+  --color-tertiary-500: #f26419;
+  --color-tertiary-600: #e34d13;
+  --color-tertiary-700: #bd3811;
+  --color-tertiary-800: #962e16;
+  --color-tertiary-900: #792815;
+  --color-tertiary-950: #411209;
 }
 
 [data-theme="light"] {
   /* v5 */
   /* Background layers */
-  --color-bg-0: hsl(0, 0%, 100%); /* page */
-  --color-bg-1: hsl(0, 0%, 96%); /* surface */
-  --color-bg-2: hsl(0, 0%, 91%); /* card */
+  --color-bg-0: var(--color-primary-100); /* page */
+  --color-bg-1: var(--color-primary-200); /* surface */
+  --color-bg-2: var(--color-primary-300); /* card */
 
   /* Borders */
-  --color-border-0: hsl(0, 0%, 85%);
-  --color-border-1: hsl(0, 0%, 85%);
+  --color-border-0: var(--color-primary-300);
+  --color-border-1: var(--color-primary-400);
 
   /* Text layers */
-  --color-text-0: hsl(0, 0%, 05%); /* strong */
-  --color-text-1: hsl(0, 0%, 20%); /* normal */
-  --color-text-2: hsl(0, 0%, 50%); /* muted */
-  --color-text-3: hsl(0, 0%, 05%); /* alt */
+  --color-text-0: var(--color-primary-900); /* strong */
+  --color-text-1: var(--color-primary-700); /* normal */
+  --color-text-2: var(--color-primary-500); /* muted */
+  --color-text-3: var(--color-primary-900); /* alt */
 
   /* Brand / State colors */
-  --color-primary: hsl(220, 90%, 55%);
+  --color-primary: var(--color-secondary-500);
   --color-success: hsl(150, 70%, 40%);
   --color-warning: hsl(32, 90%, 45%);
   --color-error: hsl(0, 75%, 50%);
+
+  --color-primary-50: #fafafa;
+  --color-primary-100: #f5f5f5;
+  --color-primary-200: #e6e6e6;
+  --color-primary-300: #d3d3d3;
+  --color-primary-400: #a3a3a3;
+  --color-primary-500: #727272;
+  --color-primary-600: #535353;
+  --color-primary-700: #404040;
+  --color-primary-800: #272727;
+  --color-primary-900: #1a1a1a;
+  --color-primary-950: #0b0b0b;
+
+  --color-secondary-50: #eff9fc;
+  --color-secondary-100: #d7eff6;
+  --color-secondary-200: #b4dfed;
+  --color-secondary-300: #81c7df;
+  --color-secondary-400: #46a6ca;
+  --color-secondary-500: #2f97c1;
+  --color-secondary-600: #266f94;
+  --color-secondary-700: #255b79;
+  --color-secondary-800: #264c64;
+  --color-secondary-900: #244155;
+  --color-secondary-950: #132939;
 }
 
 .scrollbar-none {
@@ -181,11 +241,13 @@
 .shadow-t-sm {
   box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.05);
 }
+
 .shadow-t-md {
   box-shadow:
     0 -4px 6px -1px rgba(0, 0, 0, 0.1),
     0 -2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+
 .shadow-t-lg {
   box-shadow:
     0 -10px 15px -3px rgba(0, 0, 0, 0.1),
@@ -196,11 +258,13 @@
 .shadow-r-sm {
   box-shadow: 1px 0 2px 0 rgba(0, 0, 0, 0.05);
 }
+
 .shadow-r-md {
   box-shadow:
     4px 0 6px -1px rgba(0, 0, 0, 0.1),
     2px 0 4px -1px rgba(0, 0, 0, 0.06);
 }
+
 .shadow-r-lg {
   box-shadow:
     10px 0 15px -3px rgba(0, 0, 0, 0.1),

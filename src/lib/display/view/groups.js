@@ -31,12 +31,13 @@ async function subscribeGroupList() {
       return groups.map((group) => {
         const member_names = members
           .filter((member) => member.scope_id === group.id)
-          .map((member) => contact_map.get(member.firebase_uid)?.name)
+          .map((member) => contact_map.get(member.firebase_uid)?.name || contact_map.get(member.firebase_uid)?.email_address)
           .filter(/** @param {string | null | undefined} n */ (n) => !!n);
 
         return {
           id: group.id,
           name: group.name,
+          description: group.description,
           owner_id: group.owner_id,
           users: [],
           member_names: /** @type {string[]} */ (member_names),

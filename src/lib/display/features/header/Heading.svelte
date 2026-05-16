@@ -8,10 +8,14 @@
   import { fade, slide } from "svelte/transition";
   import { backHandler } from "$logic/navigation";
   import ButtonMore from "./ButtonMore.svelte";
-  import { BACK_BUTTON_FUNCTION, capitalize } from "$lib";
+  import { BACK_BUTTON_FUNCTION, capitalize, getInitials } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
+  import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
 
+  const search_text = getContext("search_text");
+
+  let is_editing = $state(false);
   let show_searchbar = $state(false);
 
   /** @type {Record<string, string>} */
@@ -25,14 +29,14 @@
     "/(main)/settings": t("settings"),
     "/(main)/subscriptions": t("doenit_plus"),
     "/(main)/groups": t("groups"),
+    "/(main)/groups/[group_id]": page.data.group?.name ?? t("groups"),
     "/(main)/contacts": t("contact_list"),
     "/db/[collection]": capitalize(t("database")),
     "/db": capitalize(t("database")),
   });
 
-  const search_text = getContext("search_text");
-
   const title = $derived(TITLES[page.route.id || ""] ?? t("task_list"));
+  const { id, name, initials, description, owner_id } = $derived(page.data.group ?? {});
 
   $effect(() => {
     page.url;
@@ -63,18 +67,38 @@
     const func = backHandler.handlers.get(token);
     if (func) func.handler();
   }
+
+  function handleClick() {
+    if (!page.data.is_group_page) return;
+
+    is_editing = true;
+  }
 </script>
 
 <div class="bg-surface" style="padding-top: env(safe-area-inset-top);">
   <div class="relative flex items-center border-default border-b h-14">
-    <div class="shrink-0">
+    <div class="shrink-0 z-1">
       {#if !page.data.is_home}
         <ButtonBack onclick={handleBackButton} />
       {/if}
     </div>
 
-    <div class="absolute inset-0 flex items-center justify-center gap-1 py-2 pointer-events-none">
-      <img alt="logo" src="logo.png" class="w-8" class:invisible={!title} />
+    <button
+      type="button"
+      class="absolute inset-0 flex items-center justify-center gap-1 py-2 z-0"
+      class:pointer-events-none={!page.data.is_group_page}
+      onclick={handleClick}
+    >
+      {#if page.data.is_group_page}
+        <div
+          class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 font-bold text-lg"
+        >
+          {initials}
+        </div>
+      {:else}
+        <img alt="logo" src="/logo.png" class="w-8" class:invisible={!title} />
+      {/if}
+
       <div class="relative">
         <span class="text-transparent text-3xl font-bold px-2 line-clamp-1">{title}</span>
         {#key title}
@@ -83,7 +107,7 @@
           </h1>
         {/key}
       </div>
-    </div>
+    </button>
 
     <div class="flex ml-auto shrink-0">
       {#if selected_tasks.size}
@@ -111,3 +135,5 @@
     </div>
   {/if}
 </div>
+
+<ModalGroup bind:open={is_editing} {id} {name} {description} {owner_id} />

@@ -4,14 +4,18 @@
   import Api from "$logic/api";
   import { goto } from "$app/navigation";
   import { selected_categories } from "$display/selected.svelte";
+  import { page } from "$app/state";
 
   const task = $state(getTask());
+
+  const redirect_to = $derived(page.url.searchParams.get("redirect") || "/");
 
   /** @returns {Domain.Task} */
   function getTask() {
     const category_id = selected_categories.size === 1 ? selected_categories.values().next().value : undefined;
+    const scope_id = page.url.searchParams.get("scope_id") ?? undefined;
 
-    return Api.task.getNewTask({ category_id });
+    return Api.task.getNewTask({ category_id, scope_id });
   }
 
   /**
@@ -22,7 +26,7 @@
     const result = await Api.task.createTask(task);
     if (!result.ok) return result;
 
-    await goto(`/`);
+    await goto(redirect_to);
     return { ok: true };
   }
 
@@ -30,7 +34,7 @@
    * @returns {AsyncResult}
    */
   async function handleCancel() {
-    await goto(`/`);
+    await goto(redirect_to);
     return { ok: true };
   }
 </script>
