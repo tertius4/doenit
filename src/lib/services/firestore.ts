@@ -93,7 +93,7 @@ class Firestore {
   async upsertMemberships(user_id: string, scopes: string[]): Promise<void> {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "meta", "memberships");
-    await setDoc(ref, { scopes, updated_at: new Date().toISOString() }, { merge: true });
+    await setDoc(ref, { scopes: scopes.filter(Boolean), updated_at: new Date().toISOString() }, { merge: true });
   }
 
   async fetchInvites(user_id: string, since?: string): Promise<DB.ContactInvite[]> {

@@ -34,8 +34,8 @@
   hidden={!can_share.value}
   aria-label="Share Task"
   onclick={handleShare}
-  class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
+  class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
 >
+  <Icon name="share" size={16} />
   <span>{t("share")} {multiple ? t("tasks") : t("task")}</span>
-  <Icon name="share" class="text-lg text-normal" />
 </button>

@@ -2,6 +2,7 @@ import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
 import { MembershipService } from "$domain/sync/MembershipService";
+import { SyncQueue } from "$domain/sync/SyncQueue";
 
 export const save = apiLogger(saveGroupHandler);
 export const remove = apiLogger(deleteGroupHandler);
@@ -22,8 +23,12 @@ async function saveGroupHandler({ id, name, description }: Partial<DB.Group>): A
         owner_id: context.user?.id || "device",
       } as any);
       if (result.ok && context.user?.firebase_uid) {
-        // TODO: Wat as ek nie aanlyn is nie?
-        await MembershipService.addScope(context.user.firebase_uid, result.value.id);
+        await SyncQueue.enqueue({
+          table_name: "membership",
+          entity_id: context.user.firebase_uid,
+          scope_id: result.value.id,
+          op: "upsert",
+        });
       }
       return result;
     }

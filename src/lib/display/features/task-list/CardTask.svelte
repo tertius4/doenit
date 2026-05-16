@@ -37,7 +37,7 @@
       "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
       "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
       "bg-error/20 border-error text-alt": is_past && !is_selected,
-      "bg-primary/20 border-primary text-alt": is_selected,
+      "bg-secondary-800 border-primary text-alt": is_selected,
       "bg-primary-800": !is_selected && !is_past && !is_ongoing,
     },
     rest.class || "",

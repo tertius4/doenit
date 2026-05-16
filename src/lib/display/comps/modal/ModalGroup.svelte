@@ -44,7 +44,7 @@
   const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.firebase_uid)));
 
   async function loadMembers() {
-    if (!saved_id) return;
+    if (is_creating) return;
 
     const [members_result, contacts_result] = await Promise.all([
       Api.groups.getMembers(saved_id),
@@ -56,7 +56,7 @@
   }
 
   $effect(() => {
-    if (open && saved_id) loadMembers();
+    if (open && !is_creating) loadMembers();
     if (!open) {
       members = [];
       all_contacts = [];
@@ -81,7 +81,8 @@
 
   /** @param {string} contact_id */
   async function addMember(contact_id) {
-    if (!saved_id) return;
+    if (is_creating) return;
+
     const result = await Api.groups.addMember(saved_id, contact_id);
     if (!result.ok) return toast.error(result.error);
     await loadMembers();
@@ -146,32 +147,30 @@
     <div>
       <p class="font-semibold mb-2">{t("group_members")}</p>
 
-      {#if !members.length}
-        <p class="text-sm text-muted">&mdash;</p>
-      {:else}
-        <ul class="space-y-1">
-          {#each members as member (member.id)}
-            {@const contact = member.contact}
-            {#if contact}
-              <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
-                <span class="grow truncate text-sm">{contact.name}</span>
-                <span class="text-xs text-muted truncate">{contact.email_address}</span>
+      <ul class="space-y-1">
+        {#each members as member (member.id)}
+          {@const contact = member.contact}
+          {#if contact}
+            <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
+              <span class="grow truncate text-sm">{contact.name}</span>
+              <span class="text-xs text-muted truncate">{contact.email_address}</span>
 
-                {#if is_admin || isMe(contact)}
-                  <button
-                    type="button"
-                    title={isMe(contact) ? t("leave_group") : t("remove_from_group")}
-                    class="text-error shrink-0"
-                    onclick={() => removeMember(member)}
-                  >
-                    <Icon name={isMe(contact) ? "leave" : "trash"} size={18} />
-                  </button>
-                {/if}
-              </li>
-            {/if}
-          {/each}
-        </ul>
-      {/if}
+              {#if is_admin || isMe(contact)}
+                <button
+                  type="button"
+                  title={isMe(contact) ? t("leave_group") : t("remove_from_group")}
+                  class="text-error shrink-0"
+                  onclick={() => removeMember(member)}
+                >
+                  <Icon name={isMe(contact) ? "leave" : "trash"} size={18} />
+                </button>
+              {/if}
+            </li>
+          {/if}
+        {:else}
+          <li class="text-sm text-muted">{t('no_members_yet')}</li>
+        {/each}
+      </ul>
     </div>
 
     <!-- Add contacts (admin only) -->
@@ -179,7 +178,7 @@
       <div>
         <p class="font-semibold mb-2">{t("add_member")}</p>
 
-        {#if available_contacts.length === 0}
+        {#if !available_contacts.length}
           <p class="text-sm text-muted">{t("no_contacts_to_add")}</p>
         {:else}
           <ul class="space-y-1">

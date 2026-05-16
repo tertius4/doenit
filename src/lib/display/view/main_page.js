@@ -50,19 +50,19 @@ async function subscribeTaskList() {
  * @returns {AL.MainPageTask}
  */
 function formatTask(task, categoryMap, today) {
-  const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
+  const start_date = DateUtil.parseWithTimeBoundary(task.start_date, "start");
   const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
 
-  const is_ongoing = DateUtil.isDateInRange(today, startDate || dueDate, dueDate || startDate);
-  const is_past = calculateIsPast(today, startDate, dueDate, is_ongoing);
+  const is_ongoing = DateUtil.isDateInRange(today, start_date || dueDate, dueDate || start_date);
+  const is_past = calculateIsPast(today, start_date, dueDate, is_ongoing);
 
   /** @type {AL.MainPageTask['pills']} */
   const pills = [];
 
-  if (startDate || dueDate) {
+  if (start_date || dueDate) {
     pills.push({
       type: "round",
-      label: formatDateRange(startDate, dueDate),
+      label: formatDateRange(start_date, dueDate),
       pre_icon: "clock",
       ...(task.repeat_interval ? { post_icon: "sync" } : {}),
     });
@@ -92,38 +92,38 @@ function formatTask(task, categoryMap, today) {
 }
 
 /**
- * @param {Date | null} startDate
+ * @param {Date | null} start_date
  * @param {Date | null} dueDate
  * @returns {string}
  */
-function formatDateRange(startDate, dueDate) {
-  const date = dueDate ?? startDate;
+function formatDateRange(start_date, dueDate) {
+  const date = dueDate ?? start_date;
   if (!date) return "";
 
   const locale = context.settings.language === "en" ? "en-GB" : "af-ZA";
-  if (!startDate || !dueDate || DateUtil.isSameDay(startDate, dueDate)) {
+  if (!start_date || !dueDate || DateUtil.isSameDay(start_date, dueDate)) {
     return DateUtil.format(date, "D MMM YYYY", { locale });
   }
 
-  if (startDate.getFullYear() === dueDate.getFullYear() && startDate.getMonth() === dueDate.getMonth()) {
-    return `${DateUtil.format(startDate, "D", { locale })}-${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
+  if (start_date.getFullYear() === dueDate.getFullYear() && start_date.getMonth() === dueDate.getMonth()) {
+    return `${DateUtil.format(start_date, "D", { locale })}-${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
   }
 
-  return `${DateUtil.format(startDate, "D MMM", { locale })} - ${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
+  return `${DateUtil.format(start_date, "D MMM", { locale })} - ${DateUtil.format(dueDate, "D MMM YYYY", { locale })}`;
 }
 
 /**
  *
  * @param {Date} today
- * @param {Date | null} startDate
+ * @param {Date | null} start_date
  * @param {Date | null} dueDate
  * @param {boolean} is_ongoing
  * @returns {boolean}
  */
-function calculateIsPast(today, startDate, dueDate, is_ongoing) {
+function calculateIsPast(today, start_date, dueDate, is_ongoing) {
   if (is_ongoing) return false;
 
-  const date = dueDate ?? startDate;
+  const date = dueDate ?? start_date;
   if (!date) return false;
 
   return date < today;

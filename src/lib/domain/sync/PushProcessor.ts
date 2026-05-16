@@ -1,5 +1,6 @@
 import DB from "$domain/db";
 import firestore from "$services/firestore";
+import { MembershipService } from "./MembershipService";
 import { SyncQueue } from "./SyncQueue";
 import syncEngine from "./SyncEngine";
 
@@ -13,6 +14,12 @@ export class PushProcessor {
     const batch = result_batch.value;
     for (const item of batch) {
       try {
+        if (item.table_name === "membership") {
+          await MembershipService.addScope(item.entity_id, item.scope_id);
+          await SyncQueue.remove(item.id);
+          continue;
+        }
+
         const collection = DB.getCollection(item.table_name);
         if (!collection) throw new Error(`Collection ${item.table_name} not found`);
         const doc_result = await collection.findById(item.entity_id);

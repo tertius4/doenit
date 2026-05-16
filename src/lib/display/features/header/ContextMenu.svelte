@@ -12,6 +12,8 @@
 
   let { show = $bindable() } = $props();
 
+  const is_dev = context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address);
+
   onNavigate(() => {
     show = false;
   });
@@ -42,13 +44,6 @@
   transition:slide
   class="absolute right-4 w-72 max-w-[90%] top-16 bg-surface rounded-xl shadow-xl border border-default z-50 overflow-hidden"
 >
-  {#if !!selected_tasks.size}
-    <div class="p-2 space-y-1 border-b border-default">
-      <ButtonShareTask onclick={() => (show = false)} />
-      <BulkAssignCategory onclose={closeBulkAssign} />
-    </div>
-  {/if}
-
   <div class="p-2 space-y-0.5">
     <a
       aria-label={t("completed_tasks")}
@@ -79,17 +74,23 @@
       <Icon name="settings" size={16} />
       <span>{t("settings")}</span>
     </a>
-
-    {#if context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address)}
-      <a
-        aria-label={t("database")}
-        draggable="false"
-        href="/db"
-        class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
-      >
-        <Icon name="database" size={16} />
-        <span>{t("database")}</span>
-      </a>
-    {/if}
   </div>
+
+  {#if !!selected_tasks.size || is_dev}
+    <div class="p-2 space-y-1 border-t border-default">
+      <ButtonShareTask onclick={() => (show = false)} />
+      <BulkAssignCategory onclose={closeBulkAssign} />
+      {#if context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address)}
+        <a
+          aria-label={t("database")}
+          draggable="false"
+          href="/db"
+          class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+        >
+          <Icon name="database" size={16} />
+          <span>{t("database")}</span>
+        </a>
+      {/if}
+    </div>
+  {/if}
 </div>

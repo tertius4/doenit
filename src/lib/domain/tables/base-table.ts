@@ -111,14 +111,15 @@ export default class BaseTable<T> {
     return this.update(id, changes);
   }
 
-  async updateMany(updates: { id: string; changes: Partial<T> }[]): AsyncResult {
+  async updateMany(updates: { id: string; changes: Partial<T> }[]): AsyncResult<T[]> {
     if (!updates.length) return { ok: true, value: [] } as Result<T[]>;
 
     const results = await Promise.all(updates.map(({ id, changes }) => this.update(id, changes)));
+
     const ok = results.every((result) => result.ok);
     if (!ok) return { ok: false, error: "One or more updates failed" };
 
-    return { ok: true };
+    return { ok: true, value: results.map(({ value }) => value) };
   }
 
   async remove(id: string): AsyncResult {

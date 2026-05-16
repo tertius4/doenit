@@ -50,6 +50,11 @@
         task_count={group.task_count}
         members={group.members}
       />
+    {:else}
+      <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
+        <Icon name="users" size={48} class="text-muted opacity-40" />
+        <p class="text-muted">{t("no_groups_yet")}</p>
+      </div>
     {/each}
   </div>
 

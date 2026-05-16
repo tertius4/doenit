@@ -28,7 +28,7 @@
   }
 </script>
 
-<div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg ml-2 pl-2">
+<div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg pl-2">
   <button type="button" {onclick} class="grid grid-cols-[40px_1fr] items-center w-full text-left">
     <div class="relative bg-card h-8 mr-2 aspect-square rounded-full overflow-hidden">
       {#if avatar_url}

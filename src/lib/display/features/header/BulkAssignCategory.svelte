@@ -45,10 +45,10 @@
   type="button"
   aria-label={t("bulk_assign_category")}
   onclick={() => (is_open = true)}
-  class="rounded-lg bg-card border border-default font-medium flex justify-between items-center p-4 w-full"
+  class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
 >
+  <Icon name="categories" size={16} />
   <span>{t("bulk_assign_category")}</span>
-  <Icon name="categories" />
 </button>
 
 <Modal bind:is_open class="*:space-y-4">
