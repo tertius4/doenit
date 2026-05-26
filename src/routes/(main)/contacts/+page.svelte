@@ -43,10 +43,6 @@
   onMount(View.contacts.getList(contacts));
   onMount(View.contacts.getInviteList(invites));
 
-  onMount(() => {
-    if (context.user?.id) Api.invites.pull();
-  });
-
   async function handleSignIn() {
     is_loading = true;
     const result = await Api.auth.signIn();

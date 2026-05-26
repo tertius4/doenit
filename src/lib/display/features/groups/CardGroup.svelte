@@ -26,17 +26,19 @@
   class="relative w-full flex items-center gap-3 bg-surface rounded-lg px-3 py-2 text-left active:bg-card transition-colors"
 >
   <div class="flex-1">
-    <p class="text-secondary-300 mb-px font-semibold text-lg leading-none truncate">{name}</p>
+    <p class="text-secondary-300 font-semibold text-lg leading-none truncate">{name}</p>
 
-    <p class="text-sm text-muted truncate empty:hidden mb-1">{description}</p>
-    <div class="flex gap-1 font-medium text-sm">
+    <p class="text-sm text-muted truncate empty:hidden mt-px">{description}</p>
+    <div class="flex gap-1 font-medium text-sm mt-1">
       <Icon name="user" size={16} class={{ "text-muted": !members.length }} />
 
       {#each members as member, i}
         {#if !!i}<span>, </span>{/if}
         <div class="flex gap-1 items-center justify-center truncate" title={member.name}>
           {member.name}
-          <Icon name="crown" size={12} class="text-muted" />
+          {#if member.is_admin}
+            <Icon name="crown" size={12} class="text-muted" />
+          {/if}
         </div>
       {:else}
         <span class="text-muted">{t("just_you")}</span>

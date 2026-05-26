@@ -70,7 +70,10 @@ export const InviteService = {
     if (!remote.length) return;
 
     for (const invite of remote) {
-      await DB.contact_invite.upsert(invite);
+      await DB.contact_invite.upsert(invite).catch((error) => {
+        const message = error instanceof Error ? error.message : JSON.stringify(error);
+        console.error("Failed to upsert invite", { invite, error: message });
+      });
       await this._process(invite);
     }
 

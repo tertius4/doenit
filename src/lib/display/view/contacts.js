@@ -36,7 +36,7 @@ export function getInviteList(list) {
  * @returns {Promise<import("rxjs").Observable<AL.ContactListItem[]>>}
  */
 async function subscribeContactList() {
-  return DB.contact.subscribe$({ sort: [{ name: "asc" }] }).pipe(
+  return DB.contact.subscribe$({ selector: { user_id: context.user?.id }, sort: [{ name: "asc" }] }).pipe(
     map((contacts) =>
       contacts.map((contact) => ({
         id: contact.id,
@@ -54,14 +54,17 @@ async function subscribeContactList() {
  * @returns {Promise<import("rxjs").Observable<AL.ContactInviteListItem[]>>}
  */
 async function subscribeInviteList() {
+  const me = context.user?.firebase_uid;
   const contacts$ = DB.contact_invite.subscribe$({
-    selector: { status: { $in: ["pending", "accepted", "rejected"] } },
+    selector: {
+      status: { $in: ["pending", "accepted", "rejected"] },
+      $or: [{ from_firebase_uid: me }, { to_firebase_uid: me }],
+    },
     sort: [{ updated_at: "desc" }],
   });
 
   return combineLatest([contacts$]).pipe(
     map(([invites]) => {
-      const me = context.user?.firebase_uid;
       return invites.map((invite) => ({
         id: invite.id,
         relationship_id: invite.relationship_id,

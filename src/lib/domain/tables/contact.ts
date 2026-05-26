@@ -1,3 +1,4 @@
+import { context } from "$logic/context.svelte";
 import Table from "./local-table";
 
 export class ContactTable extends Table<Domain.Contact> {
@@ -10,6 +11,6 @@ export class ContactTable extends Table<Domain.Contact> {
   }
 
   async findByRelationshipId(relationship_id: string): AsyncResult<DB.Contact | null> {
-    return super.findOne({ selector: { relationship_id } });
+    return super.findOne({ selector: { relationship_id, owner_id: context.user?.id } });
   }
 }
