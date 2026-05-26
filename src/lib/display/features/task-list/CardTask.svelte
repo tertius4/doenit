@@ -54,7 +54,7 @@
       {#each pills as pill}
         <span
           class={{
-            "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5": true,
+            "inline-flex items-center gap-0.5 text-xs font-medium px-1 py-0.5": true,
             "rounded-full": pill.type === "round",
             rounded: pill.type === "square",
             "bg-success text-alt": is_ongoing && !is_selected,
@@ -64,11 +64,11 @@
           }}
         >
           {#if pill.pre_icon}
-            <Icon name={pill.pre_icon} class="text-current" size={16} />
+            <Icon name={pill.pre_icon} class="text-current h-fit" size={12} />
           {/if}
           {pill.label}
           {#if pill.post_icon}
-            <Icon name={pill.post_icon} class="text-current" size={16} />
+            <Icon name={pill.post_icon} class="text-current h-fit" size={12} />
           {/if}
         </span>
       {/each}
