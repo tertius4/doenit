@@ -210,6 +210,7 @@ declare global {
       id: string;
       name: string;
       category_id?: string;
+      is_for_someone_else: boolean;
       is_ongoing: boolean;
       is_past: boolean;
       onclick: () => void;

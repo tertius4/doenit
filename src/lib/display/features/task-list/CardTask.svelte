@@ -17,7 +17,7 @@
 
   let checked = $state(false);
 
-  const { id, name, pills, is_ongoing, is_past, top_right_icons } = $derived(task);
+  const { id, name, pills, is_ongoing, is_past, top_right_icons, is_for_someone_else } = $derived(task);
 
   /**
    * @param {boolean} value
@@ -39,28 +39,29 @@
   class={[
     {
       "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
-      "bg-success/20 border-success text-alt": is_ongoing && !is_selected,
-      "bg-error/20 border-error text-alt": is_past && !is_selected,
-      "bg-secondary-800 border-primary text-alt": is_selected,
-      "bg-primary-800": !is_selected && !is_past && !is_ongoing,
+      "bg-success/20 border-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
+      "bg-error/20 border-error text-alt": is_past && !is_selected && !is_for_someone_else,
+      "bg-secondary-800 border-primary": is_selected,
+      "bg-primary-800": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
+      "text-muted": is_for_someone_else,
     },
     rest.class || "",
   ]}
 >
   <InputCheckbox {checked} onchange={handleClick} class="my-auto" />
-  <div>
-    <div class="font-medium text-start">{name}</div>
-    <div class="flex gap-1">
+  <div class="my-auto">
+    <div class="text-start my-auto leading-none" class:font-medium={!is_for_someone_else}>{name}</div>
+    <div class="flex gap-1 mt-1" hidden={!pills?.length}>
       {#each pills as pill}
         <span
           class={{
             "inline-flex items-center gap-0.5 text-xs font-medium px-1 py-0.5": true,
             "rounded-full": pill.type === "round",
             rounded: pill.type === "square",
-            "bg-success text-alt": is_ongoing && !is_selected,
-            "bg-error text-alt": is_past && !is_selected,
-            "bg-primary text-alt": is_selected,
-            "bg-card border-default": !is_selected && !is_past && !is_ongoing,
+            "bg-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
+            "bg-error text-alt": is_past && !is_selected && !is_for_someone_else,
+            "bg-secondary-600 border-primary": is_selected,
+            "bg-primary-700": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
           }}
         >
           {#if pill.pre_icon}

@@ -78,9 +78,8 @@ function formatTask(task, categoryMap, contactMap, today) {
 
   if (task.assigned_firebase_uid) {
     const my_uid = context.user?.firebase_uid;
-    const assignee = task.assigned_firebase_uid === my_uid
-      ? t("me")
-      : (contactMap.get(task.assigned_firebase_uid) ?? t("unassigned"));
+    const assignee =
+      task.assigned_firebase_uid === my_uid ? t("me") : (contactMap.get(task.assigned_firebase_uid) ?? t("unassigned"));
     pills.push({ type: "square", label: assignee, pre_icon: "user" });
   }
 
@@ -94,6 +93,7 @@ function formatTask(task, categoryMap, contactMap, today) {
     name: task.name,
     is_ongoing,
     is_past,
+    is_for_someone_else: !!(task.assigned_firebase_uid && task.assigned_firebase_uid !== context.user?.firebase_uid),
     category_id: task.category_id,
     onclick: () => {},
     onlongpress: () => {},

@@ -88,7 +88,7 @@
       </div>
     </button>
 
-    <div class="flex ml-auto shrink-0">
+    <div class="flex gap-2 z-2 ml-auto shrink-0">
       {#if selected_tasks.size}
         <DeleteAll />
       {:else if page.data.is_home || page.data.is_completed_page}

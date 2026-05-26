@@ -23,15 +23,23 @@
     selected_tasks.clear();
     is_deleting = false;
   }
+
+  /**
+   * @param {MouseEvent} event
+   */
+  function handleClick(event) {
+    event.stopPropagation();
+    is_deleting = true;
+  }
 </script>
 
-<div class="flex justify-center items-center aspect-square w-12">
+<div class="flex justify-center items-center aspect-square w-10">
   {#if selected_tasks.size}
     <button
       transition:fade
       aria-label={t("delete_tasks")}
       class="aspect-square bg-error text-alt rounded-md flex justify-center items-center p-1.5"
-      onclick={() => (is_deleting = true)}
+      onclick={handleClick}
       type="button"
     >
       <Icon name="trash" size={28} class="pointer-events-none h-full aspect-square" />

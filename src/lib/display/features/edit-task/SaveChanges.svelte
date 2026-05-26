@@ -5,7 +5,6 @@
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";
   import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { goto } from "$app/navigation";
   import t from "$display/translate";
   import { onMount } from "svelte";
   import Api from "$logic/api";
@@ -30,7 +29,7 @@
 
       if (!has_changes) {
         await oncancel();
-        return goto("/");
+        return;
       }
 
       is_open = true;
