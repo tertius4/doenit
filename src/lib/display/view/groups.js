@@ -39,6 +39,7 @@ async function subscribeGroupList() {
       return groups.map((group) => {
         /** @type {AL.GroupListItem["members"]} */
         const formatted_names = [];
+
         for (const member of members) {
           if (member.scope_id !== group.id) continue;
 

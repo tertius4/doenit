@@ -26,9 +26,9 @@
   class="relative w-full flex items-center gap-3 bg-surface rounded-lg px-3 py-2 text-left active:bg-card transition-colors"
 >
   <div class="flex-1">
-    <p class="text-secondary-300 mb-1 font-semibold text-lg truncate">{name}</p>
+    <p class="text-secondary-300 mb-px font-semibold text-lg leading-none truncate">{name}</p>
 
-    <p class="text-sm text-muted truncate empty:hidden">{description}</p>
+    <p class="text-sm text-muted truncate empty:hidden mb-1">{description}</p>
     <div class="flex gap-1 font-medium text-sm">
       <Icon name="user" size={16} class={{ "text-muted": !members.length }} />
 
