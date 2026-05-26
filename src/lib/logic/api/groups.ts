@@ -3,6 +3,7 @@ import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
 import { MembershipService } from "$domain/sync/MembershipService";
 import { SyncQueue } from "$domain/sync/SyncQueue";
+import t from "$display/translate";
 
 export const save = apiLogger(saveGroupHandler);
 export const remove = apiLogger(deleteGroupHandler);
@@ -44,7 +45,28 @@ async function deleteGroupHandler(id: string): AsyncResult {
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Group not found" };
 
-    await DB.group.update(id, { soft_deleted: true });
+    const group = result.value;
+
+    const delete_result = await DB.group.update(id, { soft_deleted: true });
+    if (!delete_result.ok) return delete_result;
+
+    if (group.scope_id) {
+      const members_result = await DB.member.findMany({
+        selector: { scope_id: id, soft_deleted: { $ne: true } },
+      });
+      if (members_result.ok) {
+        await Promise.all(
+          members_result.value
+            .filter((m) => m.firebase_uid)
+            .map((m) =>
+              MembershipService.removeScope(m.firebase_uid, group.scope_id!).catch((err) => {
+                console.warn(`removeScope failed for ${m.firebase_uid}:`, err);
+              }),
+            ),
+        );
+      }
+    }
+
     return { ok: true };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
@@ -105,7 +127,9 @@ async function removeMemberHandler(member_id: string): AsyncResult {
   }
 }
 
-async function getMembersHandler(group_id: string): AsyncResult<(DB.Member & { contact: DB.Contact | null })[]> {
+async function getMembersHandler(
+  group_id: string,
+): AsyncResult<(DB.Member & { contact: { name?: string; email_address: string } | null })[]> {
   try {
     const result = await DB.member.findMany({
       selector: { scope_id: group_id, soft_deleted: { $ne: true } },
@@ -117,12 +141,20 @@ async function getMembersHandler(group_id: string): AsyncResult<(DB.Member & { c
       selector: { firebase_uid: { $in: members.map((gc) => gc.firebase_uid) } },
     });
 
-    const hash: Record<string, DB.Contact> = {};
+    const hash: Record<string, { name?: string; email_address: string }> = {
+      [context.user?.firebase_uid || ""]: {
+        name: t("you"),
+        email_address: context.user?.email_address || "",
+      },
+    };
     if (contact_result.ok) {
       for (const contact of contact_result.value) {
-        if (contact.firebase_uid) {
-          hash[contact.firebase_uid] = contact;
-        }
+        if (!contact.firebase_uid) continue;
+
+        hash[contact.firebase_uid] = {
+          email_address: contact.email_address || "",
+          name: contact.name || "",
+        };
       }
     }
 
@@ -154,7 +186,7 @@ async function getByIdHandler(id: string): AsyncResult<DB.Group> {
     const result = await DB.group.findById(id);
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Group not found" };
-    
+
     return { ok: true, value: result.value };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);

@@ -27,7 +27,7 @@ async function subscribeTaskList() {
     selector: {
       archived: { $eq: false },
       soft_deleted: { $ne: true },
-      assigned_firebase_uid: { $in: [null, context.user?.firebase_uid] },
+      assigned_firebase_uid: { $in: [null, context.user?.firebase_uid ?? null] },
     },
     sort: [{ due_date: "asc" }],
   });

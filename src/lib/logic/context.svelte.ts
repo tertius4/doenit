@@ -2,6 +2,7 @@ import { App } from "@capacitor/app";
 import { Device } from "@capacitor/device";
 import DB from "$lib/domain/db";
 import scopeManager from "$lib/domain/sync/ScopeManager";
+import { MembershipService } from "$lib/domain/sync/MembershipService";
 import { Subscription } from "rxjs";
 
 class ContextClass {
@@ -116,6 +117,16 @@ export async function initApp(user_id?: string | null) {
   const user_state_result = await DB.user_state.get(resolved_user_id || "device");
   if (!user_state_result.ok) {
     console.error("Failed to load user state:", user_state_result.error);
+  }
+
+  if (is_app_open && resolved_user_id) {
+    const user_result = await DB.user.findById(resolved_user_id);
+    const firebase_uid = user_result.ok ? user_result.value?.firebase_uid : null;
+    if (firebase_uid) {
+      MembershipService.reconcileScopes(firebase_uid).catch((err) =>
+        console.warn("[initApp] reconcileScopes failed:", err),
+      );
+    }
   }
 
   subscribeForUser(resolved_user_id);

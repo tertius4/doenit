@@ -25,6 +25,11 @@
     if (!has_changes) onclick();
     else is_open = true;
   }
+
+  async function handleSave() {
+    const result = await Api.task.updateTask(changed);
+    onclick();
+  }
 </script>
 
 <button
@@ -48,7 +53,10 @@
     <button
       type="button"
       class="flex gap-1 items-center h-12 px-4 py-2 bg-card border border-default rounded-lg"
-      onclick={() => (is_open = false)}
+      onclick={() => {
+        is_open = false;
+        onclick();
+      }}
     >
       <Icon name="trash" size={20} />
       <span>{t("discard")}</span>
@@ -56,10 +64,7 @@
     <button
       type="button"
       class="flex gap-1 items-center h-12 px-4 py-2 bg-primary text-alt rounded-lg ml-auto"
-      onclick={() => {
-        is_open = false;
-        onclick();
-      }}
+      onclick={handleSave}
     >
       <Icon name="save" size={20} />
       <span>{t("save")}</span>

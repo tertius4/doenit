@@ -18,7 +18,7 @@
   /** @type {Props & Record<string, any>} */
   let { scope_id, value = $bindable(undefined) } = $props();
 
-  /** @type {(DB.Member & { contact: DB.Contact | null })[]} */
+  /** @type {(DB.Member & { contact: { name?: string, email_address: string } | null })[]} */
   let members = $state([]);
 
   onMount(async () => {
@@ -32,11 +32,11 @@
   const selected_member = $derived(members.find((m) => m.firebase_uid === value) ?? null);
 
   /**
-   * @param {DB.Member & { contact: DB.Contact | null }} member
+   * @param {DB.Member & { contact: { name?: string, email_address: string } | null }} member
    * @returns {string}
    */
   function displayName(member) {
-    return member.contact?.name ?? member.contact?.email_address ?? member.firebase_uid;
+    return member.contact?.name || member.contact?.email_address || member.firebase_uid;
   }
 
   /**
@@ -72,7 +72,9 @@
       {#if selected_member}
         <ButtonClear onclick={() => (value = undefined)} class="absolute right-0 top-0 bottom-0" />
       {:else}
-        <div class="aspect-square h-12 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none">
+        <div
+          class="aspect-square h-12 flex items-center justify-center absolute right-0 top-0 bottom-0 pointer-events-none"
+        >
           <Icon name="chevron-down" class="pointer-events-none {is_open ? '-rotate-180' : ''}" />
         </div>
       {/if}
@@ -92,4 +94,3 @@
     </div>
   </Modal>
 {/if}
-

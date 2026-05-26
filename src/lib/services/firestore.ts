@@ -90,6 +90,13 @@ class Firestore {
     return (snap.data().scopes as string[]) ?? [];
   }
 
+  async scopeExists(scope_id: string): Promise<boolean> {
+    const db = this.getDb();
+    const ref = doc(db, "scopes", scope_id, "items", scope_id);
+    const snap = await getDoc(ref);
+    return snap.exists() && !snap.data()?.soft_deleted;
+  }
+
   async upsertMemberships(user_id: string, scopes: string[]): Promise<void> {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "meta", "memberships");

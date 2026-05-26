@@ -1,17 +1,16 @@
 <script>
   import ButtonSearchTask from "$display/features/header/ButtonSearchTask.svelte";
   import DeleteAll from "$display/features/header/ButtonDeleteAll.svelte";
-  import ButtonBack from "$display/features/header/ButtonBack.svelte";
   import InputText from "$display/comps/input/InputText.svelte";
   import { selected_tasks } from "$display/selected.svelte";
   import { getContext, onMount, untrack } from "svelte";
   import { fade, slide } from "svelte/transition";
   import { backHandler } from "$logic/navigation";
   import ButtonMore from "./ButtonMore.svelte";
-  import { BACK_BUTTON_FUNCTION, capitalize, getInitials } from "$lib";
+  import { capitalize } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
-  import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
+  import EditGroup from "../groups/EditGroup.svelte";
 
   const search_text = getContext("search_text");
 
@@ -116,4 +115,4 @@
   {/if}
 </div>
 
-<ModalGroup bind:open={is_editing} {id} {name} {description} {owner_id} />
+<EditGroup bind:open={is_editing} {id} {name} {description} {owner_id} />

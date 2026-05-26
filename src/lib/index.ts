@@ -145,7 +145,11 @@ export function deepEqual(obj1: any, obj2: any): boolean {
 /**
  * NOTE: Name kept as requested: getNextReapeatDate
  */
-export function getNextRepeatDates(task: Domain.Task): { is_repeat_task: boolean; start_date: string | null; due_date: string | null } {
+export function getNextRepeatDates(task: Domain.Task): {
+  is_repeat_task: boolean;
+  start_date: string | null;
+  due_date: string | null;
+} {
   const interval = task?.repeat_interval || "";
   const is_repeat_task = !!interval && (!!task.start_date || !!task.due_date);
 
@@ -200,7 +204,7 @@ export function getInitials(str: string, maxLength = 2): string {
   if (typeof str !== "string" || !str.trim().length) {
     return "";
   }
-  
+
   const words = str.trim().split(/\s+/);
   const initials = words.map((word) => word.charAt(0).toUpperCase()).join("");
   return initials.slice(0, maxLength);

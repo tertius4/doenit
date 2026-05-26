@@ -63,6 +63,10 @@
     await wait(200);
     const result = await Api.task.complete(task.id);
     if (!result.ok) return toast.error(result.error);
+
+    // Remove animation
+    if (task_element) task_element.className = task_element.className.replace(" animate-complete", "");
+
     selected_tasks.delete(task.id);
     return { ok: true };
   }
@@ -96,7 +100,7 @@
 <button
   type="button"
   onclick={() => goto(`/create?scope_id=${group.id}&redirect=/groups/${group.id}`)}
-  class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
+  class="fixed right-4 z-30 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
   style="bottom: calc(89px + env(safe-area-inset-bottom));"
   aria-label="Add task"
 >

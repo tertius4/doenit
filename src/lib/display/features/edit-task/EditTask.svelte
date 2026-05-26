@@ -112,8 +112,8 @@
   </div>
 
   <div
-    class="absolute flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2 pb-2"
-    style="bottom: calc(0px + env(safe-area-inset-bottom));"
+    class="fixed flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2"
+    style="bottom: max(16px, env(safe-area-inset-bottom));"
   >
     <ButtonBack
       task_id={task.id}

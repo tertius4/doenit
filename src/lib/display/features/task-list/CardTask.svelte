@@ -25,6 +25,10 @@
   function handleClick(value) {
     checked = value;
     if (oncheck) oncheck(value);
+
+    setTimeout(() => {
+      checked = false;
+    }, 200);
   }
 </script>
 

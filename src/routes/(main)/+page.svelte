@@ -72,7 +72,6 @@
    */
   async function handleComplete(task) {
     const task_element = document.getElementById(`task-${task.id}`);
-    console.log("task_element", task_element);
     if (task_element) task_element.className += " animate-complete";
     await wait(200);
     const result = await Api.task.complete(task.id);

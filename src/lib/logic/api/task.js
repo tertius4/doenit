@@ -37,23 +37,28 @@ async function isTaskUpdatedHandler(task_id, updated_data) {
  * @returns {Domain.Task}
  */
 function getNewTaskHandler(overrides = {}) {
-  return {
+  /** @type {Domain.Task} */
+  const task = {
     name: "",
-    due_date: null,
-    start_date: null,
-    completed: 0,
-    repeat_specific_days: [],
-    completed_at: null,
-    important: false,
-    repeat_interval: "",
-    repeat_interval_number: 1,
-    category_id: undefined,
-    assigned_firebase_uid: undefined,
-    photo_ids: [],
     archived: false,
     description: "",
+    completed: 0,
+    completed_at: null,
+    due_date: null,
+    start_date: null,
+    repeat_interval: "",
+    repeat_specific_days: [],
+    repeat_interval_number: 1,
+    important: false,
+    assigned_firebase_uid: undefined,
+    photo_ids: [],
+    category_id: undefined,
+    scope_id: undefined,
+
     ...overrides,
   };
+
+  return task;
 }
 
 /**
