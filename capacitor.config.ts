@@ -12,7 +12,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: "https",
     iosScheme: "capacitor",
-    allowNavigation: ["*.firebaseapp.com"],
+    allowNavigation: ["*.firebaseapp.com", "*.googleapis.com", "*.googleusercontent.com"],
   },
   plugins: {
     PushNotifications: {

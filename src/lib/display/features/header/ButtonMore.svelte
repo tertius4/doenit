@@ -16,7 +16,6 @@
    * @param {Event} event
    */
   function handleError(event) {
-    console.log("Error loading avatar image:", event);
     if (!(event.target instanceof HTMLElement)) {
       return;
     }
@@ -24,11 +23,6 @@
     event.target.style.display = "none";
   }
 </script>
-
-<svelte:head>
-  <!-- Preload -->
-  <link rel="preload" as="image" href={avatar} />
-</svelte:head>
 
 <button
   id="meer-opsies"
@@ -40,6 +34,7 @@
   {#if avatar}
     <img
       src={avatar}
+      loading="lazy"
       alt="User avatar"
       class="absolute inset-0 rounded-full h-10 z-1 aspect-square object-cover"
       onerror={handleError}

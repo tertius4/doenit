@@ -13,7 +13,6 @@ class ScopeManager {
     const user_id = session_result.ok ? session_result.value.user_id : null;
     if (!user_id) return () => {};
 
-    console.log("Watching scopes for user_id", user_id);
     const user = await DB.user.findById(user_id);
     if (!user.ok || !user.value) return () => {};
 

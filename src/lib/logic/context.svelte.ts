@@ -83,7 +83,6 @@ function subscribeForUser(user_id: string | null) {
     }),
   );
 
-  console.log("ND!!:", user_id)
   _user_subscriptions.add(
     DB.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
       context.user_state = user_state;

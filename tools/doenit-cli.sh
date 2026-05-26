@@ -162,7 +162,7 @@ build_app() {
     fi
     
     echo -e "${BLUE} 📦 Installeer dependencies...${NC}"
-    npm install || {
+    npm i --no-fund --no-audit || {
         echo -e "${RED} ❌ npm install failed${NC}"
         return 1
     }
@@ -217,7 +217,7 @@ build_and_install() {
     echo -e "${BLUE} 🏗️ Bou en installeer ontwikkeling weergawe...${NC}"
     
     echo -e "${BLUE} 📦 Installeer dependencies...${NC}"
-    npm install || {
+    npm i --no-fund --no-audit || {
         echo -e "${RED} ❌ npm install failed${NC}"
         return 1
     }

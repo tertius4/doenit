@@ -140,11 +140,9 @@ class Firestore {
    * Returns an unsubscribe function — call it to stop listening.
    */
   subscribeScopes(firebase_uid: string, callback: (scopes: string[]) => void): () => void {
-    console.log("firebase_uid", firebase_uid);
     const db = this.getDb();
     const ref = doc(db, "users", firebase_uid, "meta", "memberships");
     return onSnapshot(ref, (snap) => {
-      console.log("snap.data()", snap.data());
       callback(snap.exists() ? ((snap.data().scopes as string[]) ?? []) : []);
     });
   }
