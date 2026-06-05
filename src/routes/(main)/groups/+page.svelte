@@ -1,19 +1,15 @@
 <script>
-  import CardGroup from "$display/features/groups/CardGroup.svelte";
   import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
-  import Icon from "$display/comps/Icon.svelte";
-  import { goto } from "$app/navigation";
-  import View from "$display/view";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
   import { backHandler } from "$logic/navigation";
-  import { onMount } from "svelte";
   import { context } from "$logic/context.svelte";
+  import toast from "$display/toast/toast.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import { BACK_BUTTON_FUNCTION, wait } from "$lib";
+  import { goto } from "$app/navigation";
+  import Groups from "./comps/Groups.svelte";
+  import { onMount } from "svelte";
   import t from "$display/translate";
   import Api from "$logic/api";
-  import toast from "$display/toast/toast.svelte";
-
-  /** @type {AL.GroupListItem[]} */
-  let groups = $state([]);
 
   let show_create_modal = $state(false);
 
@@ -24,8 +20,6 @@
     BACK_BUTTON_FUNCTION.value = token;
     return () => backHandler.unregister(token);
   });
-
-  onMount(View.groups.getList(groups));
 
   async function handleSignIn() {
     const result = await Api.auth.signIn();
@@ -40,23 +34,13 @@
 </script>
 
 {#if is_logged_in}
-  <div class="flex flex-col space-y-2 pt-2">
-    {#each groups as group (group.id)}
-      <CardGroup
-        id={group.id}
-        name={group.name}
-        description={group.description}
-        owner_id={group.owner_id}
-        task_count={group.task_count}
-        members={group.members}
-      />
-    {:else}
-      <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
-        <Icon name="users" size={48} class="text-muted opacity-40" />
-        <p class="text-muted">{t("no_groups_yet")}</p>
-      </div>
-    {/each}
-  </div>
+  {#await wait(300)}
+    <div class="flex justify-center items-center h-20">
+      <Icon name="loading" size={32} class="animate-spin text-muted" />
+    </div>
+  {:then}
+    <Groups />
+  {/await}
 
   <!-- FAB -->
   <button

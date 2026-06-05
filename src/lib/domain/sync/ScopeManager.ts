@@ -27,12 +27,9 @@ class ScopeManager {
     const user_id = session_result.ok ? session_result.value.user_id : null;
     if (!user_id) return [];
 
-    console.log("[ScopeManager] Fetching scopes for user_id:", user_id);
-
     const state_result = await DB.user_state.get(user_id);
     if (!state_result.ok) return [];
 
-    console.log("[ScopeManager] Fetched user scopes:", state_result);
     return state_result.value.active_scopes ?? [];
   }
 }

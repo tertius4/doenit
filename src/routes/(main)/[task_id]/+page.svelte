@@ -66,9 +66,9 @@
 <div class="mb-20">
   <EditTask {task} onsubmit={handleUpdateTask} />
 
-  <div class="h-12 flex">
+  <div class="h-8 flex">
     <div class="font-bold text-left my-auto w-full">{t("complete")}</div>
 
-    <InputCheckbox onchange={handleSelectTask} checked={!!archived} />
+    <InputCheckbox onchange={handleSelectTask} checked={!!archived} class="my-auto" />
   </div>
 </div>

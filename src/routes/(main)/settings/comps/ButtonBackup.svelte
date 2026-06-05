@@ -2,7 +2,6 @@
   import Modal, { ModalHeader } from "$display/comps/modal";
   import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
-  import Backup from "$lib/services/backup.svelte";
 
   /**
    * @typedef {Object} Props
@@ -42,19 +41,19 @@
   {:else}
     <Icon name="download-cloud" class="text-3xl mx-1 my-auto" />
   {/if}
-  <div>
+  <!-- <div>
     <p class="font-medium">{is_backing_up ? t("backup_in_progress") : t("backup_now")}</p>
     <p class="text-sm">{t("last_backup")}: {Backup.last_backup_at}</p>
-  </div>
+  </div> -->
 </button>
 
 <Modal class="p-6" bind:is_open onclose={() => (is_open = false)}>
   <ModalHeader>{t("backup_question")}</ModalHeader>
-  {#if Backup.last_backup_at}
+  <!-- {#if Backup.last_backup_at}
     <p class="text-sm mb-4">
       {t("last_backup")}: {Backup.last_backup_at}
     </p>
-  {/if}
+  {/if} -->
   <div class="flex justify-end space-x-4">
     <button
       aria-label={t("backup_aria")}

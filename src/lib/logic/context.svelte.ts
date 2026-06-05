@@ -5,6 +5,7 @@ import scopeManager from "$lib/domain/sync/ScopeManager";
 import { MembershipService } from "$lib/domain/sync/MembershipService";
 import { Subscription } from "rxjs";
 import Api from "$logic/api";
+import syncEngine from "$domain/sync/SyncEngine";
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
@@ -131,6 +132,7 @@ export async function initApp(user_id?: string | null) {
 
   subscribeForUser(resolved_user_id);
   setTimeout(() => Api.invites.pull(), 300); // TODO This is bad - race condition.
+  setTimeout(() => syncEngine.requestTick(), 300);
 
   if (is_app_open) {
     const app_state_result = await DB.app_state.getDevice();

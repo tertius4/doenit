@@ -30,7 +30,7 @@
   <div class="space-y-2">
     {#each data.records as record}
       <div class="p-2 border border-default rounded">
-        <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(record, null, 2)}</pre>
+        <pre class="text-xs whitespace-pre-wrap break-all select-text!">{JSON.stringify(record, null, 2)}</pre>
         <div class="flex items-center">
           <button type="button" class="bg-amber-900 ml-auto px-2 py-1 rounded" onclick={() => handleDelete(record)}> Delete </button>
         </div>

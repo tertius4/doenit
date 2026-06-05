@@ -7,10 +7,11 @@
   import { fade, slide } from "svelte/transition";
   import { backHandler } from "$logic/navigation";
   import ButtonMore from "./ButtonMore.svelte";
-  import { capitalize } from "$lib";
+  import { BACK_BUTTON_FUNCTION, capitalize } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
   import EditGroup from "../groups/EditGroup.svelte";
+  import ButtonBack from "./ButtonBack.svelte";
 
   const search_text = getContext("search_text");
 
@@ -59,6 +60,14 @@
     return () => backHandler.unregister(token);
   });
 
+  function handleBackButton() {
+    const token = BACK_BUTTON_FUNCTION.value;
+    if (!token) return;
+
+    const func = backHandler.handlers.get(token);
+    if (func) func.handler();
+  }
+
   function handleClick() {
     if (!page.data.is_group_page) return;
 
@@ -69,22 +78,30 @@
 <div class="bg-surface" style="padding-top: env(safe-area-inset-top);">
   <div class="relative flex items-center border-default border-b h-14">
     <div class="shrink-0 z-1 ml-2">
-      <img alt="logo" src="/logo.png" class="w-8" class:invisible={!title} />
+      {#if !page.data.is_main_page}
+        <ButtonBack onclick={handleBackButton} />
+      {/if}
     </div>
 
     <button
       type="button"
-      class="absolute inset-0 flex items-center justify-center gap-1 py-2 z-0"
+      class="w-fit mx-auto absolute inset-0 flex items-center justify-center gap-1 py-2 z-0"
       class:pointer-events-none={!page.data.is_group_page}
       onclick={handleClick}
     >
-      <div class="relative">
-        <span class="text-transparent text-3xl font-bold px-2 line-clamp-1">{title}</span>
-        {#key title}
-          <h1 transition:fade={{ duration: 100 }} class="absolute inset-0 text-3xl font-bold line-clamp-1">
-            {title}
-          </h1>
-        {/key}
+      <div class="w-fit mx-auto flex items-center justify-center gap-0.5 py-2">
+        <img alt="logo" src="/logo.png" class="w-3xl" />
+        <div class="relative">
+          <span class="invisible text-3xl font-bold px-2 line-clamp-1">{title}</span>
+          {#key title}
+            <h1
+              transition:fade={{ duration: 100 }}
+              class="absolute inset-0 text-3xl font-bold line-clamp-1 h-fit my-auto"
+            >
+              {title}
+            </h1>
+          {/key}
+        </div>
       </div>
     </button>
 

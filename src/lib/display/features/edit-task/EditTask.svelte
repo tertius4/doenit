@@ -13,8 +13,6 @@
   import PhotoGallery from "./PhotoGallery.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
-  import ButtonBack from "../header/ButtonBack.svelte";
-  import { goto } from "$app/navigation";
 
   /**
    * @typedef {Object} Props
