@@ -78,8 +78,8 @@
 
   {#if !!selected_tasks.size || is_dev}
     <div class="p-2 space-y-1 border-t border-default">
-      <ButtonShareTask onclick={() => (show = false)} />
-      <BulkAssignCategory onclose={closeBulkAssign} />
+      <ButtonShareTask onclick={() => (show = false)} hidden={!selected_tasks.size} />
+      <BulkAssignCategory onclose={closeBulkAssign} hidden={!selected_tasks.size} />
       {#if context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address)}
         <a
           aria-label={t("database")}

@@ -8,7 +8,7 @@ import { browser } from "$app/environment";
 import Api from "$logic/api";
 import { getInitials } from "$lib";
 
-export async function load({ url, params, parent }) {
+export async function load({ url, params, route, parent }) {
   await parent();
   Widget.init();
   if (Capacitor.isNativePlatform()) {
@@ -31,6 +31,7 @@ export async function load({ url, params, parent }) {
 
   return {
     is_home: !!(url.pathname === "/"),
+    is_main_page: !!["/(main)", "/(main)/groups", "/(main)/contacts"].includes(route.id),
     is_task_page: !!(url.pathname === "/create" || params.task_id),
     is_friends_page: !!(url.pathname === "/friends"),
     is_completed_page: !!(url.pathname === "/complete"),

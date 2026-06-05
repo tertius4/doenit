@@ -6,7 +6,13 @@
   import t from "$display/translate";
   import Api from "$logic/api";
 
-  const { onclick = () => {} } = $props();
+  /**
+   * @typedef {Object} Props
+   * @property {() => void} [onclick]
+   */
+
+  /** @type {Props & Record<string, any>} */
+  const { onclick = () => {}, ...rest } = $props();
 
   const can_share = $state(await Share.canShare());
   const multiple = $derived(selected_tasks.size > 1);
@@ -30,6 +36,7 @@
 </script>
 
 <button
+  {...rest}
   type="button"
   hidden={!can_share.value}
   aria-label="Share Task"

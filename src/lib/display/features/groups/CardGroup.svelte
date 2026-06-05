@@ -35,10 +35,10 @@
       {#each members as member, i}
         {#if !!i}<span>, </span>{/if}
         <div class="flex gap-1 items-center justify-center truncate" title={member.name}>
-          {member.name}
           {#if member.is_admin}
-            <Icon name="crown" size={12} class="text-muted" />
+            <Icon name="crown" size={12} />
           {/if}
+          {member.name}
         </div>
       {:else}
         <span class="text-muted">{t("just_you")}</span>

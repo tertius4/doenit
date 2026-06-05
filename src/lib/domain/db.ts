@@ -12,7 +12,7 @@ type tables =
   | tables.task
   | tables.category
   | tables.user
-  | tables.permissions
+  // | tables.permissions
   | tables.settings
   // | tables.session
   // | tables.app_state

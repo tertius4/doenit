@@ -115,13 +115,6 @@
     class="fixed flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2"
     style="bottom: max(16px, env(safe-area-inset-bottom));"
   >
-    <ButtonBack
-      task_id={task.id}
-      changed={task}
-      loading={is_loading}
-      onclick={() => goto("/", { replaceState: true })}
-    />
-
     {#if config.photos_enabled}
       <div>
         <PhotoGallery bind:photo_ids={task.photo_ids} />

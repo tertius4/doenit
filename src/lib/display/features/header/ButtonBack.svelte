@@ -18,14 +18,6 @@
 
   let is_open = $state(false);
 
-  async function handleClick() {
-    if (loading || navigating.to) return;
-
-    const has_changes = await Api.task.isTaskUpdated(task_id, changed);
-    if (!has_changes) onclick();
-    else is_open = true;
-  }
-
   async function handleSave() {
     const result = await Api.task.updateTask(changed);
     onclick();
@@ -35,14 +27,14 @@
 <button
   type="button"
   aria-label="Go back button"
-  class="flex justify-center text-alt bg-card items-center aspect-square rounded-full size-13 p-3"
-  onclick={handleClick}
+  class="flex justify-center text-alt bg-card items-center aspect-square rounded-full size-10 p-2"
+  {onclick}
   disabled={loading || !!navigating.to}
 >
   {#if navigating.to}
     <Icon name="loading" class="animate-spin text-lg" />
   {:else}
-    <Icon name="xmark" size={28} />
+    <Icon name="arrow-left" size={28} />
   {/if}
 </button>
 

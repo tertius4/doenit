@@ -12,6 +12,15 @@
     BACK_BUTTON_FUNCTION.value = token;
     return () => backHandler.unregister(token);
   });
+
+  /**
+   * @param {typeof data.records[number]} record
+   */
+  async function handleDelete(record) {
+    if (confirm("Are you sure you want to delete this record?")) {
+      DB.getCollection(data.collection)?.remove(record.id);
+    }
+  }
 </script>
 
 <h2 class="text-xl font-bold my-4">{data.collection}</h2>
@@ -23,17 +32,7 @@
       <div class="p-2 border border-default rounded">
         <pre class="text-xs whitespace-pre-wrap break-all">{JSON.stringify(record, null, 2)}</pre>
         <div class="flex items-center">
-          <button
-            type="button"
-            class="bg-amber-900 ml-auto px-2 py-1 rounded"
-            onclick={() => {
-              if (confirm("Are you sure you want to delete this record?")) {
-                DB.getCollection(data.collection)?.remove(record.id);
-              }
-            }}
-          >
-            Delete
-          </button>
+          <button type="button" class="bg-amber-900 ml-auto px-2 py-1 rounded" onclick={() => handleDelete(record)}> Delete </button>
         </div>
       </div>
     {:else}

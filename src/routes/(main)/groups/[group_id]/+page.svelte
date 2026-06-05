@@ -14,7 +14,6 @@
   import toast from "$display/toast/toast.svelte";
 
   const { data } = $props();
-  const { group } = data;
 
   selected_tasks.clear();
 
@@ -27,7 +26,7 @@
     return () => backHandler.unregister(token);
   });
 
-  onMount(View.group_tasks.taskList(group.id, tasks));
+  onMount(() => View.group_tasks.taskList(data.group.id, tasks));
 
   /**
    * @param {AL.MainPageTask} task
@@ -45,7 +44,7 @@
    * @param {AL.MainPageTask} task
    */
   async function handleClick(task) {
-    if (!selected_tasks.size) return goto(`/${task.id}?redirect=/groups/${group.id}`);
+    if (!selected_tasks.size) return goto(`/${task.id}?redirect=/groups/${data.group.id}`);
     if (selected_tasks.has(task.id)) {
       selected_tasks.delete(task.id);
     } else {
@@ -87,7 +86,7 @@
       <button
         type="button"
         class="rounded-lg bg-card px-12 py-6 flex justify-center items-center gap-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        onclick={() => goto(`/create?scope_id=${group.id}&redirect=/groups/${group.id}`)}
+        onclick={() => goto(`/create?scope_id=${data.group.id}&redirect=/groups/${data.group.id}`)}
       >
         <Icon name="plus" />
         <span class="text-lg">{t("create_new_task")}</span>
@@ -99,7 +98,7 @@
 <!-- FAB -->
 <button
   type="button"
-  onclick={() => goto(`/create?scope_id=${group.id}&redirect=/groups/${group.id}`)}
+  onclick={() => goto(`/create?scope_id=${data.group.id}&redirect=/groups/${data.group.id}`)}
   class="fixed right-4 z-30 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
   style="bottom: calc(89px + env(safe-area-inset-bottom));"
   aria-label="Add task"

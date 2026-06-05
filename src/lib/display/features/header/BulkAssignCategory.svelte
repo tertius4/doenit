@@ -15,8 +15,8 @@
    * @property {() => void} onclose
    */
 
-  /** @type {Props} */
-  const { onclose } = $props();
+  /** @type {Props & Record<string, any>} */
+  const { onclose, ...rest } = $props();
 
   let is_open = $state(false);
   let is_adding = $state(false);
@@ -42,6 +42,7 @@
 </script>
 
 <button
+  {...rest}
   type="button"
   aria-label={t("bulk_assign_category")}
   onclick={() => (is_open = true)}
