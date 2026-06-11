@@ -7,7 +7,7 @@
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import View from "$display/view";
-  import { normalize, wait } from "$lib";
+  import { filterTasks, wait } from "$lib";
   import Api from "$logic/api";
   import { fade } from "svelte/transition";
   import toast from "$display/toast/toast.svelte";
@@ -15,13 +15,23 @@
 
   selected_tasks.clear();
 
+  const groupTitles = [
+    t('past'),
+    t('today'),
+    t('tomorrow'),
+    t('day_after_tomorrow'),
+    t('in_a_week'),
+    t('in_a_month'),
+    t('later'),
+    t('no_date'),
+  ];
+  
   const search_text = getContext("search_text");
-  const normalized_search = $derived(normalize(search_text.value?.trim() ?? ""));
 
   /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
 
-  const tasks = $derived(filterTasks(all_tasks, normalized_search, selected_categories));
+  const tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
 
   onMount(View.main_page.taskList(all_tasks));
 
@@ -54,20 +64,6 @@
   }
 
   /**
-   * @param {AL.MainPageTask[]} tasks
-   * @param {string} search_text
-   * @param {Set<string>} selected_categories
-   * @returns {AL.MainPageTask[]}
-   */
-  function filterTasks(tasks, search_text, selected_categories) {
-    return tasks.filter((task) => {
-      const matches_search = normalize(task.name).includes(search_text);
-      const matches_category = !selected_categories.size || selected_categories.has(task.category_id || "default");
-      return matches_search && matches_category;
-    });
-  }
-
-  /**
    * @param {AL.MainPageTask} task
    */
   async function handleComplete(task) {
@@ -87,7 +83,16 @@
 </script>
 
 <div class="space-y-1.5">
-  {#each tasks as task (task.id)}
+  {#each tasks as task, index (task.id)}
+    {@const group = task.time_group_number}
+    {@const previousGroup = index > 0 ? tasks[index - 1].time_group_number : -1}
+
+    {#if group !== previousGroup}
+      <h2 class="mb-2 text-lg font-semibold">
+        {groupTitles[group]}
+      </h2>
+    {/if}
+
     <CardTask
       {task}
       is_selected={selected_tasks.has(task.id)}

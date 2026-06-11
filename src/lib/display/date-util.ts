@@ -1,8 +1,7 @@
 export default class DateUtil {
-  static format(date: Date, format: string, options: { locale?: string } = {}): string {
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-      return "";
-    }
+  static format(_date: any, format: string, options: { locale?: string } = {}): string {
+    const date = DateUtil.toDate(_date);
+    if (!date) return "";
 
     const locale = options?.locale || "af-ZA";
     const tokens: Record<string, string> = {
@@ -25,12 +24,6 @@ export default class DateUtil {
     };
 
     return format.replace(/YYYY|YY|MMMM|MMM|MM|M|dddd|ddd|DD|D|HH|H|mm|m|ss|s/g, (match) => tokens[match]);
-  }
-
-  static addDays(date: Date, days: number): Date {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
   }
 
   static isSameDay(date1: Date | null, date2: Date | null): boolean {
@@ -67,4 +60,55 @@ export default class DateUtil {
 
     return new Date(`${day} ${time || type === "start" ? "00:00" : "23:59"}`);
   }
+
+  static add(
+    _date: any,
+    { days = 0, months = 0, years = 0, hours = 0, minutes = 0, seconds = 0, milliseconds = 0 },
+  ): Date | null {
+    const date = DateUtil.toDate(_date);
+    if (!date) return null;
+
+    date.setDate(date.getDate() + days);
+    date.setMonth(date.getMonth() + months);
+    date.setFullYear(date.getFullYear() + years);
+    date.setHours(date.getHours() + hours);
+    date.setMinutes(date.getMinutes() + minutes);
+    date.setSeconds(date.getSeconds() + seconds);
+    date.setMilliseconds(date.getMilliseconds() + milliseconds);
+
+    return date;
+  }
+
+  /**
+   * Converts a string or number to a Date object. Returns null if the input is invalid.
+   */
+  static toDate(input: any): Date | null {
+    if (isValidDate(input)) {
+      return new Date(input);
+    }
+    if (typeof input === "string" || typeof input === "number") {
+      const date = new Date(input);
+      if (isValidDate(date)) return date;
+    }
+
+    return null;
+  }
+
+  static startOfDay(_date: any): Date | null {
+    const date = DateUtil.toDate(_date);
+    if (!date) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  static endOfDay(_date: any): Date | null {
+    const date = DateUtil.toDate(_date);
+    if (!date) return null;
+    date.setHours(23, 59, 59, 999);
+    return date;
+  }
+}
+
+function isValidDate(date: any): date is Date {
+  return date instanceof Date && !isNaN(date.valueOf());
 }

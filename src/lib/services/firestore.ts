@@ -10,6 +10,7 @@ import {
   query,
   setDoc,
   where,
+  limit,
 } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
 import { getAuth } from "$lib/logic/chunk/firebase-auth";
@@ -118,6 +119,23 @@ class Firestore {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "invites", invite.id);
     await setDoc(ref, invite, { merge: true });
+  }
+
+  async fetchNotifications(user_id: string, since?: string, count = 50): Promise<DB.Notification[]> {
+    const db = this.getDb();
+    const ref = collection(db, "users", user_id, "notifications");
+    const q = since
+      ? query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"), limit(count))
+      : query(ref, orderBy("updated_at", "asc"), limit(count));
+
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DB.Notification);
+  }
+
+  async upsertNotification(user_id: string, notification: DB.Notification): Promise<void> {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "notifications", notification.id);
+    await setDoc(ref, notification, { merge: true });
   }
 
   /**

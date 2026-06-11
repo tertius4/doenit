@@ -5,6 +5,7 @@ import { PushProcessor } from "./PushProcessor";
 class SyncEngine {
   private running = false;
   private scheduled = false;
+  private scheduledTimer: ReturnType<typeof setTimeout> | null = null;
 
   startRealtimeSync(scopes: string[]): () => void {
     const since = new Date().toISOString();
@@ -19,10 +20,21 @@ class SyncEngine {
 
     this.scheduled = true;
 
-    setTimeout(() => {
+    this.scheduledTimer = setTimeout(() => {
       this.scheduled = false;
+      this.scheduledTimer = null;
       this.tick();
     }, 100); // debounce
+  }
+
+  async flush() {
+    if (this.scheduledTimer) {
+      clearTimeout(this.scheduledTimer);
+      this.scheduledTimer = null;
+      this.scheduled = false;
+    }
+
+    await this.tick();
   }
 
   private async tick() {

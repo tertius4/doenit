@@ -3,6 +3,7 @@ import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
 import t from "$lib/display/translate";
+import { getGroup } from "$lib";
 
 /**
  * @param {string} group_id
@@ -36,11 +37,40 @@ async function subscribeGroupTaskList(group_id) {
   return combineLatest([tasks$, categories$, members$, contacts$]).pipe(
     map(([tasks, categories, members, contacts]) => {
       /** @type {Map<string, DB.Category>} */
-      const categoryMap = new Map(categories.map((c) => [c.id, c]));
+      const category_map = new Map(categories.map((c) => [c.id, c]));
       /** @type {Map<string, string>} */
-      const contactMap = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
+      const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
       const today = new Date();
-      return tasks.map((task) => formatTask(task, categoryMap, contactMap, today));
+
+      tasks.sort((a, b) => {
+        const group_diff = getGroup(a) - getGroup(b);
+        if (group_diff !== 0) return group_diff;
+
+        const my_uid = context.user?.firebase_uid;
+        // Mine first, then others, then unassigned
+        const is_mine_a = a.assigned_firebase_uid === my_uid;
+        const is_other_a = a.assigned_firebase_uid && a.assigned_firebase_uid !== my_uid;
+        const a_rank = is_mine_a ? 0 : is_other_a ? 1 : 2;
+
+        const is_mine_b = b.assigned_firebase_uid === my_uid;
+        const is_other_b = b.assigned_firebase_uid && b.assigned_firebase_uid !== my_uid;
+        const b_rank = is_mine_b ? 0 : is_other_b ? 1 : 2;
+
+        if (a_rank !== b_rank) return a_rank - b_rank;
+
+        // Belangrike take eerste binne groep
+        if (a.important !== b.important) {
+          return a.important ? -1 : 1;
+        }
+
+        // Daarna op datum
+        const a_date = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
+        const b_date = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
+
+        return a_date.getTime() - b_date.getTime();
+      });
+
+      return tasks.map((task) => formatTask(task, category_map, contact_map, today));
     }),
   );
 }
@@ -91,6 +121,7 @@ function formatTask(task, categoryMap, contactMap, today) {
   return {
     id: task.id,
     name: task.name,
+    time_group_number: getGroup(task),
     is_ongoing,
     is_past,
     is_for_someone_else: !!(task.assigned_firebase_uid && task.assigned_firebase_uid !== context.user?.firebase_uid),

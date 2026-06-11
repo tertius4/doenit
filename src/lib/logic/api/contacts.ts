@@ -10,7 +10,9 @@ async function deleteContactHandler(id: string): AsyncResult {
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Contact not found" };
 
-    await DB.contact.remove(id);
+    const delete_result = await DB.contact.remove(id);
+    if (!delete_result.ok) return delete_result;
+
     return { ok: true };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);

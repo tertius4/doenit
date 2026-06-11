@@ -11,3 +11,4 @@ export { group } from "./group";
 export { member } from "./member";
 export { sync_queue } from "./sync_queue";
 export { contact_invite } from "./contact_invite";
+export { notification } from "./notification";

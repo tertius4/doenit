@@ -15,7 +15,11 @@ export class PushProcessor {
     for (const item of batch) {
       try {
         if (item.table_name === "membership") {
-          await MembershipService.addScope(item.entity_id, item.scope_id);
+          if (item.op === "delete") {
+            await MembershipService.removeScope(item.entity_id, item.scope_id);
+          } else {
+            await MembershipService.addScope(item.entity_id, item.scope_id);
+          }
           await SyncQueue.remove(item.id);
           continue;
         }

@@ -113,37 +113,18 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   }
 
   async remove(id: string): AsyncResult {
-    const result = await super.update(id, { soft_deleted: true } as Partial<T & DB.MetaDataShared>);
+    const result = await this.update(id, { soft_deleted: true } as Partial<T>);
     if (!result.ok) return result;
 
-    await this.afterWrite({
-      id,
-      scope_id: result.value.scope_id,
-      soft_deleted: true,
-    } as T & DB.MetaDataShared);
-
-    return result;
+    return { ok: true };
   }
 
   async removeMany(ids: string[]): AsyncResult {
-    const result = await super.updateMany(
-      ids.map((id) => ({
-        id,
-        changes: { soft_deleted: true } as Partial<T & DB.MetaDataShared>,
-      })),
-    );
-    if (!result.ok) return result;
+    const results = await Promise.all(ids.map((id) => this.remove(id)));
+    const failed = results.find((result) => !result.ok);
+    if (failed && !failed.ok) return failed;
 
-    const result_docs = result.value;
-    const items = result_docs.map((doc) => ({
-      id: doc.id,
-      scope_id: doc.scope_id,
-      soft_deleted: true,
-    })) as (T & DB.MetaDataShared)[];
-
-    await this.afterWriteMany(items);
-
-    return result;
+    return { ok: true };
   }
 
   private async afterWriteMany(docs: (T & DB.MetaDataShared)[]) {

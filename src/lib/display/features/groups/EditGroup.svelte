@@ -131,7 +131,7 @@
 
       <!-- Scrollable content -->
       <div class="flex-1 overflow-y-auto p-4 pt-8 space-y-4">
-        <div class="flex items-center justify-center mt-4">
+        <div class="flex items-center justify-center">
           <h1 class="text-center text-3xl font-semibold">{name}</h1>
         </div>
 
@@ -149,7 +149,7 @@
             {#each members as member (member.id)}
               {@const contact = member.contact}
               {#if contact}
-                <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
+                <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-10">
                   <span class="grow truncate text-sm">{contact.name}</span>
                   <span class="text-xs text-muted truncate">{contact.email_address}</span>
 

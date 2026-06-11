@@ -95,6 +95,19 @@ export function syncApiLogger<T extends (...args: any[]) => any>(fn: T): (...arg
   };
 }
 
+export function filterTasks(
+  tasks: AL.MainPageTask[],
+  search_text: string,
+  selected_categories: Set<string>,
+): AL.MainPageTask[] {
+  const search = normalize(search_text) || "";
+  return tasks.filter((task) => {
+    const matches_search = normalize(task.name).includes(search) || search.length === 0;
+    const matches_category = !selected_categories.size || selected_categories.has(task.category_id || "default");
+    return matches_search && matches_category;
+  });
+}
+
 /**
  * Normalize a string by trimming whitespace and converting to lowercase.
  */
@@ -140,9 +153,6 @@ export function deepEqual(obj1: any, obj2: any): boolean {
   return true;
 }
 
-/**
- * NOTE: Name kept as requested: getNextReapeatDate
- */
 export function getNextRepeatDates(task: Domain.Task): {
   is_repeat_task: boolean;
   start_date: string | null;
@@ -206,4 +216,31 @@ export function getInitials(str: string, maxLength = 2): string {
   const words = str.trim().split(/\s+/);
   const initials = words.map((word) => word.charAt(0).toUpperCase()).join("");
   return initials.slice(0, maxLength);
+}
+
+export function getGroup(task: DB.Task): number {
+  const dueDate = DateUtil.endOfDay(task.due_date) ?? DateUtil.startOfDay(task.start_date);
+  if (!dueDate) return 7; // geen datum
+
+  const today = DateUtil.startOfDay(new Date());
+  if (!today) return 7;
+  const tomorrow = DateUtil.add(today, { days: 1 });
+  if (!tomorrow) return 7;
+  const dayAfterTomorrow = DateUtil.add(today, { days: 2 });
+  if (!dayAfterTomorrow) return 7;
+  const nextWeek = DateUtil.add(today, { days: 7 });
+  if (!nextWeek) return 7;
+  const nextMonth = DateUtil.add(today, { months: 1 });
+  if (!nextMonth) return 7;
+  const in_three_days = DateUtil.add(today, { days: 3 });
+  if (!in_three_days) return 7;
+
+  if (dueDate < today) return 0; // past
+  if (dueDate < tomorrow) return 1; // today
+  if (dueDate < dayAfterTomorrow) return 2; // tomorrow
+  if (dueDate < in_three_days) return 3; // day after tomorrow
+  if (dueDate < nextWeek) return 4; // next week
+  if (dueDate < nextMonth) return 5; // next month
+
+  return 6; // later
 }

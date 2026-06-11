@@ -19,6 +19,7 @@ type tables =
   // | tables.user_state
   | tables.contact
   | tables.contact_invite
+  | tables.notification
   | tables.group
   | tables.member
   | tables.sync_queue;
@@ -36,6 +37,7 @@ class DBClass {
   private _user_state: tables.user_state | undefined;
   private _contact: tables.contact | undefined;
   private _contact_invite: tables.contact_invite | undefined;
+  private _notification: tables.notification | undefined;
   private _group: tables.group | undefined;
   private _member: tables.member | undefined;
   private _sync_queue: tables.sync_queue | undefined;
@@ -55,6 +57,7 @@ class DBClass {
     this._user_state = new tables.user_state(db.collections.user_state);
     this._contact = new tables.contact(db.collections.contact);
     this._contact_invite = new tables.contact_invite(db.collections.contact_invite);
+    this._notification = new tables.notification(db.collections.notification);
     this._group = new tables.group(db.collections.group);
     this._member = new tables.member(db.collections.member);
     this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
@@ -70,6 +73,7 @@ class DBClass {
       settings: this._settings,
       contact: this._contact,
       contact_invite: this._contact_invite,
+      notification: this._notification,
       group: this._group,
       member: this._member,
       sync_queue: this._sync_queue,
@@ -134,6 +138,11 @@ class DBClass {
     return this._contact_invite;
   }
 
+  get notification() {
+    if (!this._notification) throw new Error("DB not initialized");
+    return this._notification;
+  }
+
   get group() {
     if (!this._group) throw new Error("DB not initialized");
     return this._group;
@@ -186,12 +195,13 @@ async function initDB() {
 
     contact: { schema: schema.contact },
     contact_invite: { schema: schema.contact_invite },
+    notification: { schema: schema.notification },
     group: { schema: schema.group },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },
   });
 
-  for (const name of ["settings", "category", "task", "user", "contact", "contact_invite", "group", "member", "user_state"] as const) {
+  for (const name of ["settings", "category", "task", "user", "contact", "contact_invite", "notification", "group", "member", "user_state"] as const) {
     const col = collections[name] as any;
     const needed = await col.migrationNeeded();
     if (needed) {

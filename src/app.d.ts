@@ -102,6 +102,22 @@ declare global {
       status: "pending" | "accepted" | "rejected" | "cancelled";
       responded_at: string | null;
     }
+
+    type NotificationType =
+      | "invite_received"
+      | "invite_accepted"
+      | "group_added"
+      | "group_removed"
+      | "task_assigned";
+
+    interface Notification {
+      user_id: string;
+      type: NotificationType;
+      title: string;
+      body: string;
+      read_at: string | null;
+      data: Record<string, unknown>;
+    }
   }
 
   namespace DB {
@@ -180,6 +196,14 @@ declare global {
       updated_at: string;
       responded_at: string | null;
     }
+
+    type NotificationType = Domain.NotificationType;
+
+    interface Notification extends Domain.Notification {
+      id: string;
+      created_at: string;
+      updated_at: string;
+    }
     // Basic User info - could be the device (before any logins).
     type User = DB.MetaDataShared & Domain.User;
     // User preferences - could be the device (before any logins).
@@ -208,9 +232,10 @@ declare global {
 
     interface MainPageTask {
       id: string;
+      time_group_number: number;
       name: string;
       category_id?: string;
-      is_for_someone_else: boolean;
+      is_for_someone_else?: boolean;
       is_ongoing: boolean;
       is_past: boolean;
       onclick: () => void;

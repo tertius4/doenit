@@ -11,3 +11,4 @@ export { GroupTable as group } from "./group";
 export { MemberTable as member } from "./member";
 export { SyncQueueTable as sync_queue } from "./sync_queue";
 export { ContactInviteTable as contact_invite } from "./contact_invite";
+export { NotificationTable as notification } from "./notification";

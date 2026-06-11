@@ -1,12 +1,12 @@
 <script>
   import CardTask from "$display/features/task-list/CardTask.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { selected_tasks } from "$display/selected.svelte";
+  import { selected_categories, selected_tasks } from "$display/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
   import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { BACK_BUTTON_FUNCTION, wait } from "$lib";
+  import { BACK_BUTTON_FUNCTION, filterTasks, wait } from "$lib";
   import { backHandler } from "$logic/navigation";
   import View from "$display/view";
   import Api from "$logic/api";
@@ -16,9 +16,21 @@
   const { data } = $props();
 
   selected_tasks.clear();
+  const groupTitles = [
+    t("past"),
+    t("today"),
+    t("tomorrow"),
+    t("day_after_tomorrow"),
+    t("in_a_week"),
+    t("in_a_month"),
+    t("later"),
+    t("no_date"),
+  ];
+  const search_text = getContext("search_text");
 
   /** @type {AL.MainPageTask[]} */
-  let tasks = $state([]);
+  let all_tasks = $state([]);
+  const tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
 
   onMount(() => {
     const token = backHandler.register(() => goto("/groups"), -1);
@@ -26,7 +38,7 @@
     return () => backHandler.unregister(token);
   });
 
-  onMount(() => View.group_tasks.taskList(data.group.id, tasks));
+  onMount(() => View.group_tasks.taskList(data.group.id, all_tasks));
 
   /**
    * @param {AL.MainPageTask} task
@@ -72,7 +84,16 @@
 </script>
 
 <div class="space-y-1.5 mt-2">
-  {#each tasks as task (task.id)}
+  {#each tasks as task, index (task.id)}
+    {@const group = task.time_group_number}
+    {@const previousGroup = index > 0 ? tasks[index - 1].time_group_number : -1}
+
+    {#if group !== previousGroup}
+      <h2 class="mb-2 text-lg font-semibold">
+        {groupTitles[group]}
+      </h2>
+    {/if}
+
     <CardTask
       {task}
       is_selected={selected_tasks.has(task.id)}

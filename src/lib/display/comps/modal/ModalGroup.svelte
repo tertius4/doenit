@@ -1,12 +1,12 @@
 <script>
   import InputText from "../input/InputText.svelte";
   import ModalHeader from "./ModalHeader.svelte";
+  import { context } from "$logic/context.svelte";
+  import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
-  import { context } from "$logic/context.svelte";
-  import toast from "$display/toast/toast.svelte";
 
   /**
    * @typedef {Object} Props
@@ -151,7 +151,7 @@
         {#each members as member (member.id)}
           {@const contact = member.contact}
           {#if contact}
-            <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
+            <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-5">
               <span class="grow truncate text-sm">{contact.name}</span>
               <span class="text-xs text-muted truncate">{contact.email_address}</span>
 
@@ -168,7 +168,7 @@
             </li>
           {/if}
         {:else}
-          <li class="text-sm text-muted">{t('no_members_yet')}</li>
+          <li class="text-sm text-muted">{t("no_members_yet")}</li>
         {/each}
       </ul>
     </div>

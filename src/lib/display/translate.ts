@@ -364,6 +364,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     // Notifications
     notifications: "Kennisgewings",
+    no_notifications: "Geen kennisgewings nie",
     reminders: "Herinneringe",
     reminder_time: "Herinneringstyd",
     notify_due_tasks: "Stel my in kennis oor vandag se take",
@@ -941,6 +942,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     // Notifications
     notifications: "Notifications",
+    no_notifications: "No notifications",
     reminders: "Reminders",
     reminder_time: "Reminder Time",
     notify_due_tasks: "Notify me about tasks due today",

@@ -174,7 +174,9 @@ async function createTaskHandler(task) {
  */
 async function deleteTaskHandler(task_id) {
   try {
-    await DB.task.remove(task_id);
+    const result = await DB.task.remove(task_id);
+    if (!result.ok) return result;
+
     return { ok: true };
   } catch (error) {
     logger.error("Error deleting task:", error);
@@ -321,8 +323,11 @@ async function deleteAllHandler({ ids }) {
       }
     }
 
-    await DB.task.removeMany(tasks_to_delete);
-    await DB.task.updateMany(tasks_to_update);
+    const delete_result = await DB.task.removeMany(tasks_to_delete);
+    if (!delete_result.ok) return delete_result;
+
+    const update_result = await DB.task.updateMany(tasks_to_update);
+    if (!update_result.ok) return update_result;
 
     return { ok: true };
   } catch (error) {

@@ -26,7 +26,7 @@ async function subscribeGroupList() {
   const scope_ids = await scopeManager.getUserScopes();
   const email_address = context.user?.email_address;
   const groups$ = DB.group.subscribe$({
-    selector: { scope_id: { $in: scope_ids }, soft_deleted: { $ne: true } },
+    selector: { $or: [{ scope_id: { $in: scope_ids }}, { owner_id: context.user?.id }], soft_deleted: { $ne: true } },
     sort: [{ name: "asc" }],
   });
   const members$ = DB.member.subscribe$({

@@ -2,6 +2,7 @@ import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
+import { getGroup } from "$lib";
 
 /**
  *
@@ -38,6 +39,26 @@ async function subscribeTaskList() {
       /** @type {Map<string, DB.Category>} */
       const categoryMap = new Map(categories.map((c) => [c.id, c]));
       const today = new Date();
+
+      tasks.sort((a, b) => {
+        const groupDiff = getGroup(a) - getGroup(b);
+
+        if (groupDiff !== 0) {
+          return groupDiff;
+        }
+
+        // Belangrike take eerste binne groep
+        if (a.important !== b.important) {
+          return a.important ? -1 : 1;
+        }
+
+        // Daarna op datum
+        const aDate = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
+        const bDate = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
+
+        return aDate.getTime() - bDate.getTime();
+      });
+
       return tasks.map((task) => formatTask(task, categoryMap, today));
     }),
   );
@@ -45,31 +66,31 @@ async function subscribeTaskList() {
 
 /**
  * @param {DB.Task} task
- * @param {Map<string, DB.Category>} categoryMap
+ * @param {Map<string, DB.Category>} category_map
  * @param {Date} today
  * @returns {AL.MainPageTask}
  */
-function formatTask(task, categoryMap, today) {
-  const start_date = DateUtil.parseWithTimeBoundary(task.start_date, "start");
-  const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
+function formatTask(task, category_map, today) {
+  const start_date = DateUtil.startOfDay(task.start_date);
+  const due_date = DateUtil.endOfDay(task.due_date);
 
-  const is_ongoing = DateUtil.isDateInRange(today, start_date || dueDate, dueDate || start_date);
-  const is_past = calculateIsPast(today, start_date, dueDate, is_ongoing);
+  const is_ongoing = DateUtil.isDateInRange(today, start_date || due_date, due_date || start_date);
+  const is_past = calculateIsPast(today, start_date, due_date, is_ongoing);
 
   /** @type {AL.MainPageTask['pills']} */
   const pills = [];
 
-  if (start_date || dueDate) {
+  if (start_date || due_date) {
     pills.push({
       type: "round",
-      label: formatDateRange(start_date, dueDate),
+      label: formatDateRange(start_date, due_date),
       pre_icon: "clock",
       ...(task.repeat_interval ? { post_icon: "sync" } : {}),
     });
   }
 
   if (task.category_id) {
-    const category = categoryMap.get(task.category_id);
+    const category = category_map.get(task.category_id);
     if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
   }
 
@@ -81,6 +102,7 @@ function formatTask(task, categoryMap, today) {
   return {
     id: task.id,
     name: task.name,
+    time_group_number: getGroup(task),
     is_ongoing,
     is_past,
     category_id: task.category_id,

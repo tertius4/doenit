@@ -9,6 +9,7 @@
   import InputTime from "$display/comps/input/InputTime.svelte";
   import Button from "$display/comps/button/Button.svelte";
   import Icon from "$display/comps/Icon.svelte";
+  import { context } from "$logic/context.svelte";
 
   /**
    * @typedef {Object} Props
@@ -100,7 +101,13 @@
 <Modal bind:is_open close_button={false} class="*:space-y-2">
   <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
   <div>
-    <Calendar is_range_enabled={enable_range} bind:start_date bind:end_date ondateselected={handleSelection} />
+    <Calendar
+      is_range_enabled={enable_range}
+      bind:start_date
+      bind:end_date
+      locale={context.settings.language}
+      ondateselected={handleSelection}
+    />
   </div>
 
   <div class="flex items-center gap-2">

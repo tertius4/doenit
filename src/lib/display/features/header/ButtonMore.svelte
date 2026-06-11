@@ -2,6 +2,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import { context } from "$logic/context.svelte";
   import ContextMenu from "./ContextMenu.svelte";
+  import NotificationBadge from "$display/notifications/NotificationBadge.svelte";
 
   let show = $state(false);
 
@@ -43,6 +44,7 @@
   <div class="absolute inset-0 pointer-events-none h-full z-0 aspect-square p-1 flex justify-center items-center">
     <Icon name="vertical-ellipsis" size={28} class="m-auto h-fit" />
   </div>
+  <NotificationBadge class="absolute z-1 -right-1 -top-1" />
 </button>
 
 {#if show}

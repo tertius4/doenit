@@ -19,7 +19,9 @@
   /** @type {Props} */
   let { open = $bindable(false), id, name = "", description = "", onsubmit, onclose } = $props();
 
+  // svelte-ignore state_referenced_locally
   let local_name = $state(name);
+  // svelte-ignore state_referenced_locally
   let local_description = $state(description);
   let error_message = $state("");
 

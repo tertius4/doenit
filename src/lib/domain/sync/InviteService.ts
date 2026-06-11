@@ -1,6 +1,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
+import { NotificationService } from "$domain/notifications/NotificationService";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -54,6 +55,7 @@ export const InviteService = {
     // Write to receiver's inbox so they can discover the invite
     await firestore.upsertInvite(target.uid, invite);
     await firestore.upsertInvite(my_uid, invite);
+    await NotificationService.createInviteReceived(invite);
     await DB.contact_invite.upsert(invite);
     return { ok: true };
   },
@@ -108,6 +110,7 @@ export const InviteService = {
 
     await firestore.upsertInvite(my_uid, updated);
     await firestore.upsertInvite(invite.from_firebase_uid, updated);
+    await NotificationService.createInviteAccepted(updated);
     await DB.contact_invite.upsert(updated);
     await this._process(updated);
     return { ok: true };

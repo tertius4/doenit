@@ -5,6 +5,7 @@ import * as auth from "./auth";
 import * as contacts from "./contacts";
 import * as groups from "./groups";
 import * as invites from "./invites";
+import * as notifications from "./notifications";
 
 export default class Api {
   static readonly settings = {
@@ -48,6 +49,11 @@ export default class Api {
     reject: invites.reject,
     cancel: invites.cancel,
     pull: invites.pull,
+  };
+
+  static readonly notifications = {
+    pull: notifications.pull,
+    markAsRead: notifications.markAsRead,
   };
 
   static readonly groups = {

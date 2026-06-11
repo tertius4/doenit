@@ -61,15 +61,11 @@
   const current_month_name = $derived(current_month.toLocaleDateString(locale, { month: "long", year: "numeric" }));
 
   function previousMonth() {
-    const newMonth = new Date(current_month);
-    newMonth.setMonth(newMonth.getMonth() - 1);
-    current_month = newMonth;
+    current_month = DateUtil.add(current_month, { months: -1 }) || current_month;
   }
 
   function nextMonth() {
-    const newMonth = new Date(current_month);
-    newMonth.setMonth(newMonth.getMonth() + 1);
-    current_month = newMonth;
+    current_month = DateUtil.add(current_month, { months: 1 }) || current_month;
   }
 
   function goToToday() {

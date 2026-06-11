@@ -112,27 +112,49 @@ export async function initApp(user_id?: string | null) {
   const settings_result = await DB.settings.getSettings(resolved_user_id ?? undefined);
   if (!settings_result.ok) {
     console.error("Failed to load settings:", settings_result.error);
+  } else {
+    context.settings = settings_result.value;
   }
 
   // Ensure user state document exists before subscribing.
   const user_state_result = await DB.user_state.get(resolved_user_id || "device");
   if (!user_state_result.ok) {
     console.error("Failed to load user state:", user_state_result.error);
+  } else {
+    context.user_state = user_state_result.value;
   }
 
-  if (is_app_open && resolved_user_id) {
-    const user_result = await DB.user.findById(resolved_user_id);
-    const firebase_uid = user_result.ok ? user_result.value?.firebase_uid : null;
-    if (firebase_uid) {
-      MembershipService.reconcileScopes(firebase_uid).catch((err) =>
-        console.warn("[initApp] reconcileScopes failed:", err),
-      );
+  const user_result = resolved_user_id ? await DB.user.findById(resolved_user_id) : null;
+  const firebase_uid = user_result?.ok ? user_result.value?.firebase_uid : null;
+  context.user = user_result?.ok ? (user_result.value as DB.User | null) : null;
+
+  subscribeForUser(resolved_user_id);
+
+  if (resolved_user_id && firebase_uid) {
+    try {
+      if (is_app_open) {
+        await MembershipService.reconcileScopes(firebase_uid);
+      }
+
+      await MembershipService.sync(resolved_user_id, firebase_uid);
+    } catch (err) {
+      console.warn("[initApp] membership sync failed:", err);
+    }
+
+    try {
+      await Api.invites.pull();
+    } catch (err) {
+      console.warn("[initApp] invite pull failed:", err);
+    }
+
+    try {
+      await Api.notifications.pull();
+    } catch (err) {
+      console.warn("[initApp] notification pull failed:", err);
     }
   }
 
-  subscribeForUser(resolved_user_id);
-  setTimeout(() => Api.invites.pull(), 300); // TODO This is bad - race condition.
-  setTimeout(() => syncEngine.requestTick(), 300);
+  await syncEngine.flush();
 
   if (is_app_open) {
     const app_state_result = await DB.app_state.getDevice();

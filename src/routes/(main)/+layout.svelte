@@ -8,7 +8,6 @@
   import { setContext, onMount } from "svelte";
   import "../../app.css";
   import syncEngine from "$domain/sync/SyncEngine";
-  import { MembershipService } from "$domain/sync/MembershipService";
 
   onMount(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -19,14 +18,16 @@
   
   onMount(() => {
     let stopRealtimeSync = () => {};
+    const onOnline = () => syncEngine.requestTick();
 
-    MembershipService.sync(context.user_state.user_id, context.user?.firebase_uid ?? context.user_state.user_id).then(() => {
-      syncEngine.requestTick();
-      stopRealtimeSync = syncEngine.startRealtimeSync(context.user_state.active_scopes ?? []);
-    });
+    stopRealtimeSync = syncEngine.startRealtimeSync(context.user_state.active_scopes ?? []);
+    syncEngine.requestTick();
 
-    window.addEventListener("online", () => syncEngine.requestTick());
-    return () => stopRealtimeSync?.();
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      stopRealtimeSync?.();
+    };
   });
 
   const search_text = $state({ value: "" });

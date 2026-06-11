@@ -31,6 +31,7 @@
     "/(main)/groups": t("groups"),
     "/(main)/groups/[group_id]": page.data.group?.name ?? t("groups"),
     "/(main)/contacts": t("contact_list"),
+    "/(main)/notifications": t("notifications"),
     "/db/[collection]": capitalize(t("database")),
     "/db": capitalize(t("database")),
   });
@@ -108,7 +109,7 @@
     <div class="flex gap-2 z-2 ml-auto shrink-0">
       {#if selected_tasks.size}
         <DeleteAll />
-      {:else if page.data.is_home || page.data.is_completed_page}
+      {:else if page.data.is_home || page.data.is_completed_page || page.data.is_group_page}
         <ButtonSearchTask bind:show={show_searchbar} />
       {/if}
 
