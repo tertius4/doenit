@@ -11,7 +11,7 @@
   import ModalEditGroupInfo from "./ModalEditGroupInfo.svelte";
   import ButtonLeaveGroup from "./ButtonLeaveGroup.svelte";
   import ButtonDisbandGroup from "./ButtonDisbandGroup.svelte";
-  import { goto } from "$app/navigation";
+  import { goto, invalidate } from "$app/navigation";
 
   /**
    * @typedef {Object} Props
@@ -81,7 +81,13 @@
    */
   async function handleEditSave(new_name, new_description) {
     const result = await Api.groups.save({ id: id, name: new_name, description: new_description });
-    if (!result.ok) return toast.error(result.error);
+    if (!result.ok) {
+      toast.error(result.error);
+      return result;
+    }
+
+    await invalidate("layout:main");
+    return result;
   }
 
   function handleClose() {
@@ -130,7 +136,7 @@
       <CloseButton class="absolute top-2 right-2" onclose={handleClose} />
 
       <!-- Scrollable content -->
-      <div class="flex-1 overflow-y-auto p-4 pt-8 space-y-4">
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="flex items-center justify-center">
           <h1 class="text-center text-3xl font-semibold">{name}</h1>
         </div>
@@ -149,7 +155,7 @@
             {#each members as member (member.id)}
               {@const contact = member.contact}
               {#if contact}
-                <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-10">
+                <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
                   <span class="grow truncate text-sm">{contact.name}</span>
                   <span class="text-xs text-muted truncate">{contact.email_address}</span>
 
@@ -181,7 +187,7 @@
             {:else}
               <ul class="space-y-1">
                 {#each available_contacts as contact (contact.id)}
-                  <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
+                  <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
                     <span class="grow truncate text-sm">{contact.name}</span>
                     <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
                     <button

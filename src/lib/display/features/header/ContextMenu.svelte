@@ -47,6 +47,19 @@
 >
   <div class="p-2 space-y-0.5">
     <a
+      aria-label={t("notifications")}
+      draggable="false"
+      href="/notifications"
+      class="relative rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
+    >
+      <span class="relative">
+        <Icon name="bell" size={16} />
+      </span>
+      <span>{t("notifications")}</span>
+      <NotificationBadge />
+    </a>
+
+    <a
       aria-label={t("completed_tasks")}
       href="/complete"
       draggable="false"
@@ -75,21 +88,8 @@
       <Icon name="settings" size={16} />
       <span>{t("settings")}</span>
     </a>
-
-    <a
-      aria-label={t("notifications")}
-      draggable="false"
-      href="/notifications"
-      class="relative rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
-    >
-      <span class="relative">
-        <Icon name="bell" size={16} />
-      </span>
-      <span>{t("notifications")}</span>
-      <NotificationBadge  />
-    </a>
   </div>
- 
+
   {#if !!selected_tasks.size || is_dev}
     <div class="p-2 space-y-1 border-t border-default">
       <ButtonShareTask onclick={() => (show = false)} hidden={!selected_tasks.size} />

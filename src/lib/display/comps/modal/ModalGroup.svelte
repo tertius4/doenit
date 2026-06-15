@@ -110,7 +110,7 @@
 </script>
 
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={saveGroup} class="*:space-y-4" {...rest}>
-  <ModalHeader>{is_creating ? t("create_new_group") : t("edit_group")}</ModalHeader>
+  <ModalHeader>{is_creating ? t("new_group") : t("edit_group")}</ModalHeader>
 
   <InputText
     value={name}
@@ -124,12 +124,14 @@
     }}
   />
 
-  <InputText
+  <textarea
     value={description}
-    onchange={(value) => (description = value)}
+    onchange={(e) => (description = e.target.value)}
     maxlength="250"
     placeholder={t("enter_group_description")}
-  />
+    rows="3"
+    class="bg-card border border-default p-2 w-full rounded-lg placeholder:text-muted outline-none focus:ring-1 ring-primary resize-none"
+  ></textarea>
 
   {#if error_message}
     <p class="text-sm text-error">{error_message}</p>

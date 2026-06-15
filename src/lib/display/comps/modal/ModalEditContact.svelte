@@ -16,6 +16,7 @@
   /** @type {Props} */
   let { open = $bindable(false), contact_id, initial_name = null } = $props();
 
+  // svelte-ignore state_referenced_locally
   let name = $state(initial_name ?? "");
   let error_message = $state("");
   let is_loading = $state(false);

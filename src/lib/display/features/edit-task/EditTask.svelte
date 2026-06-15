@@ -25,6 +25,7 @@
 
   let is_loading = $state(false);
   let name_invalid = $state(false);
+  let is_prompting = $state(false);
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
   const scope_id = $derived(/** @type {any} */ (task).scope_id);
@@ -109,14 +110,21 @@
     </div>
   </div>
 
+  <PhotoGallery bind:photo_ids={task.photo_ids} class="mt-4" bind:is_prompting />
+
   <div
     class="fixed flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2"
     style="bottom: max(16px, env(safe-area-inset-bottom));"
   >
     {#if config.photos_enabled}
-      <div>
-        <PhotoGallery bind:photo_ids={task.photo_ids} />
-      </div>
+      <button
+        type="button"
+        onclick={() => (is_prompting = true)}
+        disabled={is_loading}
+        class="flex justify-center bg-card items-center aspect-square rounded-full size-13 p-3 disabled:opacity-50"
+      >
+        <Icon name="camera" />
+      </button>
     {/if}
 
     <ButtonSubmitTask loading={is_loading} />

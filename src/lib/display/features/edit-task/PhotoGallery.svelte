@@ -1,24 +1,23 @@
 <script>
   import { backHandler } from "$logic/navigation";
   import t from "$display/translate";
-  import { CameraSource } from "@capacitor/camera";
   import Icon from "$display/comps/Icon.svelte";
-  import { slide } from "svelte/transition";
   import { onMount } from "svelte";
   import Photos from "$services/photos.svelte";
   import Modal, { ModalHeader } from "$display/comps/modal";
   import toast from "$display/toast/toast.svelte";
   import Drawer from "$display/comps/Drawer.svelte";
+  import { defineCustomElements } from "@ionic/pwa-elements/loader";
 
   /**
    * @typedef {Object} Props
-   * @property {string[]} [photo_ids]
+   * @prop {boolean} [is_prompting]
+   * @prop {string[]} [photo_ids]
    */
 
-  /** @type {Props} */
-  let { photo_ids = $bindable([]) } = $props();
+  /** @type {Props & import('svelte/elements').HTMLAttributes<HTMLDivElement>} */
+  let { photo_ids = $bindable([]), is_prompting = $bindable(false), ...rest } = $props();
 
-  let is_prompting = $state(false);
   let is_fullscreen = $state(false);
   let is_deleting_photo = $state(false);
   let is_loading = $state(false);
@@ -28,7 +27,7 @@
 
   /** @type {AL.TaskPhoto[]} */
   let photos = $state([]);
-
+  $inspect(photos);
   // Load photos when photo_ids change
   $effect(() => {
     if (photo_ids?.length) {
@@ -38,10 +37,7 @@
     }
   });
 
-  onMount(async () => {
-    const { defineCustomElements } = await import("@ionic/pwa-elements/loader");
-    defineCustomElements(window);
-  });
+  onMount(() => defineCustomElements(window));
 
   onMount(() => {
     const token = backHandler.register(() => {
@@ -74,17 +70,20 @@
     is_loading = false;
   }
 
-  async function openPhotosPrompt() {
-    is_prompting = true;
-  }
-
   /**
-   * @param {CameraSource} source
+   * Open the photo prompt
+   * @param {'camera' | 'gallery'} source
    */
   async function addPhoto(source) {
     is_prompting = false;
     is_loading = true;
-    const result = await Photos.addPhoto(source);
+
+    const map = {
+      camera: async () => Photos.takePhoto(),
+      gallery: async () => Photos.choosePhoto(),
+    };
+
+    const result = await map[source]();
     if (!result.ok) {
       toast.error(result.error);
       is_loading = false;
@@ -104,9 +103,8 @@
    * @param {AL.TaskPhoto} photo
    */
   async function askToDeletePhoto(photo) {
-    is_deleting_photo = true;
-
     selected_photo = photo;
+    is_deleting_photo = true;
   }
 
   async function removePhoto() {
@@ -131,45 +129,29 @@
   }
 </script>
 
-<div>
-  <!-- Add Photo Button -->
-  {#if photos.length < 3}
-    <button
-      type="button"
-      onclick={openPhotosPrompt}
-      disabled={is_loading}
-      class="flex justify-center bg-card items-center aspect-square rounded-full size-13 p-3 disabled:opacity-50"
-    >
-      <Icon name="camera" />
-    </button>
-  {/if}
+<!-- Photos Grid -->
+<div {...rest} class={["grid grid-cols-3 gap-2", rest.class]}>
+  {#each photos as photo (photo.webview_path)}
+    <div class="relative group aspect-square">
+      <button
+        type="button"
+        onclick={() => viewPhoto(photo)}
+        class="w-full h-full rounded-lg overflow-hidden bg-card border border-default border-line"
+      >
+        <img src={photo.webview_path} alt="Attachment" class="w-full h-full object-cover" />
+      </button>
 
-  <!-- Photos Grid -->
-  {#if !!photos.length}
-    <div class="grid grid-cols-3 gap-2 mt-4">
-      {#each photos as photo (photo.id)}
-        <div class="relative group aspect-square">
-          <button
-            type="button"
-            onclick={() => viewPhoto(photo)}
-            class="w-full h-full rounded-lg overflow-hidden bg-card border border-default border-line"
-          >
-            <img src={photo.webview_path} alt="Attachment" class="w-full h-full object-cover" />
-          </button>
-
-          <!-- Delete button -->
-          <button
-            type="button"
-            onclick={() => askToDeletePhoto(photo)}
-            class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center"
-            aria-label={t("delete_photo")}
-          >
-            <Icon name="times" class="w-4 h-4" />
-          </button>
-        </div>
-      {/each}
+      <!-- Delete button -->
+      <button
+        type="button"
+        onclick={() => askToDeletePhoto(photo)}
+        class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center"
+        aria-label={t("delete_photo")}
+      >
+        <Icon name="times" class="w-4 h-4" />
+      </button>
     </div>
-  {/if}
+  {/each}
 </div>
 
 {#if is_prompting}
@@ -179,7 +161,7 @@
       <div class="flex gap-4">
         <button
           type="button"
-          onclick={() => addPhoto(CameraSource.Photos)}
+          onclick={() => addPhoto("gallery")}
           disabled={is_loading}
           class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
         >
@@ -188,7 +170,7 @@
         </button>
         <button
           type="button"
-          onclick={() => addPhoto(CameraSource.Camera)}
+          onclick={() => addPhoto("camera")}
           disabled={is_loading}
           class="flex h-12 items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 w-full justify-center bg-card border border-default"
         >
@@ -202,7 +184,7 @@
 
 {#if is_fullscreen}
   <div
-    class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+    class="fixed inset-0 bg-black/90 z-50 flex m-0! items-center justify-center p-4 backdrop-blur-sm"
     role="button"
     tabindex="0"
     onclick={() => (is_fullscreen = false)}

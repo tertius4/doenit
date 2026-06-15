@@ -8,13 +8,22 @@
   import ButtonBackup from "./comps/ButtonBackup.svelte";
   import Api from "$logic/api";
   import toast from "$display/toast/toast.svelte";
-
-  // TODO: Rethink backups...
+  import { ExportService } from "$services/backup/ExportService";
 
   const has_backup = $derived(false);
 
+  let is_loading = $state(false);
+
   async function createBackup() {
-    toast.success("Kom binnekort");
+    is_loading = true;
+    const result = await ExportService.export();
+    if (!result.ok) {
+      toast.error(result.error);
+      is_loading = false;
+      return;
+    }
+    
+    is_loading = false;
   }
 
   async function restoreBackup() {
@@ -38,9 +47,9 @@
       />
     </div>
 
-    <ButtonBackup is_loading={Backup.is_loading} onclick={() => createBackup()} class="mb-4" />
+    <ButtonBackup is_loading={is_loading} onclick={() => createBackup()} class="mb-4" />
     {#if has_backup}
-      <ButtonRestore is_loading={Backup.is_loading} onclick={restoreBackup} getBackup={handleBackup} />
+      <ButtonRestore is_loading={is_loading} onclick={restoreBackup} getBackup={handleBackup} />
     {/if}
 
     <div

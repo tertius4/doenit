@@ -209,6 +209,30 @@ async function getByIdHandler(id: string): AsyncResult<DB.Group> {
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Group not found" };
 
+    // Make sure the user may access the group
+    const group = result.value;
+    if (group.scope_id) {
+      if (!context.user_state.active_scopes.includes(group.scope_id)) {
+        return { ok: false, error: "Group not found" };
+      }
+
+      const member_result = await DB.member.findOne({
+        selector: {
+          scope_id: group.scope_id,
+          firebase_uid: context.user?.firebase_uid,
+          soft_deleted: { $ne: true },
+        },
+      });
+      if (!member_result.ok) return member_result;
+      if (!member_result.value) return { ok: false, error: "Group not found" };
+
+    } else {
+      // If the group doesn't have a scope_id, only the owner can access it
+      if (group.owner_id !== context.user?.id) {
+        return { ok: false, error: "Group not found" };
+      }
+    }
+
     return { ok: true, value: result.value };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);

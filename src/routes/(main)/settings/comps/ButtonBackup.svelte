@@ -2,6 +2,7 @@
   import Modal, { ModalHeader } from "$display/comps/modal";
   import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
+  import InputSwitch from "$display/comps/input/InputSwitch.svelte";
 
   /**
    * @typedef {Object} Props
@@ -14,6 +15,7 @@
 
   let is_open = $state(false);
   let is_backing_up = $state(false);
+  let is_photos_included = $state(false);
 
   async function handleClick() {
     is_open = false;
@@ -28,8 +30,8 @@
   {...rest}
   class={[
     "p-2 rounded-lg text-alt grid grid-cols-[min-content_auto] gap-2 items-center min-h-12 w-full text-start",
-    is_loading && "bg-primary/80",
-    !is_loading && "bg-primary text-alt",
+    is_loading && "bg-secondary-700",
+    !is_loading && "bg-secondary-500 hover:bg-secondary-600",
     rest.class || "",
   ]}
   type="button"
@@ -41,20 +43,18 @@
   {:else}
     <Icon name="download-cloud" class="text-3xl mx-1 my-auto" />
   {/if}
-  <!-- <div>
-    <p class="font-medium">{is_backing_up ? t("backup_in_progress") : t("backup_now")}</p>
-    <p class="text-sm">{t("last_backup")}: {Backup.last_backup_at}</p>
-  </div> -->
 </button>
 
 <Modal class="p-6" bind:is_open onclose={() => (is_open = false)}>
   <ModalHeader>{t("backup_question")}</ModalHeader>
-  <!-- {#if Backup.last_backup_at}
-    <p class="text-sm mb-4">
-      {t("last_backup")}: {Backup.last_backup_at}
-    </p>
-  {/if} -->
-  <div class="flex justify-end space-x-4">
+  
+  <div class="flex items-center my-4 gap-2">
+    <!-- TODO Translate -->
+    <InputSwitch value={is_photos_included} onchange={(value) => (is_photos_included = value)} />
+    <p class="font-medium">Sluit foto's in?</p>
+  </div>
+
+  <footer class="flex justify-end space-x-4">
     <button
       aria-label={t("backup_aria")}
       class="text-md items-center justify-center text-alt px-4 py-2 flex gap-1 bg-primary rounded-lg"
@@ -63,5 +63,5 @@
       <Icon name="check" />
       <span>{t("backup")}</span>
     </button>
-  </div>
+  </footer>
 </Modal>

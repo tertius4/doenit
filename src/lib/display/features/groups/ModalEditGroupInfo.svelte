@@ -12,7 +12,7 @@
    * @prop {string} [id]
    * @prop {string} [name=""]
    * @prop {string} [description=""]
-   * @prop {(name: string, description: string) => *} [onsubmit]
+   * @prop {(name: string, description: string | undefined) => *} [onsubmit]
    * @prop {() => *} [onclose]
    */
 
@@ -34,10 +34,13 @@
   });
 
   async function handleSave() {
+    if (!onsubmit) return;
+
     error_message = "";
-    const result = await Api.groups.save({ id, name: local_name, description: local_description });
+
+    const result = await onsubmit(local_name, local_description);
     if (!result.ok) return (error_message = result.error);
-    if (onsubmit) await onsubmit(result.value.name, result.value.description);
+
     open = false;
   }
 </script>

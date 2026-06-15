@@ -38,7 +38,7 @@
 <button
   {...rest}
   type="button"
-  hidden={!can_share.value}
+  hidden={rest.hidden || !can_share.value}
   aria-label="Share Task"
   onclick={handleShare}
   class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"

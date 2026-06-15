@@ -33,12 +33,12 @@
 <Modal bind:is_open={open} close_on_outside_click={false}>
   <ModalHeader>{t("leave_group")}</ModalHeader>
   <p class="text-sm mt-4 mb-6">{t("confirm_leave_group")}</p>
-  <div class="flex gap-2 justify-end">
+  <footer class="flex gap-2 justify-between">
     <button type="button" class="text-sm px-4 py-2 rounded-md bg-card" onclick={() => (open = false)}>
       {t("cancel")}
     </button>
     <button type="button" class="text-sm px-4 py-2 rounded-md bg-error text-alt" onclick={confirmLeave}>
       {t("leave_group")}
     </button>
-  </div>
+  </footer>
 </Modal>

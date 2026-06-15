@@ -219,7 +219,7 @@ declare global {
   namespace AL {
     // App Logic
     type TaskPhoto = {
-      id: string; // Primary key (UUID).
+      id: string; // File name
       filepath: string; // Path to the photo file.
       webview_path?: string; // Optional webview path for displaying the photo.
     };

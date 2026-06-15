@@ -1,9 +1,22 @@
-import { Camera, CameraResultType, CameraSource, type Photo } from "@capacitor/camera";
+import { Camera, type MediaResult, type TakePhotoOptions } from "@capacitor/camera";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
-import DateUtil from "$display/date-util";
 import { config } from "$lib/config";
 import t from "$display/translate";
+
+const PHOTO_DIR = "doenit_photos";
+
+const PHOTO_OPTIONS: TakePhotoOptions = {
+  quality: 30,
+  targetWidth: 1024,
+  targetHeight: 1024,
+  correctOrientation: true,
+
+  encodingType: 0,
+  webUseInput: true,
+  saveToGallery: true,
+  includeMetadata: true,
+};
 
 class PhotoService {
   /**
@@ -31,56 +44,91 @@ class PhotoService {
     }
   }
 
-  /**
-   * Take or select a photo
-   * @param source - Camera or gallery
-   */
-  async addPhoto(source: CameraSource = CameraSource.Prompt): AsyncResult<AL.TaskPhoto> {
+  async takePhoto(): AsyncResult<AL.TaskPhoto> {
     if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
 
     try {
-      const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Base64,
-        source: source,
-        quality: 80,
-        width: 1920,
-        height: 1920,
-        correctOrientation: true,
-      });
+      const photo = await Camera.takePhoto(PHOTO_OPTIONS);
+      if (!photo?.webPath) return { ok: false, error: t("no_photo_data") };
 
       return await this.savePhoto(photo);
     } catch (error: any) {
-      if (error?.message?.includes("User cancelled")) {
-        return { ok: false, error: t("user_cancelled") };
+      if (error?.message?.toLowerCase().includes("cancel")) {
+        return {
+          ok: false,
+          error: t("user_cancelled"),
+        };
       }
 
-      return { ok: false, error: error.message };
+      return {
+        ok: false,
+        error: error?.message ?? "Unknown error",
+      };
+    }
+  }
+
+  async choosePhoto(): AsyncResult<AL.TaskPhoto> {
+    if (!config.photos_enabled) return { ok: false, error: "Photos are not enabled" };
+
+    try {
+      const result = await Camera.chooseFromGallery({ ...PHOTO_OPTIONS, limit: 1 });
+      const photo = result.results[0];
+      if (!photo?.webPath) return { ok: false, error: t("no_photo_data") };
+
+      return await this.savePhoto(photo);
+    } catch (error: any) {
+      if (error?.message?.toLowerCase().includes("cancel")) {
+        return {
+          ok: false,
+          error: t("user_cancelled"),
+        };
+      }
+
+      return {
+        ok: false,
+        error: error?.message ?? "Unknown error",
+      };
     }
   }
 
   /**
    * Save photo to filesystem
    */
-  private async savePhoto(photo: Photo): AsyncResult<AL.TaskPhoto> {
-    if (!photo.base64String) return { ok: false, error: t("no_photo_data") };
+  private async savePhoto(photo: MediaResult): AsyncResult<AL.TaskPhoto> {
+    if (!photo.thumbnail) return { ok: false, error: t("no_photo_data") };
 
-    const result = await this.ensureDirectory();
-    if (!result.ok) return result;
+    try {
+      const dir = await this.ensureDirectory();
+      if (!dir.ok) return dir;
 
-    const timestamp = DateUtil.format(new Date(), "YYYY-MM-DD_HHmmss");
-    const filename = `${timestamp}.${photo.format}`;
+      const ext = photo.metadata?.format ?? "jpeg";
+      const filename = `${Date.now()}.${ext}`;
 
-    const saved_file = await Filesystem.writeFile({
-      path: `doenit_photos/${filename}`,
-      data: photo.base64String,
-      directory: Directory.Data,
-    });
+      await Filesystem.writeFile({
+        path: `${PHOTO_DIR}/${filename}`,
+        data: photo.thumbnail,
+        directory: Directory.Data,
+      });
 
-    const webview_path = Capacitor.isNativePlatform()
-      ? Capacitor.convertFileSrc(saved_file.uri)
-      : `data:image/${photo.format};base64,${photo.base64String}`;
+      const file = await Filesystem.getUri({
+        path: `${PHOTO_DIR}/${filename}`,
+        directory: Directory.Data,
+      });
 
-    return { ok: true, value: { id: filename, filepath: saved_file.uri, webview_path } };
+      return {
+        ok: true,
+        value: {
+          id: filename,
+          filepath: file.uri,
+          webview_path: Capacitor.convertFileSrc(file.uri),
+        },
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : JSON.stringify(error),
+      };
+    }
   }
 
   /**
@@ -171,23 +219,8 @@ class PhotoService {
 
     try {
       const all_photo_ids = await this.getAllPhotoIds();
-      const orphaned_ids: string[] = [];
-      for (let i = 0; i < all_photo_ids.length; i++) {
-        const photo_id = all_photo_ids[i];
-
-        let is_orphaned = true;
-        for (let j = 0; j < photo_ids.length; j++) {
-          if (photo_ids[j] !== photo_id) continue;
-
-          is_orphaned = false;
-          break;
-        }
-
-        if (!is_orphaned) continue;
-
-        orphaned_ids.push(photo_id);
-      }
-
+      const active = new Set(photo_ids);
+      const orphaned_ids = all_photo_ids.filter((id) => !active.has(id));
       if (!!orphaned_ids.length) {
         const result = await this.deletePhotos(orphaned_ids);
         if (!result.ok) {

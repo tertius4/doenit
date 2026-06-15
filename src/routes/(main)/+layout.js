@@ -6,9 +6,9 @@ import { mount } from "svelte";
 import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
 import { browser } from "$app/environment";
 import Api from "$logic/api";
-import { getInitials } from "$lib";
 
-export async function load({ url, params, route, parent }) {
+export async function load({ url, params, route, parent, depends }) {
+  depends("layout:main");
   await parent();
   Widget.init();
   if (Capacitor.isNativePlatform()) {
