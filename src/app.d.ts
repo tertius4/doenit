@@ -103,12 +103,7 @@ declare global {
       responded_at: string | null;
     }
 
-    type NotificationType =
-      | "invite_received"
-      | "invite_accepted"
-      | "group_added"
-      | "group_removed"
-      | "task_assigned";
+    type NotificationType = "invite_received" | "invite_accepted" | "group_added" | "group_removed" | "task_assigned";
 
     interface Notification {
       user_id: string;
@@ -217,6 +212,12 @@ declare global {
   type AsyncResult<T = void> = Promise<Result<T>>;
 
   namespace AL {
+    type Notification = {
+      id: number;
+      title: string;
+      body: string;
+      at: Date;
+    };
     // App Logic
     type TaskPhoto = {
       id: string; // File name

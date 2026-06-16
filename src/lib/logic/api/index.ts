@@ -54,6 +54,7 @@ export default class Api {
   static readonly notifications = {
     pull: notifications.pull,
     markAsRead: notifications.markAsRead,
+    schedule: notifications.schedule,
   };
 
   static readonly groups = {

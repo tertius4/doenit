@@ -187,5 +187,9 @@ export async function initApp(user_id?: string | null) {
     DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
       context.app_state = app_state;
     });
+
+    setTimeout(async () => {
+      await Api.notifications.schedule();
+    }, 300);
   }
 }

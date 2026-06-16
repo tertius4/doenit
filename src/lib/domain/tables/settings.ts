@@ -1,3 +1,4 @@
+import Api from "$logic/api";
 import Table from "./local-table";
 
 export class SettingsTable extends Table<Domain.Settings> {
@@ -6,7 +7,21 @@ export class SettingsTable extends Table<Domain.Settings> {
   }
 
   async update(id: string, changes: Partial<DB.Settings>): AsyncResult<DB.Settings> {
-    return super.update(id, changes);
+    const result = await super.update(id, changes);
+    if (!result.ok) return result;
+
+    const notifications_keys = [
+      "notifications_enabled",
+      "present_task_reminder_enabled",
+      "present_task_reminder_time",
+      "past_task_reminder_enabled",
+      "past_task_reminder_time",
+    ];
+    if (notifications_keys.some((key) => key in changes)) {
+      await Api.notifications.schedule();
+    }
+
+    return result;
   }
 
   async getSettings(user_id?: string): AsyncResult<DB.Settings> {
