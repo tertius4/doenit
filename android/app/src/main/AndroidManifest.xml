@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -9,7 +7,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
             android:name="doenit.app.MainActivity"
@@ -31,7 +28,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="doenit" />
             </intent-filter>
-
         </activity>
 
         <activity
@@ -42,12 +38,10 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="doenit.app.CREATE_TASK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
         </activity>
 
         <provider
@@ -55,27 +49,27 @@
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
         <!-- Notification Logos -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_stat_logo" />
+            android:resource="@mipmap/ic_stat_logo"
+        />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@android:color/white" />
+            android:resource="@android:color/white"
+        />
 
         <meta-data
             android:name="com.capacitorjs.local_notifications.small_icon"
-            android:resource="@drawable/ic_stat_logo" />
+            android:resource="@drawable/ic_stat_logo"
+        />
 
         <!-- Widget provider -->
-        <receiver android:name="doenit.app.TaskWidgetProvider"
-            android:exported="true">
+        <receiver android:name="doenit.app.TaskWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="COMPLETE_TASK" />
@@ -83,15 +77,15 @@
                 <action android:name="OPEN_APP" />
                 <action android:name="ADD_TASK" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider"
-                android:resource="@xml/task_widget_info" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/task_widget_info" />
         </receiver>
 
         <!-- Widget service -->
-        <service android:name="doenit.app.TaskWidgetService"
+        <service
+            android:name="doenit.app.TaskWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
-
+            android:exported="false"
+        />
     </application>
 
     <!-- Permissions -->

@@ -15,6 +15,7 @@ async function markAsReadHandler(notification: DB.Notification): AsyncResult<DB.
 }
 
 async function rebuildSchedule() {
+  console.trace("[rebuildSchedule] Rebuilding notification schedule...");
   await NotificationAdapter.cancelAll();
 
   const settings = context.settings;
@@ -95,6 +96,7 @@ async function rebuildSchedule() {
         tasks_by_day.get(day_key)!.push(task);
       }
 
+      const reminder_time = settings.present_task_reminder_time ?? "08:00";
       const [hour, minute] = reminder_time.split(":").map(Number);
 
       for (const [day_key, day_tasks] of tasks_by_day) {
@@ -197,6 +199,7 @@ async function rebuildSchedule() {
     }
   }
 
+  console.log("Notification Count:", notifications.length);
   await NotificationAdapter.schedule(notifications);
 }
 
