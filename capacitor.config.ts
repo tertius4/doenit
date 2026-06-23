@@ -2,8 +2,8 @@ import type { CapacitorConfig } from "@capacitor/cli";
 import dotenv from "dotenv";
 
 // Load environment-specific configuration
-const env = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
-dotenv.config({ path: env });
+// const env = process.env.APP_VARIANT === "development" ? ".env.development" : ".env";
+dotenv.config();
 
 const config: CapacitorConfig = {
   appId: process.env.PUBLIC_APP_ID || "doenit.app",
