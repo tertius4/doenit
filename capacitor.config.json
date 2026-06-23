@@ -1,0 +1,31 @@
+{
+  "appId": "doenit.app",
+  "appName": "Doenit",
+  "webDir": "build",
+  "server": {
+    "iosScheme": "capacitor",
+    "allowNavigation": ["*.firebaseapp.com", "*.googleapis.com", "*.googleusercontent.com"]
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_logo",
+      "iconColor": "#ffffff",
+      "sound": "notification.wav"
+    },
+    "SocialLogin": {
+      "providers": {
+        "google": true,
+        "facebook": false,
+        "apple": false,
+        "twitter": false
+      }
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false
+  }
+}
