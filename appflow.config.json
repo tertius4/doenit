@@ -1,0 +1,8 @@
+{
+  "apps": [
+    {
+      "appId": "jou.app.id",
+      "platform": "ios"
+    }
+  ]
+}

@@ -128,6 +128,7 @@ declare global {
       device_id: string;
       last_opened_at: string;
       open_count: number;
+      migration_1_complete?: boolean;
       app_version: string;
       updated_at: string;
     }

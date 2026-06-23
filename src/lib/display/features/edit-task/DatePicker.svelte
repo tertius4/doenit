@@ -10,6 +10,7 @@
   import Button from "$display/comps/button/Button.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { context } from "$logic/context.svelte";
+  import { slide } from "svelte/transition";
 
   /**
    * @typedef {Object} Props
@@ -28,15 +29,16 @@
   let end_date = $state(end ? new Date(end) : null);
 
   /** @type {string | undefined} */
-  let start_time = $state("");
+  let start_time = $state(start?.split(" ")[1] ?? "");
   /** @type {string | undefined} */
-  let end_time = $state("");
+  let end_time = $state(end?.split(" ")[1] ?? "");
 
   let is_open = $state(false);
 
   const display_end = $derived(end_date ? DateUtil.format(end_date, "D MMM YYYY") : null);
   const display_start = $derived(start_date ? DateUtil.format(start_date, "D MMM YYYY") : null);
-  const display_time = $derived(start?.split(" ")[1] ?? "");
+  const display_start_time = $derived(start?.split(" ")[1] ?? "");
+  const display_end_time = $derived(end?.split(" ")[1] ?? "");
 
   $effect(() => {
     start;
@@ -59,19 +61,27 @@
 
   /**
    * Handle date selection from Calendar
-   * @param {{ start_date: Date, start_time?: string, end_date?: Date | null }} update
+   * @param {{ start_date: Date, start_time?: string | null, end_date?: Date | null, end_time?: string | null }} update
    */
   function handleSelection(update) {
-    if (update.start_time) {
-      if (!/^\d{2}:\d{2}$/.test(update.start_time)) {
+    console.log("Date selection updated:", update);
+    if (update.start_time !== undefined) {
+      if (update.start_time !== null && !/^\d{2}:\d{2}$/.test(update.start_time)) {
         console.error(`Tyd in verkeerde formaat: ${update.start_time}. Moet in HH:mm formaat wees.`);
         return;
       }
-      start = `${DateUtil.format(update.start_date, "YYYY-MM-DD")} ${update.start_time}`;
-      end = null;
-    } else {
-      start = DateUtil.format(update.start_date, "YYYY-MM-DD");
-      end = update.end_date ? DateUtil.format(update.end_date, "YYYY-MM-DD") : null;
+      start_time = update.start_time ?? "";
+      start = `${DateUtil.format(update.start_date, "YYYY-MM-DD")} ${update.start_time ?? ""}`.trim();
+    }
+
+    if (update.end_time !== undefined) {
+      if (update.end_time !== null && !/^\d{2}:\d{2}$/.test(update.end_time)) {
+        console.error(`Tyd in verkeerde formaat: ${update.end_time}. Moet in HH:mm formaat wees.`);
+        return;
+      }
+
+      end_time = update.end_time ?? "";
+      end = `${DateUtil.format(update.end_date, "YYYY-MM-DD")} ${update.end_time ?? ""}`.trim();
     }
   }
 </script>
@@ -81,11 +91,11 @@
     {#if !start_date && !end_date}
       <span class="text-muted">{t("datepicker_choose_dates")}</span>
     {:else if start_date && !end_date}
-      <span>{display_start} {display_time}</span>
+      <span>{display_start} {display_start_time}</span>
     {:else if start_date && end_date}
       <span>{display_start}</span>
       <span> {t("to")} </span>
-      <span>{display_end}</span>
+      <span>{display_end} {display_end_time}</span>
     {/if}
   </button>
 
@@ -111,8 +121,27 @@
   </div>
 
   <div class="flex items-center gap-2">
-    <InputTime value={start_time} onchange={(value) => (start_time = value)} placeholder={t("choose_start_time")} />
-    <InputTime value={end_time} onchange={(value) => (end_time = value)} placeholder={t("choose_end_time")} />
+    {#if start_date}
+      <div transition:slide class="w-full">
+        <InputTime
+          class="w-full"
+          value={start_time}
+          onchange={(value) => handleSelection({ end_date, start_date, start_time: value ?? null })}
+          placeholder={t("choose_start_time")}
+        />
+      </div>
+    {/if}
+
+    {#if end_date}
+      <div transition:slide class="w-full">
+        <InputTime
+          class="w-full"
+          value={end_time}
+          onchange={(value) => handleSelection({ end_date, start_date, end_time: value ?? null })}
+          placeholder={t("choose_end_time")}
+        />
+      </div>
+    {/if}
   </div>
 
   <Button

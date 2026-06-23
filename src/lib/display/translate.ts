@@ -28,6 +28,11 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     DEFAULT_NAME: "Standaard",
     something_went_wrong: "Iets het verkeerd gegaan",
 
+    // Migration Notice
+    migration_notice_title: "Dateer ou data op...",
+    migration_notice_message:
+      "Dit kan tot 'n minuut neem, maar moenie die toep sluit nie!",
+
     // Search
     search: "Soek",
 
@@ -610,6 +615,11 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     DEFAULT_NAME: "Default",
     something_went_wrong: "Something went wrong",
     search: "Search",
+
+    // Migration Notice
+    migration_notice_title: "Updating old data...",
+    migration_notice_message:
+      "This may take up to a minute, but do not close the app!",
 
     // Theme & Appearance
     appearance: "Appearance",

@@ -16,6 +16,7 @@ async function markAsReadHandler(notification: DB.Notification): AsyncResult<DB.
 
 async function rebuildSchedule() {
   console.trace("[rebuildSchedule] Rebuilding notification schedule...");
+  await NotificationAdapter.requestPermissions();
   await NotificationAdapter.cancelAll();
 
   const settings = context.settings;
@@ -35,7 +36,7 @@ async function rebuildSchedule() {
    * ============================================================================
    */
 
-  if (present_time) {
+  if (!!present_time) {
     const tasks_result = await DB.task.findMany({
       selector: {
         assigned_firebase_uid: {
@@ -52,15 +53,15 @@ async function rebuildSchedule() {
             $or: [
               {
                 start_date: {
-                  $gte: start_period,
-                  $lte: end_period,
+                  $gte: start_period?.toISOString().slice(0, 10),
+                  $lte: end_period?.toISOString().slice(0, 10),
                 },
               },
               {
                 $and: [
                   { due_date: { $exists: true } },
-                  { start_date: { $lte: start_period } },
-                  { due_date: { $gte: start_period } },
+                  { start_date: { $lte: start_period?.toISOString().slice(0, 10) } },
+                  { due_date: { $gte: start_period?.toISOString().slice(0, 10) } },
                 ],
               },
             ],
@@ -130,6 +131,7 @@ async function rebuildSchedule() {
    * ============================================================================
    */
 
+  console.log("past_time", past_time, end_period?.toISOString().slice(0, 10));
   if (past_time) {
     const overdue_result = await DB.task.findMany({
       selector: {
@@ -147,23 +149,22 @@ async function rebuildSchedule() {
               {
                 due_date: {
                   $exists: true,
-                  $lt: start_period,
+                  $lt: end_period?.toISOString().slice(0, 10),
                 },
               },
               {
-                due_date: {
-                  $exists: false,
-                },
-                start_date: {
-                  $exists: true,
-                  $lt: start_period,
-                },
+                $and: [
+                  { $or: [{ due_date: { $exists: false } }, { due_date: "" }, { due_date: null }] },
+                  { start_date: { $exists: true, $lt: end_period?.toISOString().slice(0, 10) } },
+                ],
               },
             ],
           },
         ],
       },
     });
+
+    console.log("overdue_result", overdue_result);
 
     if (overdue_result.ok) {
       const overdue_tasks = overdue_result.value;
@@ -199,7 +200,7 @@ async function rebuildSchedule() {
     }
   }
 
-  console.log("Notification Count:", notifications.length);
+  console.log("Notification Count:", notifications);
   await NotificationAdapter.schedule(notifications);
 }
 

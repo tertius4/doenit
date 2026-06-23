@@ -54,7 +54,7 @@ export class TaskTable extends Table<Domain.Task> {
     }
 
     const result = await super.update(id, changes);
-    if (result.ok) return result;
+    if (!result.ok) return result;
 
     Api.notifications.schedule();
 

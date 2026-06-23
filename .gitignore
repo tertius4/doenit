@@ -39,7 +39,7 @@ android/build/
 android/capacitor-cordova-android-plugins/build/
 
 functions/lib
-package-lock.json
+# package-lock.json
 pglite-debug.log
 
 functions/service-account-key.json

@@ -8,6 +8,12 @@
   import { setContext, onMount } from "svelte";
   import "../../app.css";
   import syncEngine from "$domain/sync/SyncEngine";
+  import t from "$display/translate";
+  import Icon from "$display/comps/Icon.svelte";
+  import { runMigration } from "$logic/migrations/1_2/migration";
+  import { fade } from "svelte/transition";
+
+  let show_migration_notice = $state(false);
 
   onMount(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -15,7 +21,16 @@
     const listener = App.addListener("backButton", () => backHandler.handle());
     return () => listener.then((l) => l.remove());
   });
-  
+
+  onMount(async () => {
+    if (context.app_state.migration_1_complete) return;
+
+    show_migration_notice = true;
+    await runMigration();
+    context.app_state.migration_1_complete = true;
+    show_migration_notice = false;
+  });
+
   onMount(() => {
     let stopRealtimeSync = () => {};
     const onOnline = () => syncEngine.requestTick();
@@ -55,3 +70,11 @@
 
   <Footer />
 </main>
+
+{#if show_migration_notice}
+  <div transition:fade class="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center p-4 select-none">
+    <Icon name="loading" class="text-white animate-spin" />
+    <h2 class="text-xl font-bold text-white">{t("migration_notice_title")}</h2>
+    <p class="text-white">{t("migration_notice_message")}</p>
+  </div>
+{/if}
