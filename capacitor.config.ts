@@ -23,10 +23,6 @@ const config: CapacitorConfig = {
       iconColor: "#ffffff",
       sound: "notification.wav",
     },
-    FirebaseAuthentication: {
-      skipNativeAuth: false,
-      providers: ["google.com"],
-    },
     SocialLogin: {
       providers: {
         google: true,
@@ -45,6 +41,10 @@ const config: CapacitorConfig = {
       releaseType: "AAB",
       signingType: "jarsigner",
     },
+  },
+  ios: {
+    contentInset: "always",
+    allowsLinkPreview: false,
   },
 };
 
