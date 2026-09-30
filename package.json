@@ -4,6 +4,7 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
+    "app": "./tools/doenit-cli.sh",
     "dev": "vite dev",
     "build": "vite build --mode production",
     "build:dev": "NODE_ENV=development vite build --mode development",

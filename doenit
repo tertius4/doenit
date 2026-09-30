@@ -1,4 +1,0 @@
-#!/bin/bash
-# Quick launcher for Doenit CLI
-cd "$(dirname "$0")"
-./tools/doenit-cli.sh "$@"

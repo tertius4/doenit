@@ -8,10 +8,12 @@
   import { setContext, onMount } from "svelte";
   import "../../app.css";
   import syncEngine from "$domain/sync/SyncEngine";
+  import DB from "$domain/db";
   import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
   import { runMigration } from "$logic/migrations/1_2/migration";
   import { fade } from "svelte/transition";
+  import toast from "$display/toast/toast.svelte";
 
   let show_migration_notice = $state(false);
 
@@ -23,12 +25,21 @@
   });
 
   onMount(async () => {
-    if (context.app_state.migration_1_complete) return;
+    try {
+      if (context.app_state.migration_1_complete) return;
+  
+      show_migration_notice = true;
+      await runMigration();
 
-    show_migration_notice = true;
-    await runMigration();
-    context.app_state.migration_1_complete = true;
-    show_migration_notice = false;
+      const update_result = await DB.app_state.update({ migration_1_complete: true });
+      if (!update_result.ok) throw new Error(update_result.error);
+
+      show_migration_notice = false;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      toast.error("Migration failed: " + message);
+      show_migration_notice = false;
+    }
   });
 
   onMount(() => {

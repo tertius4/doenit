@@ -190,7 +190,12 @@ async function initDB() {
     },
     category: { schema: schema.category },
     session: { schema: schema.session },
-    app_state: { schema: schema.app_state },
+    app_state: {
+      schema: schema.app_state,
+      migrationStrategies: {
+        1: (doc) => ({ ...doc, migration_1_complete: false }),
+      },
+    },
     user_state: { schema: schema.user_state },
 
     contact: { schema: schema.contact },
@@ -201,7 +206,19 @@ async function initDB() {
     sync_queue: { schema: schema.sync_queue },
   });
 
-  for (const name of ["settings", "category", "task", "user", "contact", "contact_invite", "notification", "group", "member", "user_state"] as const) {
+  for (const name of [
+    "settings",
+    "category",
+    "task",
+    "user",
+    "contact",
+    "contact_invite",
+    "notification",
+    "group",
+    "member",
+    "user_state",
+    "app_state",
+  ] as const) {
     const col = collections[name] as any;
     const needed = await col.migrationNeeded();
     if (needed) {
