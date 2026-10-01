@@ -17,11 +17,11 @@
   });
 
   $effect(() => {
-    document.documentElement.setAttribute("data-theme", context.settings.theme || "dark");
+    document.documentElement.setAttribute("data-theme", context._settings?.theme || "dark");
   });
 
   $effect(() => {
-    document.documentElement.style.setProperty("--base-size", `var(--${context.settings.text_size || "md"})`);
+    document.documentElement.style.setProperty("--base-size", `var(--${context._settings?.text_size || "md"})`);
   });
 </script>
 

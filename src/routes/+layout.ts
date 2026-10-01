@@ -16,9 +16,15 @@ export async function load({ url, params }) {
     const { SocialLogin } = await import("@capgo/capacitor-social-login");
     await SocialLogin.handleRedirectCallback();
     await auth.initialize({ web_client_id: config.google_web_client_id }); // Ensure auth is initialized to clear any internal state
-    return; // window.close() is called internally
+    return { ready: Promise.resolve(false) }; // window.close() is called internally
   }
 
+  // Don't await: SvelteKit renders nothing until every load resolves. Components gate on `ready` instead.
+  return { ready: startup() };
+}
+
+/** Resolves to `true` when the DB and app context are usable, `false` after an (alerted) failure. Never rejects. */
+async function startup(): Promise<boolean> {
   // Initialize Firebase before any DB or sync operations
   firestore.init();
 
@@ -26,7 +32,8 @@ export async function load({ url, params }) {
     await DB.init();
   } catch (error) {
     const message = error instanceof Error ? error.message : JSON.stringify(error);
-    return alert.error("Databasis fout", message);
+    alert.error("Databasis fout", message);
+    return false;
   }
 
   try {
@@ -34,6 +41,9 @@ export async function load({ url, params }) {
   } catch (error) {
     console.error("Failed to initialize app", error);
     const message = error instanceof Error ? error.message : JSON.stringify(error);
-    return alert.error("Initialisasie fout", message);
+    alert.error("Initialisasie fout", message);
+    return false;
   }
+
+  return true;
 }

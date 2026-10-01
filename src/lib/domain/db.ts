@@ -2,11 +2,11 @@ import { addRxPlugin, createRxDatabase } from "rxdb";
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
 import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
-import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode";
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv";
 
 import * as schema from "./schema";
 import * as tables from "./tables";
+import * as env from "$env/static/public";
 
 type tables =
   | tables.task
@@ -165,7 +165,10 @@ export default DB;
 async function initDB() {
   addRxPlugin(RxDBMigrationSchemaPlugin);
   addRxPlugin(RxDBUpdatePlugin);
-  addRxPlugin(RxDBDevModePlugin);
+  if (env.PUBLIC_ENVIRONMENT === "development") {
+    const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
+    addRxPlugin(RxDBDevModePlugin);
+  }
 
   // TODO XXX: Migrate tasks and categories from "doenitDb".
   const DB = await createRxDatabase({

@@ -3,7 +3,8 @@ import DB from "$domain/db";
 export const ssr = false;
 
 export async function load({ params, parent }) {
-  await parent();
+  const { ready } = await parent();
+  await ready;
   const col = DB.getCollection(params.collection);
   if (!col) {
     return { collection: params.collection, records: [], error: "Collection not found" };

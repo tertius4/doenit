@@ -3,7 +3,8 @@ import Api from "$logic/api";
 import { redirect } from "@sveltejs/kit";
 
 export async function load({ params, parent }) {
-  await parent();
+  const { ready } = await parent();
+  await ready;
   const { task_id } = params;
   const task_result = await Api.task.getTaskById(task_id);
   if (!task_result.ok) {

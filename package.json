@@ -10,7 +10,7 @@
     "build:dev": "NODE_ENV=development vite build --mode development",
     "build:prod": "NODE_ENV=production vite build",
     "preview": "vite preview",
-    "prebuild": "./tools/prebuild-appflow.sh",
+    "ionic:build:before": "./tools/prebuild-appflow.sh",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
@@ -49,10 +49,14 @@
     "@capgo/capacitor-social-login": "^8.3.22",
     "@ionic/pwa-elements": "^3.4.0",
     "cordova-plugin-purchase": "^13.16.1",
-    "dotenv": "^17.4.2",
-    "firebase": "12.14.0",
+    "dotenv": "^18.0.5",
+    "firebase": "12.19.0",
     "jszip": "^3.10.1",
-    "pako": "^2.1.0",
+    "pako": "^3.0.2",
     "rxdb": "^17.3.0"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.3": true,
+    "protobufjs@7.6.6": true
   }
 }

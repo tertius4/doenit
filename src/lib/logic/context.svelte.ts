@@ -93,6 +93,32 @@ function subscribeForUser(user_id: string | null) {
 }
 
 /**
+ * Pulls remote state (memberships, invites, notifications) and flushes the sync queue.
+ * Never throws - every step logs its own failure.
+ */
+async function syncRemote(user_id: string | null, firebase_uid: string | null, reconcile: boolean) {
+  if (user_id && firebase_uid) {
+    try {
+      const scopes = reconcile ? await MembershipService.reconcileScopes(firebase_uid) : undefined;
+      await MembershipService.sync(user_id, firebase_uid, scopes);
+    } catch (err) {
+      console.warn("[initApp] membership sync failed:", err);
+    }
+
+    await Promise.all([
+      Api.invites.pull().catch((err) => console.warn("[initApp] invite pull failed:", err)),
+      Api.notifications.pull().catch((err) => console.warn("[initApp] notification pull failed:", err)),
+    ]);
+  }
+
+  try {
+    await syncEngine.flush();
+  } catch (err) {
+    console.warn("[initApp] sync flush failed:", err);
+  }
+}
+
+/**
  * Call on app open (no argument) or explicitly after sign-in / sign-out (pass user_id or null).
  * - App open: reads the session, initialises app state, then wires subscriptions.
  * - Sign-in / sign-out: skips app-state init and re-wires subscriptions for the new user.
@@ -125,36 +151,15 @@ export async function initApp(user_id?: string | null) {
   }
 
   const user_result = resolved_user_id ? await DB.user.findById(resolved_user_id) : null;
-  const firebase_uid = user_result?.ok ? user_result.value?.firebase_uid : null;
+  const firebase_uid = user_result?.ok ? (user_result.value?.firebase_uid ?? null) : null;
   context.user = user_result?.ok ? (user_result.value as DB.User | null) : null;
 
   subscribeForUser(resolved_user_id);
 
-  if (resolved_user_id && firebase_uid) {
-    try {
-      if (is_app_open) {
-        await MembershipService.reconcileScopes(firebase_uid);
-      }
-
-      await MembershipService.sync(resolved_user_id, firebase_uid);
-    } catch (err) {
-      console.warn("[initApp] membership sync failed:", err);
-    }
-
-    try {
-      await Api.invites.pull();
-    } catch (err) {
-      console.warn("[initApp] invite pull failed:", err);
-    }
-
-    try {
-      await Api.notifications.pull();
-    } catch (err) {
-      console.warn("[initApp] notification pull failed:", err);
-    }
-  }
-
-  await syncEngine.flush();
+  // Network sync is not needed to render. On app open it runs in the background;
+  // after sign-in / sign-out callers expect fresh data, so it is awaited.
+  const remote_sync = syncRemote(resolved_user_id, firebase_uid, is_app_open);
+  if (!is_app_open) await remote_sync;
 
   if (is_app_open) {
     const app_state_result = await DB.app_state.getDevice();

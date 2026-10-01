@@ -10,7 +10,9 @@
 
 <nav class="shadow-t-sm border-t border-default">
   {#if page.data.is_home}
-    <Hotbar />
+    {#await page.data.ready then ok}
+      {#if ok}<Hotbar />{/if}
+    {/await}
   {/if}
 
   {#if !page.data.is_task_page}

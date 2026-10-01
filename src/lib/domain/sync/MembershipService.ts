@@ -7,9 +7,10 @@ export const MembershipService = {
    * local UserState. Call this after login and before SyncEngine.requestTick().
    * @param user_id  Local RxDB user ID (used as the user_state primary key).
    * @param firebase_uid  Firebase UID (used as the Firestore document key).
+   * @param known_scopes  Already-fetched memberships (e.g. from reconcileScopes) to avoid a second fetch.
    */
-  async sync(user_id: string, firebase_uid: string): Promise<void> {
-    const scopes = await firestore.fetchMemberships(firebase_uid);
+  async sync(user_id: string, firebase_uid: string, known_scopes?: string[]): Promise<void> {
+    const scopes = known_scopes ?? (await firestore.fetchMemberships(firebase_uid));
 
     await DB.user_state.upsert({
       id: user_id,
@@ -42,10 +43,11 @@ export const MembershipService = {
    * Reconciles a user's Firestore scope memberships against the live Firestore scope data.
    * Any scope whose group document is absent or soft-deleted in Firestore is removed from memberships.
    * Call this on app startup after Firestore is initialised.
+   * Returns the (cleaned) membership list so callers don't need to fetch it again.
    */
-  async reconcileScopes(firebase_uid: string): Promise<void> {
+  async reconcileScopes(firebase_uid: string): Promise<string[]> {
     const existing = await firestore.fetchMemberships(firebase_uid);
-    if (existing.length === 0) return;
+    if (existing.length === 0) return existing;
 
     const stale: string[] = [];
     await Promise.all(
@@ -55,10 +57,11 @@ export const MembershipService = {
       }),
     );
 
-    if (stale.length === 0) return;
+    if (stale.length === 0) return existing;
 
     console.warn("[MembershipService] Reconciling stale scopes:", stale);
     const cleaned = existing.filter((s) => !stale.includes(s));
     await firestore.upsertMemberships(firebase_uid, cleaned);
+    return cleaned;
   },
 };
