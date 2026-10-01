@@ -64,14 +64,12 @@
    * @param {{ start_date: Date, start_time?: string | null, end_date?: Date | null, end_time?: string | null }} update
    */
   function handleSelection(update) {
-    console.log("Date selection updated:", update);
     if (update.start_time !== undefined) {
       if (update.start_time !== null && !/^\d{2}:\d{2}$/.test(update.start_time)) {
         console.error(`Tyd in verkeerde formaat: ${update.start_time}. Moet in HH:mm formaat wees.`);
         return;
       }
       start_time = update.start_time ?? "";
-      start = `${DateUtil.format(update.start_date, "YYYY-MM-DD")} ${update.start_time ?? ""}`.trim();
     }
 
     if (update.end_time !== undefined) {
@@ -79,10 +77,11 @@
         console.error(`Tyd in verkeerde formaat: ${update.end_time}. Moet in HH:mm formaat wees.`);
         return;
       }
-
       end_time = update.end_time ?? "";
-      end = `${DateUtil.format(update.end_date, "YYYY-MM-DD")} ${update.end_time ?? ""}`.trim();
     }
+
+    start = update.start_date ? `${DateUtil.format(update.start_date, "YYYY-MM-DD")} ${start_time ?? ""}`.trim() : "";
+    end = update.end_date ? `${DateUtil.format(update.end_date, "YYYY-MM-DD")} ${end_time ?? ""}`.trim() : "";
   }
 </script>
 
