@@ -115,18 +115,12 @@ build_and_install_dev() {
 # 4) App logs
 view_logs() {
     check_device || return 1
-    local pkg pid
-    pkg=$(app_id .env.development)
-    pid=$(adb shell pidof "${pkg:-doenit.app.dev}" 2>/dev/null | tr -d '\r')
 
+    # Filter op tag en nie op pid nie: 'n pid word ongeldig sodra die app herlaai of herinstalleer word.
+    # Capacitor/Console = console.log vanuit die web-kode, LN = local-notifications plugin.
     adb logcat -c
-    if [[ -n $pid ]]; then
-        step "Logs vir $pkg (Ctrl+C om te stop)"
-        adb logcat --pid="$pid"
-    else
-        warn "$pkg loop nie; wys alle 'Doenit|Console' logs (Ctrl+C om te stop)"
-        adb logcat | grep --line-buffered -E "Doenit|Console"
-    fi
+    step "App logs (Capacitor/Console, plugin LN, 'Doenit') - Ctrl+C om te stop"
+    adb logcat -v time | grep --line-buffered -E "Capacitor|/LN|Doenit"
 }
 
 # Voer 'n opsie uit; Ctrl+C stop net die aksie, nie die CLI nie.

@@ -1,7 +1,6 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { NotificationService } from "$domain/notifications/NotificationService";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -18,7 +17,7 @@ function myLocalId(): string | null {
 }
 
 export const InviteService = {
-  async send(to_email: string): AsyncResult {
+  async send(to_email: string): AsyncResult<DB.ContactInvite> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
     const my_email = context.user?.email_address;
@@ -55,9 +54,8 @@ export const InviteService = {
     // Write to receiver's inbox so they can discover the invite
     await firestore.upsertInvite(target.uid, invite);
     await firestore.upsertInvite(my_uid, invite);
-    await NotificationService.createInviteReceived(invite);
     await DB.contact_invite.upsert(invite);
-    return { ok: true };
+    return { ok: true, value: invite };
   },
 
   async pull(): Promise<void> {
@@ -88,7 +86,7 @@ export const InviteService = {
     });
   },
 
-  async accept(invite_id: string): AsyncResult {
+  async accept(invite_id: string): AsyncResult<DB.ContactInvite> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
     if (!my_uid || !my_local_id) return { ok: false, error: "Not authenticated" };
@@ -110,10 +108,9 @@ export const InviteService = {
 
     await firestore.upsertInvite(my_uid, updated);
     await firestore.upsertInvite(invite.from_firebase_uid, updated);
-    await NotificationService.createInviteAccepted(updated);
     await DB.contact_invite.upsert(updated);
     await this._process(updated);
-    return { ok: true };
+    return { ok: true, value: updated };
   },
 
   async reject(invite_id: string): AsyncResult {

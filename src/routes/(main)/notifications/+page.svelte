@@ -1,5 +1,5 @@
 <script>
-  import DB from "$domain/db";
+  import { subscribeList } from "$display/view/notifications";
   import Api from "$logic/api";
   import { context } from "$logic/context.svelte";
   import NotificationList from "$display/notifications/NotificationList.svelte";
@@ -30,16 +30,7 @@
 
     if (!user_id) return;
 
-    const subscription = DB.notification
-      .subscribe$({
-        selector: { user_id },
-        sort: [{ created_at: "desc" }],
-      })
-      .subscribe((items) => {
-        notifications = items;
-      });
-
-    unsubscribe = () => subscription.unsubscribe();
+    unsubscribe = subscribeList(user_id, (items) => (notifications = items));
   });
 
   onDestroy(() => unsubscribe());

@@ -1,5 +1,6 @@
 import { apiLogger } from "$lib";
 import { InviteService } from "$domain/sync/InviteService";
+import { NotificationService } from "$logic/notifications/NotificationService";
 
 export const send = apiLogger(sendInviteHandler);
 export const accept = apiLogger(acceptInviteHandler);
@@ -8,11 +9,19 @@ export const cancel = apiLogger(cancelInviteHandler);
 export const pull = () => InviteService.pull();
 
 async function sendInviteHandler(to_email: string): AsyncResult {
-  return InviteService.send(to_email);
+  const result = await InviteService.send(to_email);
+  if (!result.ok) return result;
+
+  await NotificationService.createInviteReceived(result.value);
+  return { ok: true };
 }
 
 async function acceptInviteHandler(invite_id: string): AsyncResult {
-  return InviteService.accept(invite_id);
+  const result = await InviteService.accept(invite_id);
+  if (!result.ok) return result;
+
+  await NotificationService.createInviteAccepted(result.value);
+  return { ok: true };
 }
 
 async function rejectInviteHandler(invite_id: string): AsyncResult {

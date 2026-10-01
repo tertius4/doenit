@@ -1,6 +1,5 @@
 <script>
   import Api from "$logic/api";
-  import { NotificationRouter } from "$domain/notifications/NotificationRouter";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import DateUtil from "$display/date-util";
@@ -15,13 +14,35 @@
       await Api.notifications.markAsRead(notification);
     }
 
-    await NotificationRouter.open(notification);
+    await Api.notifications.open(notification);
   }
 
   /** @param {string} timestamp */
   function formatDate(timestamp) {
     const locale = context.settings.language == "en" ? "en-GB" : "af-ZA";
     return DateUtil.format(timestamp, "D MMM YYYY, HH:mm", { locale });
+  }
+
+  /**
+   *
+   * @param {DB.Notification} notification
+   * @return {{ title: string; body: string }}
+   */
+  function notificationText(notification) {
+    const data = notification.data ?? {};
+    const email = typeof data.email === "string" ? data.email : "";
+    const group = typeof data.group_name === "string" ? data.group_name : "";
+
+    const translatable =
+      ((notification.type === "invite_received" || notification.type === "invite_accepted") && email) ||
+      ((notification.type === "group_added" || notification.type === "group_removed") && group);
+
+    if (!translatable) return { title: notification.title, body: notification.body };
+
+    return {
+      title: t(`notification_${notification.type}_title`),
+      body: t(`notification_${notification.type}_body`, { email, group }),
+    };
   }
 </script>
 
@@ -48,10 +69,10 @@
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-start justify-between gap-3">
-            <p class="font-semibold text-sm line-clamp-2">{notification.title}</p>
+            <p class="font-semibold text-sm line-clamp-2">{notificationText(notification).title}</p>
             <time class="text-xs text-muted shrink-0 pt-0.5">{formatDate(notification.created_at)}</time>
           </div>
-          <p class="mt-1 text-sm text-muted line-clamp-2">{notification.body}</p>
+          <p class="mt-1 text-sm text-muted line-clamp-2">{notificationText(notification).body}</p>
         </div>
       </button>
     </li>

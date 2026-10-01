@@ -103,7 +103,13 @@ declare global {
       responded_at: string | null;
     }
 
-    type NotificationType = "invite_received" | "invite_accepted" | "group_added" | "group_removed" | "task_assigned";
+    type NotificationType =
+      | "invite_received"
+      | "invite_accepted"
+      | "group_added"
+      | "group_removed"
+      | "task_assigned"
+      | "mentioned";
 
     interface Notification {
       user_id: string;
@@ -218,6 +224,8 @@ declare global {
       title: string;
       body: string;
       at: Date;
+      /** Data returned when the notification is tapped. */
+      extra?: { task_id?: string; type?: string };
     };
     // App Logic
     type TaskPhoto = {

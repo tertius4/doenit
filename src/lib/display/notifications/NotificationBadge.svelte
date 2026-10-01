@@ -1,5 +1,5 @@
 <script>
-  import DB from "$domain/db";
+  import { subscribeUnreadCount } from "$display/view/notifications";
   import { context } from "$logic/context.svelte";
   import { onDestroy } from "svelte";
 
@@ -24,10 +24,7 @@
 
     if (!user_id) return;
 
-    const subscription = DB.notification.subscribe$(DB.notification.unreadQuery(user_id)).subscribe((items) => {
-      count = items.length;
-    });
-    unsubscribe = () => subscription.unsubscribe();
+    unsubscribe = subscribeUnreadCount(user_id, (unread) => (count = unread));
   });
 
   onDestroy(() => unsubscribe());

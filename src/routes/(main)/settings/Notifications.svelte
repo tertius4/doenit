@@ -6,12 +6,21 @@
   import Icon from "$display/comps/Icon.svelte";
   import InputTime from "$display/comps/input/InputTime.svelte";
   import { context } from "$logic/context.svelte";
+  import toast from "$display/toast/toast.svelte";
   import Api from "$logic/api";
 
-  let saving = $state(false);
-  let saved = $state(false);
-
   const enabled = $derived(context.settings.notifications_enabled);
+
+  /** @param {Partial<Domain.Settings>} changes */
+  async function update(changes) {
+    await Api.settings.update(changes);
+
+    // Ask for the OS permission while the user is turning a reminder on.
+    if (Object.values(changes).includes(true)) {
+      const result = await Api.notifications.requestPermission();
+      if (result.ok && !result.value) toast.warning(t("notification_permission_denied"));
+    }
+  }
 </script>
 
 <Accordion label={t("notifications")}>
@@ -20,7 +29,7 @@
     <div class="flex items-center gap-2">
       <InputSwitch
         value={context.settings.notifications_enabled}
-        onchange={(value) => Api.settings.update({ notifications_enabled: value })}
+        onchange={(value) => update({ notifications_enabled: value })}
       />
       <span class="text-sm font-medium">{t("reminders")}</span>
     </div>
@@ -31,7 +40,7 @@
         <div class="flex items-center gap-2">
           <InputSwitch
             value={context.settings.present_task_reminder_enabled}
-            onchange={(value) => Api.settings.update({ present_task_reminder_enabled: value })}
+            onchange={(value) => update({ present_task_reminder_enabled: value })}
           />
           <span class="text-sm font-medium">{t("notify_due_tasks")}</span>
         </div>
@@ -51,22 +60,6 @@
                 onchange={(value) => Api.settings.update({ present_task_reminder_time: value })}
                 placeholder={t("choose_time")}
               />
-
-              <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
-                {#if saving}
-                  <div in:slide={{ duration: 200 }}>
-                    <Icon name="loading" class="animate-spin" />
-                  </div>
-                {:else if saved}
-                  <div
-                    in:slide={{ duration: 200 }}
-                    out:slide={{ duration: 200 }}
-                    class="border-2 rounded-full border-success aspect-square h-fit p-1"
-                  >
-                    <Icon name="check" class="text-success text-sm" />
-                  </div>
-                {/if}
-              </div>
             </div>
           </div>
         {/if}
@@ -74,7 +67,7 @@
         <div class="flex items-center gap-2">
           <InputSwitch
             value={context.settings.past_task_reminder_enabled}
-            onchange={(value) => Api.settings.update({ past_task_reminder_enabled: value })}
+            onchange={(value) => update({ past_task_reminder_enabled: value })}
           />
           <span class="text-sm font-medium">{t("notify_past_due_tasks")}</span>
         </div>
@@ -94,22 +87,6 @@
                 onchange={(value) => Api.settings.update({ past_task_reminder_time: value })}
                 placeholder={t("choose_time")}
               />
-
-              <div class="absolute top-1/2 -translate-y-1/2 right-3 flex items-center justify-center">
-                {#if saving}
-                  <div in:slide={{ duration: 200 }}>
-                    <Icon name="loading" class="animate-spin" />
-                  </div>
-                {:else if saved}
-                  <div
-                    in:slide={{ duration: 200 }}
-                    out:slide={{ duration: 200 }}
-                    class="border-2 rounded-full border-success aspect-square h-fit p-1"
-                  >
-                    <Icon name="check" class="text-success text-sm" />
-                  </div>
-                {/if}
-              </div>
             </div>
           </div>
         {/if}

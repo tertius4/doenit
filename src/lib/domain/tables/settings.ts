@@ -1,29 +1,6 @@
-import Api from "$logic/api";
 import Table from "./local-table";
 
 export class SettingsTable extends Table<Domain.Settings> {
-  async create(item: Domain.Settings & Partial<DB.MetaDataPrivate>): AsyncResult<DB.Settings> {
-    return super.create(item);
-  }
-
-  async update(id: string, changes: Partial<DB.Settings>): AsyncResult<DB.Settings> {
-    const result = await super.update(id, changes);
-    if (!result.ok) return result;
-
-    const notifications_keys = [
-      "notifications_enabled",
-      "present_task_reminder_enabled",
-      "present_task_reminder_time",
-      "past_task_reminder_enabled",
-      "past_task_reminder_time",
-    ];
-    if (notifications_keys.some((key) => key in changes)) {
-      await Api.notifications.schedule();
-    }
-
-    return result;
-  }
-
   async getSettings(user_id?: string): AsyncResult<DB.Settings> {
     try {
       if (user_id) {
@@ -68,7 +45,7 @@ export class SettingsTable extends Table<Domain.Settings> {
           present_task_reminder_enabled: true,
           present_task_reminder_time: "09:00",
           past_task_reminder_enabled: false,
-          past_task_reminder_time: null,
+          past_task_reminder_time: "09:00",
           text_size: "md",
 
           created_at: date,

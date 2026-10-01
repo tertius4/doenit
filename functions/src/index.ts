@@ -125,6 +125,22 @@ async function verifyGooglePlayPurchase(
 
 // Backup functions
 // Send Push Notification function
+const MAX_PUSH_RECIPIENTS = 50;
+// Matches the in-app inbox types (src/app.d.ts Domain.NotificationType), plus the legacy types.
+const PUSH_TYPES = [
+  "invite_received",
+  "invite_accepted",
+  "group_added",
+  "group_removed",
+  "task_assigned",
+  "mentioned",
+  "friend_request",
+  "new_task",
+  "task_updated",
+  "task_completed",
+  "user_left_group",
+  "friend_request_accepted",
+] as const;
 export const sendPushNotification = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
@@ -148,8 +164,23 @@ export const sendPushNotification = functions.https.onRequest(async (req, res) =
 
       // Get notification details from body
       const { users, title, body, type, data } = req.body;
-      if (!users?.length) {
+      if (!Array.isArray(users) || !users.length || users.length > MAX_PUSH_RECIPIENTS) {
         res.status(400).json({ error: "Missing parameters" });
+        return;
+      }
+      if (users.some((user: any) => typeof user?.fcm_token !== "string" || !user.fcm_token)) {
+        res.status(400).json({ error: "Missing fcm_token" });
+        return;
+      }
+      // TODO: Before the app starts calling this, resolve recipients server-side (tokens in users/{uid}/private/push)
+      // and check the caller shares an accepted contact or group with each recipient. Right now any signed-in
+      // caller that knows a token can push to it.
+      if (title && body && (String(title).length > 100 || String(body).length > 500)) {
+        res.status(400).json({ error: "Notification text too long" });
+        return;
+      }
+      if (type && !(PUSH_TYPES as readonly string[]).includes(type)) {
+        res.status(400).json({ error: "Unknown notification type" });
         return;
       }
 
@@ -510,6 +541,16 @@ async function saveSubscription(subscription: any | null): Promise<void> {
 function getTemplateTitle(type: string, lang: "af" | "en"): string {
   const is_english = lang === "en";
   switch (type) {
+    case "invite_received":
+      return is_english ? "New contact invite" : "Nuwe kontak-uitnodiging";
+    case "invite_accepted":
+      return is_english ? "Contact invite accepted" : "Kontak-uitnodiging aanvaar";
+    case "group_added":
+      return is_english ? "Added to group" : "By groep gevoeg";
+    case "group_removed":
+      return is_english ? "Removed from group" : "Uit groep verwyder";
+    case "task_assigned":
+      return is_english ? "New task assigned" : "Nuwe taak toegeken";
     case "friend_request":
       if (is_english) {
         return "New Friend Request";
@@ -559,6 +600,16 @@ function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, s
   const is_english = lang === "en";
 
   switch (type) {
+    case "invite_received":
+      return is_english ? `${data.email} wants to connect with you.` : `${data.email} wil met jou skakel.`;
+    case "invite_accepted":
+      return is_english ? `${data.email} accepted your invite.` : `${data.email} het jou uitnodiging aanvaar.`;
+    case "group_added":
+      return is_english ? `You were added to ${data.group_name}.` : `Jy is by ${data.group_name} gevoeg.`;
+    case "group_removed":
+      return is_english ? `You were removed from ${data.group_name}.` : `Jy is uit ${data.group_name} verwyder.`;
+    case "task_assigned":
+      return is_english ? `Task "${data.task_name}" was assigned to you` : `Taak "${data.task_name}" is aan jou toegeken`;
     case "friend_request":
       if (is_english) {
         return "You have a new friend request";

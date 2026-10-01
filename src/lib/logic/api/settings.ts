@@ -29,18 +29,16 @@ async function updateSettingsHandler(settings: Partial<Domain.Settings>): AsyncR
     }
   }
 
-  if (settings.notifications_enabled !== undefined) {
-    if (typeof settings.notifications_enabled !== "boolean") {
-      return { ok: false, error: "Invalid notifications enabled" };
-    }
+  if (settings.notifications_enabled !== undefined && typeof settings.notifications_enabled !== "boolean") {
+    return { ok: false, error: "Invalid notifications enabled" };
+  }
 
-    if (!settings.notifications_enabled) {
-      settings.present_task_reminder_enabled = false;
-      settings.past_task_reminder_enabled = false;
-    } else {
-      settings.present_task_reminder_enabled = true;
-      settings.past_task_reminder_enabled = true;
-    }
+  // Turning the master switch on with both reminders off would do nothing: restore the defaults.
+  if (settings.notifications_enabled) {
+    const current = context.settings;
+    const present = settings.present_task_reminder_enabled ?? current.present_task_reminder_enabled;
+    const past = settings.past_task_reminder_enabled ?? current.past_task_reminder_enabled;
+    if (!present && !past) settings.present_task_reminder_enabled = true;
   }
 
   const result = await DB.settings.update(context.settings.id, settings);

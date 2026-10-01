@@ -55,7 +55,13 @@
         <!-- Notification Logos -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_stat_logo"
+            android:resource="@drawable/ic_stat_logo"
+        />
+
+        <!-- Same channel the local-notifications plugin creates, so push and reminders share settings. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default"
         />
 
         <meta-data
@@ -94,5 +100,4 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 </manifest>

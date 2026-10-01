@@ -3,7 +3,7 @@ import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
 import { SyncQueue } from "$domain/sync/SyncQueue";
 import t from "$display/translate";
-import { NotificationService } from "$domain/notifications/NotificationService";
+import { NotificationService } from "$logic/notifications/NotificationService";
 
 export const save = apiLogger(saveGroupHandler);
 export const remove = apiLogger(deleteGroupHandler);

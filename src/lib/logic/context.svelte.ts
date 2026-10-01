@@ -3,7 +3,7 @@ import { Device } from "@capacitor/device";
 import DB from "$lib/domain/db";
 import scopeManager from "$lib/domain/sync/ScopeManager";
 import { MembershipService } from "$lib/domain/sync/MembershipService";
-import { Subscription } from "rxjs";
+import { Subscription, distinctUntilChanged, map } from "rxjs";
 import Api from "$logic/api";
 import syncEngine from "$domain/sync/SyncEngine";
 
@@ -85,11 +85,33 @@ function subscribeForUser(user_id: string | null) {
     }),
   );
 
+  // Reminders depend on the settings and on who is signed in (emits on subscribe, so also on sign-in / sign-out).
+  _user_subscriptions.add(
+    DB.settings
+      .subscribeOne$(user_id || "device")
+      .pipe(
+        map((settings) => JSON.stringify(notificationSettings(settings))),
+        distinctUntilChanged(),
+      )
+      .subscribe(() => Api.notifications.schedule()),
+  );
+
   _user_subscriptions.add(
     DB.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
       context.user_state = user_state;
     }),
   );
+}
+
+function notificationSettings(settings: DB.Settings | null) {
+  return [
+    settings?.notifications_enabled,
+    settings?.present_task_reminder_enabled,
+    settings?.present_task_reminder_time,
+    settings?.past_task_reminder_enabled,
+    settings?.past_task_reminder_time,
+    settings?.language,
+  ];
 }
 
 /**
@@ -193,8 +215,8 @@ export async function initApp(user_id?: string | null) {
       context.app_state = app_state;
     });
 
-    setTimeout(async () => {
-      await Api.notifications.schedule();
-    }, 300);
+    // Tasks change locally and through sync pulls (which bypass the tables), so watch the collection itself.
+    DB.task.collection.$.subscribe(() => Api.notifications.schedule());
+    Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
   }
 }

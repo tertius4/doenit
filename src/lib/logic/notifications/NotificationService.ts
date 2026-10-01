@@ -1,5 +1,7 @@
 /**
- * TODO: Afrikaanse weergawes!!!
+ * The stored title/body are an English fallback (also usable as push text later).
+ * The inbox renders translated text from `type` + `data` in the recipient's language
+ * (see $display/notifications/text.ts), so keep `data` complete.
  */
 
 import firestore from "$services/firestore";
@@ -60,6 +62,7 @@ export const NotificationService = {
       data: {
         invite_id: invite.id,
         from_user_id: invite.from_firebase_uid,
+        email: invite.from_email,
       },
     });
   },
@@ -73,6 +76,7 @@ export const NotificationService = {
       data: {
         invite_id: invite.id,
         from_user_id: invite.to_firebase_uid,
+        email: invite.to_email,
       },
     });
   },
@@ -114,6 +118,10 @@ export const NotificationService = {
     if (!remote.length) return;
 
     for (const notification of remote) {
+      // Our own markAsRead writes come back on the next pull; skip what is already up to date locally.
+      const local = await DB.notification.findById(notification.id);
+      if (local.ok && local.value && local.value.updated_at >= notification.updated_at) continue;
+
       await DB.notification.upsert(notification);
     }
 
@@ -138,8 +146,11 @@ export const NotificationService = {
     };
 
     try {
-      await firestore.upsertNotification(my_uid, updated);
+      // Local first so reading works offline; the remote write is best-effort.
       await DB.notification.upsert(updated);
+      firestore
+        .upsertNotification(my_uid, updated)
+        .catch((error) => console.warn("[notifications] failed to sync read state:", error));
       return { ok: true, value: updated };
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);

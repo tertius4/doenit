@@ -1,30 +1,32 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 
-export class NotificationAdapter {
-  static async requestPermissions() {
-    await LocalNotifications.requestPermissions();
-  }
+export const NotificationAdapter = {
+  async hasPermission(): Promise<boolean> {
+    const status = await LocalNotifications.checkPermissions();
+    return status.display === "granted";
+  },
 
-  static async schedule(notifications: AL.Notification[] = []) {
+  /** Shows the OS prompt if the user has not decided yet. */
+  async requestPermission(): Promise<boolean> {
+    const status = await LocalNotifications.requestPermissions();
+    return status.display === "granted";
+  },
+
+  async schedule(notifications: AL.Notification[] = []) {
     if (!notifications.length) return;
-    
+
     await LocalNotifications.schedule({
       notifications: notifications.map((notification) => ({
         id: notification.id,
         title: notification.title,
         body: notification.body,
-        schedule: { at: notification.at },
+        schedule: { at: notification.at, allowWhileIdle: true },
+        extra: notification.extra,
       })),
     });
-  }
+  },
 
-  static async cancel(id: number) {
-    await LocalNotifications.cancel({
-      notifications: [{ id }],
-    });
-  }
-
-  static async cancelAll() {
+  async cancelAll() {
     const pending = await LocalNotifications.getPending();
 
     if (!pending.notifications.length) {
@@ -36,15 +38,16 @@ export class NotificationAdapter {
         id: n.id,
       })),
     });
-  }
+  },
 
-  static async getPending(): Promise<AL.Notification[]> {
-    const pending = await LocalNotifications.getPending();
-    return pending.notifications.map((n) => ({
-      id: n.id,
-      title: n.title,
-      body: n.body,
-      at: new Date(n.schedule?.at ?? 0),
-    }));
-  }
-}
+  /** Calls back with the extra data of a tapped notification. Returns an unsubscribe function. */
+  async onTap(callback: (extra: AL.Notification["extra"]) => void): Promise<() => void> {
+    const handle = await LocalNotifications.addListener("localNotificationActionPerformed", (action) => {
+      callback(action.notification.extra ?? {});
+    });
+
+    return () => {
+      handle.remove();
+    };
+  },
+};

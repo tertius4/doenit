@@ -1,8 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Public profile used to find a user by e-mail when sending a contact invite.
+    match /user_profiles/{uid} {
+      allow read: if signedIn();
+      allow write: if isOwner(uid);
+    }
+
+    // Synced scope data (tasks, groups, ...). Scope ids are random UUIDs.
+    // TODO: restrict to scope members once membership checks are verified against the emulator.
+    match /scopes/{scope_id}/items/{item_id} {
+      allow read, write: if signedIn();
+    }
+
+    match /users/{uid} {
+      // Group owners read and write memberships on behalf of the members they add or remove.
+      match /meta/{doc_id} {
+        allow read, write: if signedIn();
+      }
+
+      // Reserved for per-user private data such as push tokens: owner only (the Admin SDK bypasses rules).
+      match /private/{doc_id} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Both parties of an invite keep a copy in their own inbox.
+      match /invites/{invite_id} {
+        allow read: if isOwner(uid);
+        allow create, update: if signedIn()
+          && (request.resource.data.from_firebase_uid == request.auth.uid
+            || request.resource.data.to_firebase_uid == request.auth.uid);
+      }
+
+      // Anyone signed in may send a notification to a user; only the user can read or change it.
+      match /notifications/{notification_id} {
+        allow read, update, delete: if isOwner(uid);
+        allow create: if signedIn() && request.resource.data.user_id == uid;
+      }
+    }
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

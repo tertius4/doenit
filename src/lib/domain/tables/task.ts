@@ -1,5 +1,4 @@
 import t from "$lib/display/translate";
-import Api from "$logic/api";
 import Table from "./sync-table";
 
 export class TaskTable extends Table<Domain.Task> {
@@ -23,12 +22,7 @@ export class TaskTable extends Table<Domain.Task> {
       }
     }
 
-    const result = await super.create(item);
-    if (result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
+    return super.create(item);
   }
 
   async update(id: string, changes: Partial<DB.Task>): AsyncResult<DB.Task> {
@@ -53,49 +47,6 @@ export class TaskTable extends Table<Domain.Task> {
       }
     }
 
-    const result = await super.update(id, changes);
-    if (!result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
-  }
-
-  async remove(id: string): AsyncResult {
-    const result = await super.remove(id);
-    if (!result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
-  }
-
-  async createMany(items: Domain.Task[]): AsyncResult<(Domain.Task & DB.MetaDataShared)[]> {
-    const result = await super.createMany(items);
-    if (!result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
-  }
-
-  async removeMany(ids: string[]): AsyncResult {
-    const result = await super.removeMany(ids);
-    if (!result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
-  }
-
-  async updateMany(
-    updates: { id: string; changes: Partial<Domain.Task & DB.MetaDataShared> }[],
-  ): AsyncResult<(Domain.Task & DB.MetaDataShared)[]> {
-    const result = await super.updateMany(updates);
-    if (!result.ok) return result;
-
-    Api.notifications.schedule();
-
-    return result;
+    return super.update(id, changes);
   }
 }

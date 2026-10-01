@@ -18,6 +18,7 @@ export const NotificationRouter = {
         await goto("/groups");
         break;
       case "task_assigned":
+      case "mentioned":
         if (typeof notification.data.task_id === "string") {
           await goto(`/${notification.data.task_id}`);
         } else {
@@ -27,5 +28,10 @@ export const NotificationRouter = {
       default:
         await goto("/");
     }
+  },
+
+  /** Opens the screen for a tapped local reminder. */
+  async openReminder(extra: AL.Notification["extra"]): Promise<void> {
+    await goto(extra?.task_id ? `/${extra.task_id}` : "/");
   },
 };

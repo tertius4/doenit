@@ -31,8 +31,10 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save photos to your device in order to link them to your tasks.</string>
 
-	<key>aps-environment</key>
-	<string>production</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
