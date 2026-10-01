@@ -61,6 +61,13 @@ export default class DateUtil {
     return new Date(`${day} ${time || type === "start" ? "00:00" : "23:59"}`);
   }
 
+  /**
+   * Returns the "HH:mm" part of a "YYYY-MM-DD HH:mm" string, or "" if there is none.
+   */
+  static getTime(date: string | null | undefined): string {
+    return date?.split(" ")[1]?.slice(0, 5) ?? "";
+  }
+
   static add(
     _date: any,
     { days = 0, months = 0, years = 0, hours = 0, minutes = 0, seconds = 0, milliseconds = 0 },

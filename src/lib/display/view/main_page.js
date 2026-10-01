@@ -83,7 +83,7 @@ function formatTask(task, category_map, today) {
   if (start_date || due_date) {
     pills.push({
       type: "round",
-      label: formatDateRange(start_date, due_date),
+      label: `${formatDateRange(start_date, due_date)} ${task.due_date ? "" : DateUtil.getTime(task.start_date)}`.trim(),
       pre_icon: "clock",
       ...(task.repeat_interval ? { post_icon: "sync" } : {}),
     });
