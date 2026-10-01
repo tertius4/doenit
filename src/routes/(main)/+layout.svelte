@@ -27,7 +27,8 @@
   setContext("search_text", search_text);
 
   onMount(async () => {
-    if (!(await data.ready)) return;
+    const is_init_done = await data.ready;
+    if (!is_init_done) return;
 
     Widget.init();
     if (Capacitor.isNativePlatform() && !(context.app_state.open_count % 20)) {

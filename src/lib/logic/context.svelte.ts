@@ -203,12 +203,15 @@ export async function initApp(user_id?: string | null) {
         // Running in browser / web — skip native APIs
       }
 
-      await DB.app_state.update({
+      const update_result = await DB.app_state.update({
         device_id,
         app_version,
         last_opened_at: now,
         open_count: app_state_result.value.open_count + 1,
       });
+
+      // Set synchronously: the subscription below emits asynchronously and callers read app_state right after initApp.
+      context.app_state = update_result.ok ? update_result.value : app_state_result.value;
     }
 
     DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {

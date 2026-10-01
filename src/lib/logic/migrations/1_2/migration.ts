@@ -31,7 +31,9 @@ async function listIndexedDbNames(): Promise<string[]> {
     if (typeof listDatabases !== "function") return [];
 
     const dbs = await listDatabases.call(indexedDB);
-    return (dbs || []).map((item: { name?: string }) => item?.name).filter((name: string | undefined): name is string => !!name);
+    return (dbs || [])
+      .map((item: { name?: string }) => item?.name)
+      .filter((name: string | undefined): name is string => !!name);
   } catch {
     return [];
   }
@@ -160,11 +162,11 @@ export async function runMigration() {
     if (!category_result.ok) throw new Error(category_result.error);
     const category_summary = category_result.value;
     if (!category_summary) throw new Error("Category migration returned no summary");
-    
+
     const task_result = await migrateTasks(legacyDb);
     if (!task_result.ok) throw new Error(task_result.error);
     const task_summary = task_result.value;
-    if (!task_summary) throw new Error("Task migration returned no summary");    
+    if (!task_summary) throw new Error("Task migration returned no summary");
   } finally {
     try {
       await legacyDb?.close();
