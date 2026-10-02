@@ -11,6 +11,16 @@
 
   const enabled = $derived(context.settings.notifications_enabled);
 
+  /** @param {boolean} value */
+  async function updatePush(value) {
+    await Api.settings.update({ push_notifications_enabled: value });
+
+    if (value) {
+      const registered = await Api.notifications.registerPush({ prompt: true });
+      if (!registered) toast.warning(t("notification_permission_denied"));
+    }
+  }
+
   /** @param {Partial<Domain.Settings>} changes */
   async function update(changes) {
     await Api.settings.update(changes);
@@ -26,6 +36,13 @@
 <Accordion label={t("notifications")}>
   <!-- Main toggle with better explanation -->
   <div class="space-y-4">
+    {#if context.user}
+      <div class="flex items-center gap-2">
+        <InputSwitch value={context.settings.push_notifications_enabled !== false} onchange={updatePush} />
+        <span class="text-sm font-medium">{t("push_notifications")}</span>
+      </div>
+    {/if}
+
     <div class="flex items-center gap-2">
       <InputSwitch
         value={context.settings.notifications_enabled}

@@ -5,6 +5,7 @@ import { Message } from "firebase-admin/lib/messaging/messaging-api";
 import { google } from "googleapis";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { type App } from "firebase-admin/app";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { type DecodedIdToken } from "firebase-admin/auth";
 
 const app = getFirebaseStorage();
@@ -35,7 +36,7 @@ const corsHandler = cors({
  * @returns {{ success: true, data: DecodedIdToken } | { success: false, error_message: string }}
  */
 async function verifyToken(
-  id_token: string
+  id_token: string,
 ): Promise<{ success: true; data: DecodedIdToken } | { success: false; error_message: string }> {
   try {
     const result = await admin.auth(app).verifyIdToken(id_token);
@@ -46,18 +47,32 @@ async function verifyToken(
   }
 }
 
+/** The project this function is deployed in (dev and production differ). */
+function getProjectId(): string {
+  try {
+    const config = JSON.parse(process.env.FIREBASE_CONFIG || "{}");
+    if (config.projectId) return config.projectId;
+  } catch {
+    // Fall through to the other variables.
+  }
+
+  return process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "doenit2";
+}
+
 function getFirebaseStorage(): App {
   let app: App;
 
   try {
     app = admin.app("doenitdb");
-  } catch (error) {
-    functions.logger.info("Initializing Firebase app", error);
-    const init = {
-      projectId: "doenit2",
-      storageBucket: "doenit2.firebasestorage.app",
-    };
-    app = admin.initializeApp(init, "doenitdb");
+  } catch {
+    // Not created yet (every cold start). Use the project the function runs in: dev and production differ.
+    functions.logger.info("Initializing Firebase app");
+    const project_id = getProjectId();
+    functions.logger.info(`Firebase project: ${project_id}`);
+    app = admin.initializeApp(
+      { projectId: project_id, storageBucket: `${project_id}.firebasestorage.app` },
+      "doenitdb",
+    );
   }
 
   return app;
@@ -68,7 +83,7 @@ async function verifyGooglePlayPurchase(
   packageName: string,
   product_id: string,
   purchaseToken: string,
-  user_id: string
+  user_id: string,
 ) {
   try {
     // Initialize Google Auth with service account
@@ -123,137 +138,91 @@ async function verifyGooglePlayPurchase(
   }
 }
 
-// Backup functions
-// Send Push Notification function
-const MAX_PUSH_RECIPIENTS = 50;
-// Matches the in-app inbox types (src/app.d.ts Domain.NotificationType), plus the legacy types.
+// Matches the in-app inbox types (src/app.d.ts DB.NotificationType).
 const PUSH_TYPES = [
   "invite_received",
   "invite_accepted",
   "group_added",
   "group_removed",
-  "task_assigned",
-  "mentioned",
-  "friend_request",
-  "new_task",
-  "task_updated",
-  "task_completed",
+  "group_deleted",
   "user_left_group",
-  "friend_request_accepted",
+  "task_assigned",
+  "task_completed",
+  "mentioned",
 ] as const;
-export const sendPushNotification = functions.https.onRequest(async (req, res) => {
-  return corsHandler(req, res, async () => {
-    try {
-      if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
-        return;
-      }
 
-      const auth_header = req.headers.authorization;
-      if (!auth_header || !auth_header.startsWith("Bearer ")) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
+/**
+ * Delivers a push for every new inbox notification (users/{uid}/notifications/{id}).
+ * Recipients and text come from Firestore, never from the caller, so nobody can push arbitrary text to a token.
+ * Tokens live in users/{uid}/push_tokens/{device_id}; dead ones are pruned here.
+ */
+export const sendPushOnNotification = onDocumentCreated(
+  { document: "users/{uid}/notifications/{notification_id}", database: "doenitdb", region: "africa-south1" },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
 
-      const id_token = auth_header.split("Bearer ")[1];
-      const token_result = await verifyToken(id_token);
-      if (!token_result.success) {
-        res.status(401).json({ error: token_result.error_message });
-        return;
-      }
+    const { uid, notification_id } = event.params;
+    const notification = snapshot.data();
+    const type = String(notification.type ?? "");
+    functions.logger.info(`Push requested for ${uid}: ${type}`);
+    if (!(PUSH_TYPES as readonly string[]).includes(type)) return;
+    if (notification.user_id !== uid) return;
 
-      // Get notification details from body
-      const { users, title, body, type, data } = req.body;
-      if (!Array.isArray(users) || !users.length || users.length > MAX_PUSH_RECIPIENTS) {
-        res.status(400).json({ error: "Missing parameters" });
-        return;
-      }
-      if (users.some((user: any) => typeof user?.fcm_token !== "string" || !user.fcm_token)) {
-        res.status(400).json({ error: "Missing fcm_token" });
-        return;
-      }
-      // TODO: Before the app starts calling this, resolve recipients server-side (tokens in users/{uid}/private/push)
-      // and check the caller shares an accepted contact or group with each recipient. Right now any signed-in
-      // caller that knows a token can push to it.
-      if (title && body && (String(title).length > 100 || String(body).length > 500)) {
-        res.status(400).json({ error: "Notification text too long" });
-        return;
-      }
-      if (type && !(PUSH_TYPES as readonly string[]).includes(type)) {
-        res.status(400).json({ error: "Unknown notification type" });
-        return;
-      }
-
-      // Send notification using firebase-admin
-      if (title && body) {
-        // Direct notification (simple case) - send to all users with same content
-        await admin
-          .app("doenitdb")
-          .messaging()
-          .sendEach(
-            users.map((user: any) => ({
-              token: user.fcm_token,
-              notification: { title, body },
-            }))
-          );
-      } else if (type && data) {
-        // Structured notification - format per user's language preference
-        const messages = users.map((user: any) => {
-          const lang = (user.language_code || "af") as "af" | "en";
-          const formattedTitle = getTemplateTitle(type, lang);
-          const formattedBody = getTemplateBody(type, lang, data);
-
-          const message: Message = {
-            token: user.fcm_token,
-            notification: {
-              title: formattedTitle,
-              body: formattedBody,
-            },
-
-            // Configure for both platforms
-            android: {
-              priority: "high" as const,
-              notification: {
-                channelId: "default",
-                priority: "high" as const,
-                defaultSound: true,
-                defaultVibrateTimings: true,
-              },
-            },
-            apns: {
-              headers: {
-                "apns-priority": "10",
-              },
-              payload: {
-                aps: {
-                  alert: {
-                    title: formattedTitle,
-                    body: formattedBody,
-                  },
-                  sound: "default",
-                  badge: 1,
-                },
-              },
-            },
-          };
-
-          return message;
-        });
-
-        await admin.app("doenitdb").messaging().sendEach(messages);
-      } else {
-        res.status(400).json({ error: "Invalid notification payload" });
-        return;
-      }
-
-      res.json({ success: true });
-    } catch (error) {
-      const error_message = error instanceof Error ? error.message : String(error);
-      console.error("Fout met stuur van push notification:", error_message);
-      res.status(500).json({ error: error_message });
+    const db = getFirestore(app, "doenitdb");
+    const tokens_snapshot = await db.collection("users").doc(uid).collection("push_tokens").get();
+    if (tokens_snapshot.empty) {
+      functions.logger.info(`No push tokens for ${uid}`);
+      return;
     }
-  });
-});
+
+    const data: Record<string, string> = {};
+    for (const [key, value] of Object.entries((notification.data ?? {}) as Record<string, unknown>)) {
+      if (typeof value === "string") data[key] = value;
+    }
+
+    const devices = tokens_snapshot.docs
+      .map((doc) => ({ ref: doc.ref, token: doc.get("token"), language: doc.get("language_code") }))
+      .filter((device): device is { ref: typeof device.ref; token: string; language: string } => {
+        return typeof device.token === "string" && !!device.token;
+      });
+
+    const messages: Message[] = devices.map((device) => {
+      const lang = device.language === "en" ? "en" : "af";
+      const title = getTemplateTitle(type, lang);
+      const body = getTemplateBody(type, lang, data);
+
+      return {
+        token: device.token,
+        notification: { title, body },
+        // Everything in `data` must be a string. The app uses it to open the right screen on tap.
+        data: { ...data, type, notification_id },
+        android: {
+          priority: "high",
+          notification: { channelId: "default", priority: "high", defaultSound: true, defaultVibrateTimings: true },
+        },
+        apns: {
+          headers: { "apns-priority": "10" },
+          payload: { aps: { alert: { title, body }, sound: "default", badge: 1 } },
+        },
+      };
+    });
+    if (!messages.length) return;
+
+    const response = await admin.app("doenitdb").messaging().sendEach(messages);
+    functions.logger.info(`Push to ${uid}: ${response.successCount} sent, ${response.failureCount} failed`);
+
+    // Remove tokens FCM says are gone (app uninstalled, token rotated, signed out elsewhere).
+    const dead_codes = ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"];
+    await Promise.all(
+      response.responses.map(async (result, index) => {
+        const code = result.error?.code;
+        if (code && dead_codes.includes(code)) await devices[index].ref.delete();
+        else if (code) functions.logger.warn(`Push to ${uid} failed: ${code}`);
+      }),
+    );
+  },
+);
 
 export const cancelSubscription = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
@@ -305,7 +274,7 @@ export const cancelSubscription = functions.https.onRequest(async (req, res) => 
           },
           is_plus_user: false,
         },
-        { merge: true }
+        { merge: true },
       );
 
       res.json({
@@ -386,17 +355,12 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
       try {
         // Actually verify the purchase with Google Play
-        const verificationResult = await verifyGooglePlayPurchase(
-          package_name,
-          product_id,
-          purchase_token,
-          user.uid
-        );
+        const verificationResult = await verifyGooglePlayPurchase(package_name, product_id, purchase_token, user.uid);
         functions.logger.info("Google Play verification result:", verificationResult);
         if (!verificationResult.isValid) {
           if (!verificationResult.emailMatches) {
             functions.logger.warn(
-              `Email mismatch: Purchase made with ${verificationResult.obfuscatedAccountId}, user is ${user.email_address}`
+              `Email mismatch: Purchase made with ${verificationResult.obfuscatedAccountId}, user is ${user.email_address}`,
             );
             res.json({
               valid: false,
@@ -469,7 +433,7 @@ export const verifySubscription = functions.https.onRequest(async (req, res) => 
 
 async function getUser(
   uid: string,
-  db: FirebaseFirestore.Firestore
+  db: FirebaseFirestore.Firestore,
 ): Promise<
   | {
       success: true;
@@ -496,7 +460,7 @@ async function getUser(
 
 async function getSubscription(
   uid: string,
-  db: FirebaseFirestore.Firestore
+  db: FirebaseFirestore.Firestore,
 ): Promise<{ success: true; data: FirebaseFirestore.DocumentData | null } | { success: false; error_message: string }> {
   try {
     const subscription_collection = db.collection("subscriptions");
@@ -539,118 +503,51 @@ async function saveSubscription(subscription: any | null): Promise<void> {
 }
 
 function getTemplateTitle(type: string, lang: "af" | "en"): string {
-  const is_english = lang === "en";
+  const en = lang === "en";
   switch (type) {
     case "invite_received":
-      return is_english ? "New contact invite" : "Nuwe kontak-uitnodiging";
+      return en ? "New contact invite" : "Nuwe kontak-uitnodiging";
     case "invite_accepted":
-      return is_english ? "Contact invite accepted" : "Kontak-uitnodiging aanvaar";
+      return en ? "Contact invite accepted" : "Kontak-uitnodiging aanvaar";
     case "group_added":
-      return is_english ? "Added to group" : "By groep gevoeg";
+      return en ? "Added to group" : "By groep gevoeg";
     case "group_removed":
-      return is_english ? "Removed from group" : "Uit groep verwyder";
-    case "task_assigned":
-      return is_english ? "New task assigned" : "Nuwe taak toegeken";
-    case "friend_request":
-      if (is_english) {
-        return "New Friend Request";
-      } else {
-        return "Nuwe Vriend Versoek";
-      }
-    case "new_task":
-      if (is_english) {
-        return "New Task Assigned";
-      } else {
-        return "Nuwe Taak Toegeken";
-      }
-    case "task_updated":
-      if (is_english) {
-        return "Task Updated";
-      } else {
-        return "Taak Opgedateer";
-      }
-    case "task_completed":
-      if (is_english) {
-        return "A task is done!";
-      } else {
-        return "'n Taak is Klaar!";
-      }
+      return en ? "Removed from group" : "Uit groep verwyder";
+    case "group_deleted":
+      return en ? "Group deleted" : "Groep uitgevee";
     case "user_left_group":
-      if (is_english) {
-        return "User Left Group";
-      } else {
-        return "Gebruiker Het Groep Verlaat";
-      }
-    case "friend_request_accepted":
-      if (is_english) {
-        return "Friend Request Accepted";
-      } else {
-        return "Vriend Versoek Aanvaar";
-      }
+      return en ? "Member left group" : "Lid het groep verlaat";
+    case "task_assigned":
+      return en ? "New task assigned" : "Nuwe taak toegeken";
+    case "task_completed":
+      return en ? "A task is done!" : "'n Taak is klaar!";
     default:
-      if (is_english) {
-        return "Notification";
-      } else {
-        return "Kennisgewing";
-      }
+      return en ? "Notification" : "Kennisgewing";
   }
 }
 
 function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, string>): string {
-  const is_english = lang === "en";
-
+  const en = lang === "en";
   switch (type) {
     case "invite_received":
-      return is_english ? `${data.email} wants to connect with you.` : `${data.email} wil met jou skakel.`;
+      return en ? `${data.email} wants to connect with you.` : `${data.email} wil met jou skakel.`;
     case "invite_accepted":
-      return is_english ? `${data.email} accepted your invite.` : `${data.email} het jou uitnodiging aanvaar.`;
+      return en ? `${data.email} accepted your invite.` : `${data.email} het jou uitnodiging aanvaar.`;
     case "group_added":
-      return is_english ? `You were added to ${data.group_name}.` : `Jy is by ${data.group_name} gevoeg.`;
+      return en ? `You were added to ${data.group_name}.` : `Jy is by ${data.group_name} gevoeg.`;
     case "group_removed":
-      return is_english ? `You were removed from ${data.group_name}.` : `Jy is uit ${data.group_name} verwyder.`;
-    case "task_assigned":
-      return is_english ? `Task "${data.task_name}" was assigned to you` : `Taak "${data.task_name}" is aan jou toegeken`;
-    case "friend_request":
-      if (is_english) {
-        return "You have a new friend request";
-      } else {
-        return "Jy het 'n nuwe vriend versoek";
-      }
-    case "new_task":
-      if (is_english) {
-        return `New task "${data.task_name}" assigned in ${data.category_name}`;
-      } else {
-        return `Nuwe taak "${data.task_name}" toegeken in ${data.category_name}`;
-      }
-    case "task_updated":
-      if (is_english) {
-        return `Task "${data.task_name}" updated in ${data.category_name}`;
-      } else {
-        return `Taak "${data.task_name}" opgedateer in ${data.category_name}`;
-      }
-    case "task_completed":
-      if (is_english) {
-        return `"${data.task_name}" is completed in "${data.category_name}"!`;
-      } else {
-        return `"${data.task_name}" is gedoen in "${data.category_name}"!`;
-      }
+      return en ? `You were removed from ${data.group_name}.` : `Jy is uit ${data.group_name} verwyder.`;
+    case "group_deleted":
+      return en ? `${data.group_name} was deleted.` : `${data.group_name} is uitgevee.`;
     case "user_left_group":
-      if (is_english) {
-        return `${data.user_name} left ${data.category_name}`;
-      } else {
-        return `${data.user_name} het ${data.category_name} verlaat`;
-      }
-    case "friend_request_accepted":
-      if (is_english) {
-        return `${data.sender_name} accepted your friend request`;
-      } else {
-        return `${data.sender_name} het jou vriend versoek aanvaar`;
-      }
+      return en ? `${data.user_name} left ${data.group_name}.` : `${data.user_name} het ${data.group_name} verlaat.`;
+    case "task_assigned":
+      return en ? `Task "${data.task_name}" was assigned to you.` : `Taak "${data.task_name}" is aan jou toegeken.`;
+    case "task_completed":
+      return en
+        ? `${data.user_name} completed "${data.task_name}" in ${data.group_name}.`
+        : `${data.user_name} het "${data.task_name}" in ${data.group_name} voltooi.`;
     default:
-      if (is_english) {
-        return "You have a new notification";
-      } else {
-        return "Jy het 'n nuwe kennisgewing";
-      }
+      return en ? "You have a new notification" : "Jy het 'n nuwe kennisgewing";
   }
 }

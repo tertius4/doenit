@@ -6,7 +6,7 @@
 
 import firestore from "$services/firestore";
 import DB from "$domain/db";
-import { patchSyncCursors } from "$domain/sync/cursors";
+import { patchSyncCursors, withClockSkew } from "$domain/sync/cursors";
 import { context } from "$logic/context.svelte";
 
 type CreateNotificationInput = {
@@ -108,13 +108,75 @@ export const NotificationService = {
     });
   },
 
+  async createGroupDeleted(user_id: string, group: DB.Group): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "group_deleted",
+      title: "Group deleted",
+      body: `${group.name} was deleted.`,
+      data: {
+        group_id: group.id,
+        group_name: group.name,
+      },
+    });
+  },
+
+  async createUserLeftGroup(user_id: string, group: DB.Group, user_name: string): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "user_left_group",
+      title: "Member left group",
+      body: `${user_name} left ${group.name}.`,
+      data: {
+        group_id: group.id,
+        group_name: group.name,
+        user_name,
+      },
+    });
+  },
+
+  async createTaskAssigned(user_id: string, task: DB.Task): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "task_assigned",
+      title: "New task assigned",
+      body: `Task "${task.name}" was assigned to you.`,
+      data: {
+        task_id: task.id,
+        task_name: task.name,
+        ...(task.scope_id ? { group_id: task.scope_id } : {}),
+      },
+    });
+  },
+
+  async createTaskCompleted(
+    user_id: string,
+    task: DB.Task,
+    group: DB.Group,
+    user_name: string,
+  ): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "task_completed",
+      title: "A task is done!",
+      body: `${user_name} completed "${task.name}" in ${group.name}.`,
+      data: {
+        task_id: task.id,
+        task_name: task.name,
+        group_id: group.id,
+        category_name: group.name,
+        user_name,
+      },
+    });
+  },
+
   async pull(): Promise<void> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
     if (!my_uid || !my_local_id) return;
 
     const state = await DB.user_state.get(my_local_id);
-    const since = state.ok ? state.value.sync_cursors?.["__notifications"] : undefined;
+    const since = state.ok ? withClockSkew(state.value.sync_cursors?.["__notifications"]) : undefined;
     const remote = await firestore.fetchNotifications(my_uid, since);
     if (!remote.length) return;
 

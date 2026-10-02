@@ -1,5 +1,6 @@
 import { apiLogger } from "$lib";
 import { NotificationService } from "$logic/notifications/NotificationService";
+import { PushService } from "$logic/notifications/PushService";
 import { NotificationRouter } from "$logic/notifications/NotificationRouter";
 import { buildSchedule, DEFAULT_REMINDER_TIME } from "$logic/notifications/schedule-builder";
 import { NotificationAdapter } from "$services/notifications/NotificationAdapter";
@@ -12,6 +13,10 @@ export const pull = () => NotificationService.pull();
 export const markAsRead = apiLogger(markAsReadHandler);
 export const open = (notification: DB.Notification) => NotificationRouter.open(notification);
 export const requestPermission = apiLogger(requestPermissionHandler);
+export const syncPush = () => PushService.sync();
+export const registerPush = (options?: { prompt?: boolean }) => PushService.register(options);
+export const unregisterPush = () => PushService.unregister();
+export const listenForPush = () => PushService.listen();
 
 async function markAsReadHandler(notification: DB.Notification): AsyncResult<DB.Notification> {
   return NotificationService.markAsRead(notification);
@@ -80,7 +85,6 @@ async function flush() {
 }
 
 async function rebuildSchedule() {
-  console.log(`[DOENIT Notifications]: Here: ${context._settings}`);
   const settings = context._settings;
   if (!settings) return;
 

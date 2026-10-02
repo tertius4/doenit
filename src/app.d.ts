@@ -23,6 +23,7 @@ declare global {
 
       theme: "light" | "dark" | "system";
       notifications_enabled: boolean;
+      push_notifications_enabled?: boolean; // invites, group and task updates from other users; on unless false
       present_task_reminder_enabled: boolean;
       present_task_reminder_time: string | null; // e.g. "09:00"
       past_task_reminder_enabled: boolean;
@@ -108,7 +109,10 @@ declare global {
       | "invite_accepted"
       | "group_added"
       | "group_removed"
+      | "group_deleted"
+      | "user_left_group"
       | "task_assigned"
+      | "task_completed"
       | "mentioned";
 
     interface Notification {
@@ -151,6 +155,8 @@ declare global {
       last_backed_up: string;
       rate_prompt_count: number;
       has_rated: boolean;
+      fcm_token?: string; // push token of this device for this user ("" = none)
+      fcm_token_updated_at?: string;
       updated_at: string;
     }
 

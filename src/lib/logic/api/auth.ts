@@ -6,6 +6,7 @@ import { initApp } from "$logic/context.svelte";
 import { signInWithCredential, signOutFirebase, GoogleAuthProvider } from "$lib/logic/chunk/firebase-auth";
 import { doc, setDoc } from "$lib/logic/chunk/firebase-firestore";
 import firestore from "$services/firestore";
+import { PushService } from "$logic/notifications/PushService";
 
 export const signIn = apiLogger(signInHandler);
 export const signOut = apiLogger(signOutHandler);
@@ -53,6 +54,9 @@ async function signInHandler(): AsyncResult {
 
   await initApp(local_result.value);
 
+  // Ask for the OS permission right after sign-in; push is best-effort and never blocks it.
+  PushService.register({ prompt: true });
+
   return { ok: true };
 }
 
@@ -94,6 +98,10 @@ async function signOutHandler(): AsyncResult {
   const init_result = await auth.initialize({ web_client_id: config.google_web_client_id });
   const result = init_result.ok ? await auth.signOut() : init_result;
   if (!result.ok) console.warn("[auth] Google sign-out failed:", result.error);
+
+  // While still signed in: the token must be removed so the next user of this device never gets these pushes.
+  // Bounded: an offline device must not keep the user waiting on sign-out.
+  await Promise.race([PushService.unregister(), new Promise((resolve) => setTimeout(resolve, 3000))]);
 
   try {
     await signOutFirebase(firestore.getAuth());

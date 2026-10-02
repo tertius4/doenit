@@ -33,15 +33,26 @@
     const email = typeof data.email === "string" ? data.email : "";
     const group = typeof data.group_name === "string" ? data.group_name : "";
 
-    const translatable =
-      ((notification.type === "invite_received" || notification.type === "invite_accepted") && email) ||
-      ((notification.type === "group_added" || notification.type === "group_removed") && group);
+    const task = typeof data.task_name === "string" ? data.task_name : "";
+    const user = typeof data.user_name === "string" ? data.user_name : "";
 
-    if (!translatable) return { title: notification.title, body: notification.body };
+    /** @type {Partial<Record<DB.NotificationType, string>>} What each type needs before it can be translated. */
+    const required = {
+      invite_received: email,
+      invite_accepted: email,
+      group_added: group,
+      group_removed: group,
+      group_deleted: group,
+      user_left_group: group && user,
+      task_assigned: task,
+      task_completed: task && group && user,
+    };
+
+    if (!required[notification.type]) return { title: notification.title, body: notification.body };
 
     return {
       title: t(`notification_${notification.type}_title`),
-      body: t(`notification_${notification.type}_body`, { email, group }),
+      body: t(`notification_${notification.type}_body`, { email, group, task, user }),
     };
   }
 </script>
@@ -60,7 +71,7 @@
       >
         <div
           class={{
-            "mt-0.5 rounded-full p-2 shrink-0": true,
+            "mt-0.5 rounded-full p-2 shrink-0 h-fit": true,
             "bg-primary text-white": !notification.read_at,
             "bg-card text-muted": !!notification.read_at,
           }}

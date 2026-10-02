@@ -9,6 +9,7 @@ import {
   orderBy,
   query,
   setDoc,
+  deleteDoc,
   where,
   limit,
   writeBatch,
@@ -167,6 +168,40 @@ class Firestore {
       },
       (error) => console.warn("[Firestore] invites listener failed:", error),
     );
+  }
+
+  /**
+   * Attaches a real-time listener to the user's notification inbox. `callback` fires on remote changes only,
+   * not for the initial snapshot (the app pulls notifications separately on start).
+   * Returns an unsubscribe function.
+   */
+  subscribeNotifications(user_id: string, callback: () => void): () => void {
+    const db = this.getDb();
+    const ref = collection(db, "users", user_id, "notifications");
+    let is_first = true;
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (is_first) {
+          is_first = false;
+          return;
+        }
+        if (snap.docChanges().length > 0 && !snap.metadata.hasPendingWrites) callback();
+      },
+      (error) => console.warn("[Firestore] notifications listener failed:", error),
+    );
+  }
+
+  /** Stores this device's push token. The Cloud Function reads these to deliver pushes. */
+  async savePushToken(user_id: string, device_id: string, token: string, language_code: string): Promise<void> {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "push_tokens", device_id);
+    await setDoc(ref, { token, language_code, updated_at: new Date().toISOString() }, { merge: true });
+  }
+
+  async deletePushToken(user_id: string, device_id: string): Promise<void> {
+    const db = this.getDb();
+    await deleteDoc(doc(db, "users", user_id, "push_tokens", device_id));
   }
 
   async fetchNotifications(user_id: string, since?: string, count = 50): Promise<DB.Notification[]> {

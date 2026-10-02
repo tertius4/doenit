@@ -4,6 +4,7 @@ import DateUtil from "$display/date-util";
 import t from "$lib/display/translate";
 import logger from "$display/logger";
 import DB from "$lib/domain/db";
+import { TaskNotifier } from "$logic/notifications/TaskNotifier";
 
 export const updateTask = apiLogger(updateTaskHandler);
 export const isTaskUpdated = apiLogger(isTaskUpdatedHandler);
@@ -136,6 +137,9 @@ async function updateTaskHandler(task) {
     const updated_task = await DB.task.update(task.id, task);
     if (!updated_task.ok) throw Error(updated_task.error);
 
+    TaskNotifier.assigned(updated_task.value, original_task.assigned_firebase_uid);
+    if (!original_task.archived && updated_task.value.archived) TaskNotifier.completed(updated_task.value);
+
     // Delete removed photos
     await tempMediaManager.commit(task.photo_ids);
 
@@ -158,6 +162,7 @@ async function createTaskHandler(task) {
 
     const new_task = result.value;
     await tempMediaManager.commit(new_task.photo_ids);
+    TaskNotifier.assigned(new_task);
 
     return { ok: true };
   } catch (error) {
@@ -199,6 +204,7 @@ async function completeTaskHandler(task_id) {
 
     const task = task_result.value;
     const next_repeat = getNextRepeatDates(task);
+    const was_open = !task.archived;
 
     if (task.archived) {
       task.completed = 0;
@@ -217,6 +223,7 @@ async function completeTaskHandler(task_id) {
     }
 
     const result = await DB.task.update(task_id, task);
+    if (result.ok && was_open) TaskNotifier.completed(result.value);
     if (next_repeat.is_repeat_task) {
       // Let the task finish sliding out of the list before it re-enters (see TASK_OUT_MS in task-transitions.js).
       setTimeout(() => DB.task.update(task_id, { archived: false }), 500);

@@ -54,11 +54,14 @@ export default class Api {
 
   static readonly notifications = {
     pull: notifications.pull,
+    syncPush: notifications.syncPush,
     markAsRead: notifications.markAsRead,
     open: notifications.open,
     schedule: notifications.schedule,
     requestPermission: notifications.requestPermission,
+    registerPush: notifications.registerPush,
     listenForTaps: notifications.listenForTaps,
+    listenForPush: notifications.listenForPush,
   };
 
   static readonly widget = {

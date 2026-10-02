@@ -183,7 +183,8 @@ async function initDB() {
 
   const collections = await DB.addCollections({
     user: { schema: schema.user },
-    settings: { schema: schema.settings },
+    // Version 1 adds the optional push_notifications_enabled: documents are unchanged.
+    settings: { schema: schema.settings, migrationStrategies: { 1: (doc) => doc } },
     permission: { schema: schema.permissions },
     task: {
       schema: schema.task,
@@ -199,12 +200,14 @@ async function initDB() {
         1: (doc) => ({ ...doc, migration_1_complete: false }),
       },
     },
-    user_state: { schema: schema.user_state },
+    // Version 1 adds the optional fcm_token fields: documents are unchanged.
+    user_state: { schema: schema.user_state, migrationStrategies: { 1: (doc) => doc } },
 
     // Version 1 only adds indexes: documents are unchanged.
     contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
     contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc } },
-    notification: { schema: schema.notification },
+    // Version 1 only widens the type enum: documents are unchanged.
+    notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
     group: { schema: schema.group },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },

@@ -4,7 +4,7 @@ export const notification: RxJsonSchema<DB.Notification> = {
   primaryKey: "id",
   required: ["id", "user_id", "type", "title", "body", "data", "created_at", "updated_at"],
   type: "object",
-  version: 0,
+  version: 1,
   title: "notification",
   description: "Local cache of user-level notifications from Firestore. Not scope-synced.",
   properties: {
@@ -12,7 +12,17 @@ export const notification: RxJsonSchema<DB.Notification> = {
     user_id: { type: "string" },
     type: {
       type: "string",
-      enum: ["invite_received", "invite_accepted", "group_added", "group_removed", "task_assigned", "mentioned"],
+      enum: [
+        "invite_received",
+        "invite_accepted",
+        "group_added",
+        "group_removed",
+        "group_deleted",
+        "user_left_group",
+        "task_assigned",
+        "task_completed",
+        "mentioned",
+      ],
     },
     title: { type: "string" },
     body: { type: "string" },

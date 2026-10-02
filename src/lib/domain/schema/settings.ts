@@ -4,7 +4,7 @@ export const settings: RxJsonSchema<DB.Settings> = {
   primaryKey: "id",
   required: [],
   type: "object",
-  version: 0,
+  version: 1,
   title: "settings",
   description: "All the settings of a specific user",
   properties: {
@@ -18,6 +18,7 @@ export const settings: RxJsonSchema<DB.Settings> = {
     user_id: { type: "string" },
     theme: { type: "string" },
     notifications_enabled: { type: "boolean" },
+    push_notifications_enabled: { type: "boolean" },
     language: { type: ["string", "null"] },
 
     automatic_backup: { type: "boolean" },

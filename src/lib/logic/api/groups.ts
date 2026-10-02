@@ -77,7 +77,6 @@ async function deleteGroupHandler(id: string): AsyncResult {
         if (!task_delete_result.ok) return task_delete_result;
       }
 
-      await notifyRemovedMembers(members_result.value, group);
       removed_members.push(...members_result.value);
     }
 
@@ -88,6 +87,9 @@ async function deleteGroupHandler(id: string): AsyncResult {
 
     const delete_result = await DB.group.remove(id);
     if (!delete_result.ok) return delete_result;
+
+    // Only after the group is really gone.
+    await notifyDeletedGroup(removed_members, group);
 
     // Membership removals go last: pushing the tombstones above requires the scope membership they revoke.
     if (group_scope_id) {
@@ -142,7 +144,7 @@ async function addMemberHandler(group_id: string, contact_id: string): AsyncResu
     await enqueueMembership(context.user?.firebase_uid, group.value.id);
     await enqueueMembership(firebase_uid, group.value.id);
     if (!existing_member.value || existing_member.value.soft_deleted) {
-      await NotificationService.createAddedToGroup(firebase_uid, group.value);
+      await NotificationService.createAddedToGroup(firebase_uid, group.value).then(warnOnFailure);
     }
     return result;
   } catch (err) {
@@ -182,8 +184,10 @@ async function removeMemberHandler(member_id: string): AsyncResult {
     if (!result.ok) return result;
 
     await enqueueMembershipRemoval(member.firebase_uid, member.scope_id);
-    if (group && !is_self) {
-      await NotificationService.createRemovedFromGroup(member.firebase_uid, group);
+    if (group && is_self) {
+      await notifyMemberLeft(group);
+    } else if (group) {
+      await NotificationService.createRemovedFromGroup(member.firebase_uid, group).then(warnOnFailure);
     }
 
     return { ok: true };
@@ -381,16 +385,30 @@ async function enqueueMembershipRemoval(firebase_uid: string | undefined, group_
   });
 }
 
-async function notifyRemovedMembers(members: DB.Member[], group: DB.Group) {
+async function notifyDeletedGroup(members: DB.Member[], group: DB.Group) {
   const current_firebase_uid = context.user?.firebase_uid;
   await Promise.all(
     members
       .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid && !member.soft_deleted)
-      .map(async (member) => {
-        const result = await NotificationService.createRemovedFromGroup(member.firebase_uid, group);
-        if (!result.ok) {
-          console.warn("[groups] failed to create group removal notification:", result.error);
-        }
-      }),
+      .map((member) => NotificationService.createGroupDeleted(member.firebase_uid, group).then(warnOnFailure)),
   );
+}
+
+async function notifyMemberLeft(group: DB.Group) {
+  const current_firebase_uid = context.user?.firebase_uid;
+  const members = await DB.member.findMany({ selector: { scope_id: group.id, soft_deleted: { $ne: true } } });
+  if (!members.ok) return;
+
+  const user_name = context.user?.name || context.user?.email_address || "";
+  await Promise.all(
+    members.value
+      .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid)
+      .map((member) =>
+        NotificationService.createUserLeftGroup(member.firebase_uid, group, user_name).then(warnOnFailure),
+      ),
+  );
+}
+
+function warnOnFailure(result: Result<unknown>) {
+  if (!result.ok) console.warn("[groups] failed to create notification:", result.error);
 }

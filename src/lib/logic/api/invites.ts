@@ -12,7 +12,8 @@ async function sendInviteHandler(to_email: string): AsyncResult {
   const result = await InviteService.send(to_email);
   if (!result.ok) return result;
 
-  await NotificationService.createInviteReceived(result.value);
+  const notified = await NotificationService.createInviteReceived(result.value);
+  if (!notified.ok) console.warn("[invites] failed to create notification:", notified.error);
   return { ok: true };
 }
 
@@ -20,7 +21,8 @@ async function acceptInviteHandler(invite_id: string): AsyncResult {
   const result = await InviteService.accept(invite_id);
   if (!result.ok) return result;
 
-  await NotificationService.createInviteAccepted(result.value);
+  const notified = await NotificationService.createInviteAccepted(result.value);
+  if (!notified.ok) console.warn("[invites] failed to create notification:", notified.error);
   return { ok: true };
 }
 

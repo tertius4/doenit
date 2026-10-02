@@ -55,6 +55,7 @@ export const context = $state(new ContextClass());
 let _user_subscriptions: Subscription | null = null;
 let _scope_unsubscribe: (() => void) | null = null;
 let _invite_unsubscribe: (() => void) | null = null;
+let _notification_unsubscribe: (() => void) | null = null;
 let _scope_generation = 0;
 let _app_subscriptions = new Subscription();
 
@@ -67,6 +68,8 @@ function subscribeForUser(user_id: string | null) {
   _scope_unsubscribe = null;
   _invite_unsubscribe?.();
   _invite_unsubscribe = null;
+  _notification_unsubscribe?.();
+  _notification_unsubscribe = null;
 
   if (user_id) {
     const generation = _scope_generation;
@@ -100,6 +103,17 @@ function subscribeForUser(user_id: string | null) {
       })
       .catch((err) => console.warn("[context] watchUserInvites failed:", err));
 
+    // New notifications show up in the inbox (and badge) without restarting the app.
+    scopeManager
+      .watchUserNotifications(() => {
+        Api.notifications.pull().catch((err) => console.warn("[context] notification pull failed:", err));
+      })
+      .then((unsub) => {
+        if (generation !== _scope_generation) return unsub();
+        _notification_unsubscribe = unsub;
+      })
+      .catch((err) => console.warn("[context] watchUserNotifications failed:", err));
+
     _user_subscriptions.add(
       DB.user.subscribeOne$(user_id).subscribe((user) => {
         context.user = user;
@@ -123,7 +137,10 @@ function subscribeForUser(user_id: string | null) {
         map((settings) => JSON.stringify(notificationSettings(settings))),
         distinctUntilChanged(),
       )
-      .subscribe(() => Api.notifications.schedule()),
+      .subscribe(() => {
+        Api.notifications.schedule();
+        Api.notifications.syncPush();
+      }),
   );
 
   _user_subscriptions.add(
@@ -141,6 +158,7 @@ function notificationSettings(settings: DB.Settings | null) {
     settings?.past_task_reminder_enabled,
     settings?.past_task_reminder_time,
     settings?.language,
+    settings?.push_notifications_enabled,
   ];
 }
 
@@ -282,5 +300,6 @@ export async function initApp(user_id?: string | null) {
     // Tasks change locally and through sync pulls (which bypass the tables), so watch the collection itself.
     _app_subscriptions.add(DB.task.collection.$.subscribe(() => Api.notifications.schedule()));
     Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
+    Api.notifications.listenForPush().catch((err) => console.warn("[initApp] push listener failed:", err));
   }
 }

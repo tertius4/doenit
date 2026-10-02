@@ -2,7 +2,7 @@ import type { RxJsonSchema } from "rxdb";
 
 export const user_state: RxJsonSchema<DB.UserState> = {
   title: "user_state",
-  version: 0,
+  version: 1,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -44,6 +44,14 @@ export const user_state: RxJsonSchema<DB.UserState> = {
     },
     has_rated: {
       type: "boolean",
+    },
+    fcm_token: {
+      type: "string",
+      maxLength: 4096,
+    },
+    fcm_token_updated_at: {
+      type: "string",
+      format: "date-time",
     },
     updated_at: {
       type: "string",

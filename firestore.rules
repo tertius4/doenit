@@ -63,9 +63,12 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) || isMemberManaging();
       }
 
-      // Reserved for per-user private data such as push tokens: owner only (the Admin SDK bypasses rules).
-      match /private/{doc_id} {
-        allow read, write: if isOwner(uid);
+      // One push token per device, written by the owner. The Cloud Function reads them with the Admin SDK.
+      match /push_tokens/{device_id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.token is string
+          && request.resource.data.token.size() < 4096;
       }
 
       // Both parties of an invite keep a copy in their own inbox.
@@ -117,7 +120,11 @@ service cloud.firestore {
       // Anyone signed in may send a notification to a user; only the user can read or change it.
       match /notifications/{notification_id} {
         allow read, update, delete: if isOwner(uid);
-        allow create: if signedIn() && request.resource.data.user_id == uid;
+        allow create: if signedIn() && request.resource.data.user_id == uid
+          && request.resource.data.type in ['invite_received', 'invite_accepted', 'group_added', 'group_removed',
+            'group_deleted', 'user_left_group', 'task_assigned', 'task_completed', 'mentioned']
+          && request.resource.data.title is string && request.resource.data.title.size() <= 200
+          && request.resource.data.body is string && request.resource.data.body.size() <= 500;
       }
     }
 
