@@ -6,6 +6,7 @@ import * as contacts from "./contacts";
 import * as groups from "./groups";
 import * as invites from "./invites";
 import * as notifications from "./notifications";
+import * as widget from "./widget";
 
 export default class Api {
   static readonly settings = {
@@ -58,6 +59,10 @@ export default class Api {
     schedule: notifications.schedule,
     requestPermission: notifications.requestPermission,
     listenForTaps: notifications.listenForTaps,
+  };
+
+  static readonly widget = {
+    watchPendingCompletions: widget.watchPendingCompletions,
   };
 
   static readonly groups = {

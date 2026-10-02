@@ -95,6 +95,15 @@ public class DB {
         }
     }
 
+    public static void remove(String name) {
+        if (prefs == null) {
+            Log.e(Const.LOG_TAG_DOENIT_DB, "SharedPreferences not initialized");
+            return;
+        }
+
+        prefs.edit().remove(name).apply();
+    }
+
     public static void clearData() {
         if (prefs == null) {
             Log.e(Const.LOG_TAG_DOENIT_DB, "SharedPreferences not initialized");

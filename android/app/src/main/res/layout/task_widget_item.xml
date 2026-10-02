@@ -24,6 +24,7 @@
         >
 
             <ImageView
+                android:id="@+id/icon_checkbox"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:src="@drawable/ic_box"
@@ -137,7 +138,6 @@
         android:id="@+id/important_icon"
         android:layout_width="16dp"
         android:layout_height="16dp"
-        android:src="@drawable/ic_important"
         android:layout_gravity="top|end"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="4dp"

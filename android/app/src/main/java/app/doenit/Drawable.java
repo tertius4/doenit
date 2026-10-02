@@ -112,4 +112,18 @@ public class Drawable {
 
         return is_light ? drawable.ic_category_light_alt : drawable.ic_category_dark_alt;
     }
+
+    public static int iconCheckbox() {
+        String theme = DB.getString("theme", "dark");
+        Boolean is_light = theme.equals("light");
+
+        return is_light ? drawable.ic_box_light : drawable.ic_box;
+    }
+
+    public static int iconImportant() {
+        String theme = DB.getString("theme", "dark");
+        Boolean is_light = theme.equals("light");
+
+        return is_light ? drawable.ic_important_light : drawable.ic_important_dark;
+    }
 }

@@ -16,6 +16,7 @@
   import toast from "$display/toast/toast.svelte";
   import { InAppReview } from "@capacitor-community/in-app-review";
   import { Widget } from "$services/widget";
+  import Api from "$logic/api";
   import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
 
   const { children, data } = $props();
@@ -38,6 +39,15 @@
     if (!context.settings.language) mount(DrawerLanguage, { target: document.body });
 
     is_ready = true;
+  });
+
+  onMount(() => {
+    const stop = data.ready.then((is_init_done) =>
+      is_init_done ? Api.widget.watchPendingCompletions() : () => {},
+    );
+    return () => {
+      stop.then((fn) => fn());
+    };
   });
 
   onMount(() => {

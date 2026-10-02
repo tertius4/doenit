@@ -100,6 +100,7 @@ public class TaskWidgetService extends RemoteViewsService {
             else if (isPast)
                 backgroundColor = Drawable.taskPast();
             views.setInt(R.id.task_container, "setBackgroundResource", backgroundColor);
+            views.setImageViewResource(R.id.icon_checkbox, Drawable.iconCheckbox());
 
             // Handle due date display with icon
 
@@ -175,6 +176,7 @@ public class TaskWidgetService extends RemoteViewsService {
             }
 
             // Set priority indicators
+            views.setImageViewResource(R.id.important_icon, Drawable.iconImportant());
             views.setViewVisibility(R.id.important_icon, task.important ? View.VISIBLE : View.GONE);
 
             // Set up fill-in intent for COMPLETE_TASK (complete_button)
@@ -219,9 +221,13 @@ public class TaskWidgetService extends RemoteViewsService {
             String tasksJson = DB.getString(Const.WIDGET_TASKS);
             String categoriesJson = DB.getString(Const.WIDGET_CATEGORIES);
 
+            if (Utils.isEmpty(tasksJson)) {
+                return;
+            }
+
             // Parse categories for name lookup
             try {
-                JSONObject categories = new JSONObject(categoriesJson);
+                JSONObject categories = Utils.isEmpty(categoriesJson) ? new JSONObject() : new JSONObject(categoriesJson);
                 JSONArray tasksArray = new JSONArray(tasksJson);
 
                 for (int i = 0; i < tasksArray.length(); i++) {

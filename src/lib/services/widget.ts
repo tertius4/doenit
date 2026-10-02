@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { combineLatest, debounceTime, distinctUntilChanged, map, Subscription } from "rxjs";
 import db from "$domain/db";
+import { compareTasks } from "$lib";
 import logger from "$display/logger";
 import toast from "$display/toast/toast.svelte";
 
@@ -8,6 +9,9 @@ export interface TaskWidgetPlugin {
   updateTasks({ tasks, categories }: { tasks: DB.Task[]; categories: DB.Category[] }): Promise<void>;
   updateLanguage({ language }: { language: Domain.Settings["language"] }): Promise<void>;
   updateTheme({ theme }: { theme: Domain.Settings["theme"] }): Promise<void>;
+  /** Ids of tasks checked off in the widget while the app was closed. */
+  getPendingCompletions(): Promise<{ ids: string[] }>;
+  clearPendingCompletions({ ids }: { ids: string[] }): Promise<void>;
 }
 
 const TaskWidget = Capacitor.registerPlugin<TaskWidgetPlugin>("TaskWidget");
@@ -27,7 +31,7 @@ export class Widget {
     this._subscription.add(
       combineLatest([tasks$, categories$])
         .pipe(debounceTime(500))
-        .subscribe(([tasks, categories]) => Widget.updateTasks(tasks, categories)),
+        .subscribe(([tasks, categories]) => Widget.updateTasks([...tasks].sort(compareTasks), categories)),
     );
 
     this._subscription.add(
@@ -41,6 +45,20 @@ export class Widget {
         .pipe(map((s) => s[0]?.theme), distinctUntilChanged())
         .subscribe((theme) => { if (theme !== undefined) Widget.updateTheme(theme); }),
     );
+  }
+
+  /** Ids of tasks checked off in the widget while the app was closed. */
+  static async getPendingCompletions(): Promise<string[]> {
+    if (!Capacitor.isNativePlatform()) return [];
+
+    const { ids } = await TaskWidget.getPendingCompletions();
+    return ids;
+  }
+
+  static async clearPendingCompletions(ids: string[]): Promise<void> {
+    if (!Capacitor.isNativePlatform() || !ids.length) return;
+
+    await TaskWidget.clearPendingCompletions({ ids });
   }
 
   static async updateLanguage(language: Domain.Settings["language"]): Promise<void> {
@@ -59,8 +77,6 @@ export class Widget {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
-      if (!Capacitor.isNativePlatform()) return;
-
       const result = await TaskWidget.updateTheme({ theme });
       logger.debug("Theme updated", result);
     } catch (error) {

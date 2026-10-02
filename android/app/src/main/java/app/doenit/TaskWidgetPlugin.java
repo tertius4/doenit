@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.util.Log;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -48,7 +49,7 @@ public class TaskWidgetPlugin extends Plugin {
             }
 
             Log.d(Const.LOG_TAG_DOENIT, "Tasks count: " + tasks.length());
-            Log.d(Const.LOG_TAG_DOENIT, "Categories count: " + categories.length());
+            Log.d(Const.LOG_TAG_DOENIT, "Categories count: " + categoriesCount);
             TaskWidgetProvider.updateTasksData(context, tasks.toString(), category_hash.toString());
 
             JSObject ret = new JSObject();
@@ -57,6 +58,23 @@ public class TaskWidgetPlugin extends Plugin {
             call.resolve(ret);
         } catch (Exception e) {
             call.reject("Failed to update widget: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void getPendingCompletions(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("ids", PendingCompletions.get());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void clearPendingCompletions(PluginCall call) {
+        try {
+            PendingCompletions.remove(call.getArray("ids", new JSArray()));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Failed to clear pending completions: " + e.getMessage());
         }
     }
 

@@ -7,7 +7,7 @@
     android:viewportHeight="24">
     <path
         android:fillColor="@android:color/transparent"
-        android:strokeColor="@color/text_alt_light"
+        android:strokeColor="@color/page_light"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:pathData="M12,5v14M5,12h14" />

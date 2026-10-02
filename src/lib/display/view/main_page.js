@@ -2,7 +2,7 @@ import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
-import { getGroup } from "$lib";
+import { compareTasks, getGroup } from "$lib";
 
 /**
  *
@@ -40,24 +40,7 @@ async function subscribeTaskList() {
       const categoryMap = new Map(categories.map((c) => [c.id, c]));
       const today = new Date();
 
-      tasks.sort((a, b) => {
-        const groupDiff = getGroup(a) - getGroup(b);
-
-        if (groupDiff !== 0) {
-          return groupDiff;
-        }
-
-        // Belangrike take eerste binne groep
-        if (a.important !== b.important) {
-          return a.important ? -1 : 1;
-        }
-
-        // Daarna op datum
-        const aDate = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
-        const bDate = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
-
-        return aDate.getTime() - bDate.getTime();
-      });
+      tasks.sort(compareTasks);
 
       return tasks.map((task) => formatTask(task, categoryMap, today));
     }),

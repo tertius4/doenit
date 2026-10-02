@@ -78,10 +78,6 @@
         <receiver android:name="doenit.app.TaskWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="COMPLETE_TASK" />
-                <action android:name="OPEN_TASK" />
-                <action android:name="OPEN_APP" />
-                <action android:name="ADD_TASK" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/task_widget_info" />
         </receiver>

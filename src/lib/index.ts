@@ -218,6 +218,21 @@ export function getInitials(str: string, maxLength = 2): string {
   return initials.slice(0, maxLength);
 }
 
+/** Most urgent first: by group, then important, then closest date. */
+export function compareTasks(a: DB.Task, b: DB.Task): number {
+  const groupDiff = getGroup(a) - getGroup(b);
+  if (groupDiff !== 0) return groupDiff;
+
+  // Belangrike take eerste binne groep
+  if (a.important !== b.important) return a.important ? -1 : 1;
+
+  // Daarna op datum
+  const aDate = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
+  const bDate = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
+
+  return aDate.getTime() - bDate.getTime();
+}
+
 export function getGroup(task: DB.Task): number {
   const dueDate = DateUtil.endOfDay(task.due_date) ?? DateUtil.startOfDay(task.start_date);
   if (!dueDate) return 7; // geen datum

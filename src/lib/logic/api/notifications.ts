@@ -3,6 +3,7 @@ import { NotificationService } from "$logic/notifications/NotificationService";
 import { NotificationRouter } from "$logic/notifications/NotificationRouter";
 import { buildSchedule, DEFAULT_REMINDER_TIME } from "$logic/notifications/schedule-builder";
 import { NotificationAdapter } from "$services/notifications/NotificationAdapter";
+import { Widget } from "$services/widget";
 import { context } from "$logic/context.svelte";
 import DB from "$domain/db";
 import t from "$display/translate";
@@ -112,7 +113,11 @@ async function rebuildSchedule() {
       return;
     }
 
-    notifications = buildSchedule({ tasks: tasks.value, present_time, past_time, now: new Date(), t });
+    // Tasks completed in the widget are only written to the DB when the app next opens; never re-schedule them.
+    const completed_in_widget = await Widget.getPendingCompletions().catch(() => [] as string[]);
+    const open_tasks = tasks.value.filter((task) => !completed_in_widget.includes(task.id));
+
+    notifications = buildSchedule({ tasks: open_tasks, present_time, past_time, now: new Date(), t });
   }
 
   await NotificationAdapter.cancelAll();

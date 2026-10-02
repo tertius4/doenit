@@ -67,6 +67,7 @@ public class TaskWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
+        DB.init(context);
 
         String action = intent.getAction();
         Log.d(Const.LOG_TAG_DOENIT_SIMPLE, "onReceive called with action: " + action);
@@ -89,26 +90,8 @@ public class TaskWidgetProvider extends AppWidgetProvider {
             Log.d(Const.LOG_TAG_DOENIT_SIMPLE, "Handling COMPLETE_TASK action for taskId: " + taskId);
 
             if (taskId != null) {
-                // Handle task completion
                 completeTask(context, taskId);
-
-                // Update all widgets
-                AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-                ComponentName cn = new ComponentName(context, TaskWidgetProvider.class);
-                int[] appWidgetIds = appWidgetManager.getAppWidgetIds(cn);
-
-                // Notify data changed first
-                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list_view);
-
-                // Then update the widgets
-                for (int appWidgetId : appWidgetIds) {
-                    updateAppWidget(context, appWidgetManager, appWidgetId);
-                }
-
-                Intent appIntent = new Intent(context, MainActivity.class);
-                appIntent.putExtra("route", "/");
-                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                context.startActivity(appIntent);
+                refreshAll(context);
             } else {
                 Log.e(Const.LOG_TAG_TASK_WIDGET, "COMPLETE_TASK action received but no task ID found");
             }
@@ -189,7 +172,7 @@ public class TaskWidgetProvider extends AppWidgetProvider {
     static void setWidgetColors(Context context, RemoteViews views) {
         Resources resources = context.getResources();
 
-        views.setInt(R.id.widget_body, "setBackgroundResource", Drawable.mainContainer());
+        views.setImageViewResource(R.id.widget_background, Drawable.mainContainer());
         views.setInt(R.id.widget_header, "setBackgroundResource", Drawable.headerContainer());
 
         int app_name_text_res_id = Colors.get("text-strong");
@@ -269,126 +252,51 @@ public class TaskWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    /**
+     * Completes a task without opening the app: queues it for the app to apply,
+     * hides it from the widget and cancels its reminder.
+     */
     public static void completeTask(Context context, String taskId) {
         try {
-            // Send broadcast to notify main app of task completion
-            Intent broadcastIntent = new Intent(Const.BROADCAST_TASK_COMPLETED);
-            broadcastIntent.putExtra("taskId", taskId);
-            context.sendBroadcast(broadcastIntent);
-            Log.d(Const.LOG_TAG_DOENIT_SIMPLE, "Broadcast sent for task completion: " + taskId);
-
-            // Also store in SharedPreferences as backup
-            String taskIds = DB.getString(Const.TASK_ID);
-            if (taskIds == null) {
-                taskIds = taskId;
-            } else {
-                taskIds += "," + taskId;
-            }
-            DB.saveData(Const.TASK_ID, taskIds);
+            PendingCompletions.add(taskId);
+            Utils.cancelNotification(context, taskId);
+            removeFromWidgetTasks(taskId);
         } catch (Exception e) {
             Log.e(Const.LOG_TAG_DOENIT, "Error completing task", e);
         }
     }
 
-    private static String calculateNextDueDate(JSONObject task) throws JSONException {
-        String repeatInterval = task.optString("repeat_interval", "");
-        String currentDueDate = task.optString("due_date", "");
-        int repeatIntervalNumber = task.optInt("repeat_interval_number", 1);
+    private static boolean removeFromWidgetTasks(String taskId) throws JSONException {
+        String json = DB.getString(Const.WIDGET_TASKS);
+        if (Utils.isEmpty(json)) return false;
 
-        if (repeatInterval.isEmpty() || currentDueDate.isEmpty()) {
-            return null;
-        }
+        JSONArray tasks = new JSONArray(json);
+        JSONArray remaining = new JSONArray();
+        boolean found = false;
 
-        try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            Date currentDate = dateFormat.parse(currentDueDate);
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(currentDate);
-
-            switch (repeatInterval) {
-                case "daily":
-                    calendar.add(Calendar.DAY_OF_MONTH, 1 * repeatIntervalNumber);
-                    break;
-                case "workdaily":
-                    int daysToAdd = 1;
-                    int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-                    if (dayOfWeek == Calendar.FRIDAY) {
-                        daysToAdd = 3; // Skip weekend
-                    } else if (dayOfWeek == Calendar.SATURDAY) {
-                        daysToAdd = 2; // Skip Sunday
-                    }
-                    calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
-                    break;
-                case "weekly":
-                    calendar.add(Calendar.WEEK_OF_YEAR, 1 * repeatIntervalNumber);
-                    break;
-                case "monthly":
-                    calendar.add(Calendar.MONTH, 1 * repeatIntervalNumber);
-                    break;
-                case "yearly":
-                    calendar.add(Calendar.YEAR, 1 * repeatIntervalNumber);
-                    break;
-                default:
-                    Log.w(Const.LOG_TAG_DOENIT_SIMPLE, "Unknown repeat interval: " + repeatInterval);
-                    return null;
+        for (int i = 0; i < tasks.length(); i++) {
+            JSONObject task = tasks.getJSONObject(i);
+            if (taskId.equals(task.optString("id"))) {
+                found = true;
+            } else {
+                remaining.put(task);
             }
-
-            return dateFormat.format(calendar.getTime());
-        } catch (ParseException e) {
-            Log.e(Const.LOG_TAG_DOENIT_SIMPLE, "Error parsing due date: " + currentDueDate, e);
-            return null;
         }
+
+        if (found) DB.saveData(Const.WIDGET_TASKS, remaining.toString());
+        return found;
     }
 
-    private static String calculateNextStartDate(JSONObject task) throws JSONException {
-        String repeatInterval = task.optString("repeat_interval", "");
-        String currentStartDate = task.optString("start_date", "");
-        int repeatIntervalNumber = task.optInt("repeat_interval_number", 1);
+    /** Re-renders every widget instance and reloads its list. */
+    static void refreshAll(Context context) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        ComponentName cn = new ComponentName(context, TaskWidgetProvider.class);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(cn);
 
-        if (repeatInterval.isEmpty() || currentStartDate.isEmpty()) {
-            return null;
+        for (int appWidgetId : appWidgetIds) {
+            updateAppWidget(context, appWidgetManager, appWidgetId);
         }
 
-        try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            Date currentDate = dateFormat.parse(currentStartDate);
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(currentDate);
-
-            switch (repeatInterval) {
-                case "daily":
-                    calendar.add(Calendar.DAY_OF_MONTH, 1 * repeatIntervalNumber);
-                    break;
-                case "workdaily":
-                    int daysToAdd = 1;
-                    int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-                    if (dayOfWeek == Calendar.FRIDAY) {
-                        daysToAdd = 3; // Skip weekend
-                    } else if (dayOfWeek == Calendar.SATURDAY) {
-                        daysToAdd = 2; // Skip Sunday
-                    }
-                    calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
-                    break;
-                case "weekly":
-                    calendar.add(Calendar.WEEK_OF_YEAR, 1 * repeatIntervalNumber);
-                    break;
-                case "monthly":
-                    calendar.add(Calendar.MONTH, 1 * repeatIntervalNumber);
-                    break;
-                case "yearly":
-                    calendar.add(Calendar.YEAR, 1 * repeatIntervalNumber);
-                    break;
-                default:
-                    Log.w(Const.LOG_TAG_DOENIT_SIMPLE, "Unknown repeat interval: " + repeatInterval);
-                    return null;
-            }
-
-            return dateFormat.format(calendar.getTime());
-        } catch (ParseException e) {
-            Log.e(Const.LOG_TAG_DOENIT_SIMPLE, "Error parsing start date: " + currentStartDate, e);
-            return null;
-        }
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list_view);
     }
 }

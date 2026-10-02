@@ -47,13 +47,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         Bridge bridge = getBridge();
 
         Utils.navigateToRoute(bridge, intent);
-
-        // Skip pending task updates check if we're going to /create
-        String route = intent.getStringExtra("route");
-        if (route == null || !route.equals("/create")) {
-            // Check for pending task updates from SharedPreferences
-            checkForPendingTaskUpdates();
-        }
     }
 
     @Override
@@ -70,9 +63,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                     // Handle intent navigation
                     Intent intent = getIntent();
                     Utils.navigateToRoute(bridge, intent);
-
-                    // Check for pending task updates from SharedPreferences
-                    checkForPendingTaskUpdates();
                 });
             }
         }
@@ -115,45 +105,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                     ((SocialLoginPlugin) plugin).handleGoogleLoginIntent(requestCode, data);
                 }
             }
-        }
-    }
-
-    private void checkForPendingTaskUpdates() {
-        try {
-            String taskIds = DB.getString(Const.TASK_ID);
-            if (taskIds == null) {
-                Log.d(Const.LOG_TAG_DOENIT, "No completed task found");
-                return;
-            }
-
-            Bridge bridge = getBridge();
-            if (bridge == null) {
-                Log.w(Const.LOG_TAG_DOENIT, "Bridge is null, cannot forward task completion");
-                return;
-            }
-
-            WebView webView = bridge.getWebView();
-            if (webView == null) {
-                Log.w(Const.LOG_TAG_DOENIT, "WebView is null, cannot forward task completion");
-                return;
-            }
-
-            Log.d(Const.LOG_TAG_DOENIT, "Found pending task update for taskIds: " + taskIds);
-            final String js = String.format(
-                "if (window.location) { window.location.href = '/?completed_task_ids=%s'; }",
-                taskIds
-            );
-
-            webView.post(() -> {
-                try {
-                    webView.evaluateJavascript(js, null);
-                    DB.clearData();
-                } catch (Exception e) {
-                    Log.e(Const.LOG_TAG_DOENIT, "Error executing JavaScript for task completion", e);
-                }
-            });
-        } catch (Exception e) {
-            Log.e(Const.LOG_TAG_DOENIT, "Error checking for pending task updates", e);
         }
     }
 }

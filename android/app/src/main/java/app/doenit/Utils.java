@@ -1,6 +1,7 @@
 package doenit.app;
 
 import android.content.Intent;
+import android.os.Build;
 import android.webkit.WebView;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -8,6 +9,8 @@ import android.content.SharedPreferences;
 import android.util.Log;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import androidx.core.app.NotificationManagerCompat;
+import com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import java.security.MessageDigest;
@@ -33,51 +36,48 @@ public class Utils {
     }
 
     /**
-     * Cancels a notification using the taskId as the notification ID.
-     * 
-     * @param context The application context
-     * @param taskId  The task ID used as notification ID
+     * Cancels the scheduled and any visible "task_<id>" reminder, mirroring the
+     * local-notifications plugin's own cancel. The id must match hash() in
+     * schedule-builder.ts.
      */
     public static void cancelNotification(Context context, String taskId) {
-        // TODO: I need to write my own LocalNotifications plugin that can be accessed
-        // by the widget.
+        if (context == null || isEmpty(taskId)) {
+            return;
+        }
 
-        // if (context == null || taskId == null) {
-        // return;
-        // }
+        try {
+            int notificationId = notificationIdForTask(taskId);
 
-        // int notificationId = taskId.hashCode();
+            // Must match LocalNotificationManager.cancelTimerForNotification in the plugin.
+            int flags = PendingIntent.FLAG_NO_CREATE;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                flags |= PendingIntent.FLAG_MUTABLE;
+            }
+            Intent intent = new Intent(context, TimedNotificationPublisher.class);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, notificationId, intent, flags);
+            if (pendingIntent != null) {
+                AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                alarmManager.cancel(pendingIntent);
+                pendingIntent.cancel();
+            }
 
-        // // Cancel the notification
-        // NotificationManager nm = (NotificationManager)
-        // context.getSystemService(Context.NOTIFICATION_SERVICE);
-        // nm.cancel(notificationId);
+            NotificationManagerCompat.from(context).cancel(notificationId);
 
-        // // Cancel the alarm
-        // try {
+            // The plugin restores scheduled notifications from here (NOTIFICATION_STORE_ID) after a reboot.
+            context.getSharedPreferences("NOTIFICATION_STORE", Context.MODE_PRIVATE)
+                    .edit().remove(Integer.toString(notificationId)).apply();
 
-        // Intent intent = new Intent(context,
-        // Class.forName("com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin"));
-        // intent.setAction("com.capacitorjs.plugins.localnotifications.NOTIFICATION_INTENT");
-        // intent.putExtra("com.capacitorjs.plugins.localnotifications.NOTIFICATION_INTENT",
-        // notificationId);
+            Log.d(Const.LOG_TAG_DOENIT, "Cancelled reminder " + notificationId + " for task " + taskId + " (alarm found: "
+                    + (pendingIntent != null) + ")");
+        } catch (Exception e) {
+            Log.e(Const.LOG_TAG_DOENIT, "Error cancelling reminder", e);
+        }
+    }
 
-        // PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
-        // notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT |
-        // PendingIntent.FLAG_IMMUTABLE);
-
-        // AlarmManager alarmManager = (AlarmManager)
-        // context.getSystemService(Context.ALARM_SERVICE);
-        // alarmManager.cancel(pendingIntent);
-
-        // Log.d(Const.LOG_TAG_DOENIT, "Cancelled alarm for notificationId: " +
-        // notificationId);
-        // } catch (Exception e) {
-        // Log.e(Const.LOG_TAG_DOENIT, "Error canceling alarm", e);
-        // }
-
-        // Log.d(Const.LOG_TAG_DOENIT, "Cancelled notification for taskId HASH: " +
-        // notificationId);
+    /** Port of hash("task_" + id) in schedule-builder.ts. */
+    static int notificationIdForTask(String taskId) {
+        long id = Integer.toUnsignedLong(("task_" + taskId).hashCode()) % 2147483646L;
+        return id == 0 ? 1 : (int) id;
     }
 
     /**

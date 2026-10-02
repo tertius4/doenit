@@ -12,8 +12,8 @@ else
 fi
 
 readonly OUTPUT_DIR="app-output"
-readonly DEV_APK="android/app/build/outputs/apk/release/app-release-signed.apk"
-readonly PROD_APK="$DEV_APK"
+readonly DEV_APK="android/app/build/outputs/apk/debug/app-debug.apk"
+readonly PROD_APK="android/app/build/outputs/apk/release/app-release-signed.apk"
 readonly PROD_AAB="android/app/build/outputs/bundle/release/app-release-signed.aab"
 
 step()  { echo "${BLUE}==> $*${NC}"; }
@@ -92,8 +92,8 @@ install_dev() {
     use_config dev || return 1
 
     step "Bou Android dev APK"
-    NODE_ENV=development APP_VARIANT=development \
-        run npx cap build android --androidreleasetype APK --signing-type apksigner || return 1
+    # Debug bou: slaan R8/shrinkResources en handtekening oor (baie vinniger as release).
+    (cd android && NODE_ENV=development APP_VARIANT=development run ./gradlew assembleDebug) || return 1
     need_file "$DEV_APK" || return 1
 
     mkdir -p "$OUTPUT_DIR"
