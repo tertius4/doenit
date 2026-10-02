@@ -37,7 +37,7 @@
     onclick={() => (show_create_modal = true)}
     class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
     style="bottom: calc(89px + env(safe-area-inset-bottom)); "
-    aria-label="Add group"
+    aria-label={t("add_group")}
   >
     <Icon name="new-group" size={28} class="text-white" />
   </button>

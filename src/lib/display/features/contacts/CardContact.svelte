@@ -1,6 +1,7 @@
 <script>
   import { fly, slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
+  import t from "$display/translate";
 
   /**
    * @typedef {Object} Props
@@ -19,7 +20,6 @@
    * @param {Event} event
    */
   function handleError(event) {
-    console.log("Error loading avatar image:", event);
     if (!(event.target instanceof HTMLElement)) {
       return;
     }
@@ -34,7 +34,7 @@
       {#if avatar_url}
         <img
           src={avatar_url}
-          alt="User avatar"
+          alt={t("user_avatar")}
           class="absolute inset-0 rounded-full h-8 z-1 aspect-square object-cover"
           loading="lazy"
           decoding="async"

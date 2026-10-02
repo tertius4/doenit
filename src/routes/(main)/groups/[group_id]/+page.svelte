@@ -5,7 +5,8 @@
   import Icon from "$display/comps/Icon.svelte";
   import { selected_categories, selected_tasks } from "$display/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
-  import { goto } from "$app/navigation";
+  import { goto, invalidate } from "$app/navigation";
+  import { context } from "$logic/context.svelte";
   import { getContext, onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { BACK_BUTTON_FUNCTION, filterTasks } from "$lib";
@@ -33,6 +34,17 @@
   });
 
   onMount(() => View.group_tasks.taskList(data.group.id, all_tasks));
+
+  // Re-run the access check in +page.js when memberships change, it redirects to /groups if access was lost
+  let first_scopes_run = true;
+  $effect(() => {
+    context.user_state.active_scopes.join(",");
+    if (first_scopes_run) {
+      first_scopes_run = false;
+      return;
+    }
+    invalidate("groups:page");
+  });
 
   /**
    * @param {AL.MainPageTask} task
@@ -96,7 +108,7 @@
   onclick={() => goto(`/create?scope_id=${data.group.id}&redirect=/groups/${data.group.id}`)}
   class="fixed right-4 z-30 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
   style="bottom: calc(89px + env(safe-area-inset-bottom));"
-  aria-label="Add task"
+  aria-label={t("add_task")}
 >
   <Icon name="plus" class="text-2xl text-white" />
 </button>

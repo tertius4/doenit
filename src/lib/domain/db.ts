@@ -201,8 +201,9 @@ async function initDB() {
     },
     user_state: { schema: schema.user_state },
 
-    contact: { schema: schema.contact },
-    contact_invite: { schema: schema.contact_invite },
+    // Version 1 only adds indexes: documents are unchanged.
+    contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
+    contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc } },
     notification: { schema: schema.notification },
     group: { schema: schema.group },
     member: { schema: schema.member },

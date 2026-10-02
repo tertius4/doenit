@@ -23,8 +23,8 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   /** Updates a document directly, bypassing the sync queue. Use for applying remote changes. */
   async updateRaw(id: string, changes: Partial<T & DB.MetaDataShared>): AsyncResult<T & DB.MetaDataShared> {
     try {
-      const test = await super.update(id, changes);
-      return test as Result<T & DB.MetaDataShared>;
+      const result = await super.update(id, changes);
+      return result as Result<T & DB.MetaDataShared>;
     } catch (error) {
       const message = error instanceof Error ? error.message : JSON.stringify(error);
       return { ok: false, error: message } as Result<T & DB.MetaDataShared>;
@@ -88,12 +88,12 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   }
 
   async update(id: string, changes: Partial<T>): AsyncResult<T & DB.MetaDataShared> {
-    if (!Object.keys(changes).length) throw new Error("[Table] No changes provided");
-
-    const doc = await this.collection.findOne(id).exec();
-    if (!doc) throw new Error(`[Table] Cannot update: document with id "${id}" not found`);
+    if (!Object.keys(changes).length) return err("[Table] No changes provided") as Result<T & DB.MetaDataShared>;
 
     try {
+      const doc = await this.collection.findOne(id).exec();
+      if (!doc) return err(`[Table] Cannot update: document with id "${id}" not found`) as Result<T & DB.MetaDataShared>;
+
       const currentDoc = doc.toJSON() as T & DB.MetaDataShared;
       const result = await super.update(id, {
         ...changes,
@@ -119,12 +119,33 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
     return { ok: true };
   }
 
+  /** Soft-deletes many documents with one read and one batched queue write (instead of N finds + N enqueues). */
   async removeMany(ids: string[]): AsyncResult {
-    const results = await Promise.all(ids.map((id) => this.remove(id)));
-    const failed = results.find((result) => !result.ok);
-    if (failed && !failed.ok) return failed;
+    try {
+      const unique_ids = [...new Set(ids)];
+      if (!unique_ids.length) return { ok: true };
 
-    return { ok: true };
+      const docs = await this.collection.find({ selector: { id: { $in: unique_ids } } } as any).exec();
+      if (docs.length !== unique_ids.length) return err("[Table] Cannot remove: some documents were not found");
+
+      const date = new Date().toISOString();
+      const updated = await Promise.all(
+        docs.map((doc) =>
+          doc.incrementalModify((data: any) => ({
+            ...data,
+            soft_deleted: true,
+            updated_at: date,
+            version: (data.version ?? 0) + 1,
+          })),
+        ),
+      );
+
+      await this.afterWriteMany(updated.map((doc) => doc.toJSON() as T & DB.MetaDataShared));
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      return err(message);
+    }
   }
 
   private async afterWriteMany(docs: (T & DB.MetaDataShared)[]) {

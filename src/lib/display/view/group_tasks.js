@@ -6,33 +6,28 @@ import t from "$lib/display/translate";
 import { getGroup } from "$lib";
 
 /**
+ * Fills `list` with a group's open tasks. Returns the unsubscribe function, so it can be returned from `onMount`.
  * @param {string} group_id
  * @param {AL.MainPageTask[]} list
  * @returns {() => void}
  */
 export function taskList(group_id, list) {
-  /** @type {import("rxjs").Subscription} */
-  let subscription;
-
-  subscribeGroupTaskList(group_id)
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
-
-  return () => () => subscription?.unsubscribe();
+  const subscription = subscribeGroupTaskList(group_id).subscribe((data) => list.splice(0, list.length, ...data));
+  return () => subscription.unsubscribe();
 }
 
 /**
  * @param {string} group_id
- * @returns {Promise<import("rxjs").Observable<AL.MainPageTask[]>>}
+ * @returns {import("rxjs").Observable<AL.MainPageTask[]>}
  */
-async function subscribeGroupTaskList(group_id) {
+function subscribeGroupTaskList(group_id) {
   const tasks$ = DB.task.subscribe$({
-    selector: { scope_id: group_id, archived: { $eq: false }, soft_deleted: { $ne: true } },
+    selector: { scope_id: group_id, archived: { $ne: true }, soft_deleted: { $ne: true } },
     sort: [{ due_date: "asc" }],
   });
   const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
   const members$ = DB.member.subscribe$({ selector: { scope_id: group_id, soft_deleted: { $ne: true } } });
-  const contacts$ = DB.contact.subscribe$({});
+  const contacts$ = DB.contact.subscribe$({ selector: { user_id: context.user?.id } });
 
   return combineLatest([tasks$, categories$, members$, contacts$]).pipe(
     map(([tasks, categories, members, contacts]) => {
@@ -109,7 +104,7 @@ function formatTask(task, categoryMap, contactMap, today) {
   if (task.assigned_firebase_uid) {
     const my_uid = context.user?.firebase_uid;
     const assignee =
-      task.assigned_firebase_uid === my_uid ? t("me") : (contactMap.get(task.assigned_firebase_uid) ?? t("unassigned"));
+      task.assigned_firebase_uid === my_uid ? t("me") : (contactMap.get(task.assigned_firebase_uid) ?? t("unknown_member"));
     pills.push({ type: "square", label: assignee, pre_icon: "user" });
   }
 

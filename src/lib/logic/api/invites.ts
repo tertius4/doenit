@@ -1,5 +1,5 @@
 import { apiLogger } from "$lib";
-import { InviteService } from "$domain/sync/InviteService";
+import { InviteService } from "$logic/invites/InviteService";
 import { NotificationService } from "$logic/notifications/NotificationService";
 
 export const send = apiLogger(sendInviteHandler);

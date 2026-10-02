@@ -17,10 +17,11 @@
 
   /** @type {AL.GroupListItem[]} */
   const groups = $state([]);
-  const members = $derived(groups.find((g) => g.id === group.id)?.members ?? []);
+  const members = $derived(groups[0]?.members ?? []);
   const member_names = $derived(!members.length ? t("just_you") : members.map(({ name }) => name).join(", "));
 
-  onMount(View.groups.getList(groups));
+  // svelte-ignore state_referenced_locally
+  onMount(View.groups.getOne(group.id, groups));
 </script>
 
 <div class="bg-surface rounded-lg px-4 py-3 space-y-2">

@@ -31,13 +31,14 @@
 
   let edit_open = $state(false);
 
-  /** @type {(DB.Member & {contact: DB.Contact | null})[]} */
+  /** @type {import("$logic/api/groups").GroupMember[]} */
   let members = $state([]);
   /** @type {DB.Contact[]} */
   let all_contacts = $state([]);
 
-  const is_admin = $derived(!owner_id || owner_id === (context.user?.id || "device"));
-  const my_member = $derived(members.find((m) => m.contact && isMe(m.contact)) ?? null);
+  const is_owner = $derived(!!owner_id && owner_id === context.user?.id);
+  const my_member = $derived(members.find((m) => m.is_me) ?? null);
+  const is_admin = $derived(is_owner || my_member?.role === "admin");
   const member_contact_ids = $derived(new Set(members.map((m) => m.firebase_uid)));
   const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.firebase_uid)));
 
@@ -66,9 +67,20 @@
     await loadMembers();
   }
 
-  /**
-   * @param {DB.Member & {contact: DB.Contact | null}} member
-   */
+  /** @param {import("$logic/api/groups").GroupMember} member */
+  function memberLabel(member) {
+    if (member.is_me) return t("you");
+    return member.contact?.name || member.contact?.email_address || t("unknown_member");
+  }
+
+  /** @param {import("$logic/api/groups").GroupMember} member */
+  function canRemove(member) {
+    // The owner can't leave (they disband instead) and admin rows can't be removed by others.
+    if (member.is_me) return !is_owner;
+    return is_admin && member.role !== "admin";
+  }
+
+  /** @param {import("$logic/api/groups").GroupMember} member */
   async function removeMember(member) {
     const result = await Api.groups.removeMember(member.id);
     if (!result.ok) return toast.error(result.error);
@@ -86,19 +98,13 @@
       return result;
     }
 
-    await invalidate("layout:main");
+    await invalidate("groups:page");
     return result;
   }
 
   function handleClose() {
-    id = id;
     open = false;
     if (onclose) onclose();
-  }
-
-  /** @param {DB.Contact} contact */
-  function isMe(contact) {
-    return !!context.user?.email_address && contact.email_address === context.user.email_address;
   }
 
   onMount(() => {
@@ -126,6 +132,7 @@
 {#if open}
   <div
     aria-modal="true"
+    aria-labelledby="edit-group-title"
     {@attach closeOnEsc}
     role="dialog"
     class="fixed inset-0 z-40 bg-surface"
@@ -138,7 +145,7 @@
       <!-- Scrollable content -->
       <div class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="flex items-center justify-center">
-          <h1 class="text-center text-3xl font-semibold">{name}</h1>
+          <h1 id="edit-group-title" class="text-center text-3xl font-semibold">{name}</h1>
         </div>
 
         {#if description}
@@ -154,23 +161,25 @@
           <ul class="space-y-1">
             {#each members as member (member.id)}
               {@const contact = member.contact}
-              {#if contact}
-                <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
-                  <span class="grow truncate text-sm">{contact.name}</span>
+              <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
+                <span class="grow truncate text-sm">{memberLabel(member)}</span>
+                {#if contact?.name && contact.email_address}
                   <span class="text-xs text-muted truncate">{contact.email_address}</span>
+                {/if}
 
-                  {#if is_admin || isMe(contact)}
-                    <button
-                      type="button"
-                      title={isMe(contact) ? t("leave_group") : t("remove_from_group")}
-                      class="text-error shrink-0"
-                      onclick={() => removeMember(member)}
-                    >
-                      <Icon name={isMe(contact) ? "leave" : "trash"} size={18} />
-                    </button>
-                  {/if}
-                </li>
-              {/if}
+                {#if canRemove(member)}
+                  {@const label = member.is_me ? t("leave_group") : t("remove_from_group")}
+                  <button
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    class="text-error shrink-0"
+                    onclick={() => removeMember(member)}
+                  >
+                    <Icon name={member.is_me ? "leave" : "trash"} size={18} />
+                  </button>
+                {/if}
+              </li>
             {:else}
               <li class="text-sm text-muted">{t("no_members_yet")}</li>
             {/each}
@@ -188,11 +197,14 @@
               <ul class="space-y-1">
                 {#each available_contacts as contact (contact.id)}
                   <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
-                    <span class="grow truncate text-sm">{contact.name}</span>
-                    <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
+                    <span class="grow truncate text-sm">{contact.name || contact.email_address}</span>
+                    {#if contact.name}
+                      <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
+                    {/if}
                     <button
                       type="button"
                       title={t("add_member")}
+                      aria-label={t("add_member")}
                       class="text-primary shrink-0"
                       onclick={() => addMember(contact.id)}
                     >
@@ -217,7 +229,7 @@
                 goto("/groups", { replaceState: true, invalidateAll: true });
               }}
             />
-          {:else if !is_admin && my_member}
+          {:else if my_member}
             <ButtonLeaveGroup member_id={my_member.id} onleave={handleClose} />
           {/if}
         </div>
@@ -227,6 +239,7 @@
             type="button"
             class="bg-primary text-alt p-3 rounded-full shadow-md"
             title={t("edit_group")}
+            aria-label={t("edit_group")}
             onclick={() => (edit_open = true)}
           >
             <Icon name="edit" size={20} />

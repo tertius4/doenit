@@ -12,12 +12,15 @@ class MergeEngine {
     delete remote.collection; // Only used for fetching, not stored in DB
 
     if (!local) {
-      const result = await collection.createRaw(remote);
+      // Nothing to delete locally, so don't materialise a tombstone for a doc this device never saw.
+      if (remote.soft_deleted) return;
+
+      await collection.createRaw(remote);
       return;
     }
 
     if (shouldApplyRemote(local as Record<string, any> & DB.MetaDataShared, remote)) {
-      const result = await collection.updateRaw(remote.id, remote);
+      await collection.updateRaw(remote.id, remote);
     }
   }
 }

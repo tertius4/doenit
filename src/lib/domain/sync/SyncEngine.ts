@@ -4,6 +4,7 @@ import { PushProcessor } from "./PushProcessor";
 
 class SyncEngine {
   private running = false;
+  private dirty = false;
   private scheduled = false;
   private scheduledTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -38,12 +39,19 @@ class SyncEngine {
   }
 
   private async tick() {
-    if (this.running) return;
-    this.running = true;
+    // A request that arrives mid-tick must not be lost: remember it and run again once finished.
+    if (this.running) {
+      this.dirty = true;
+      return;
+    }
 
+    this.running = true;
     try {
-      await PushProcessor.run();
-      await PullProcessor.run();
+      do {
+        this.dirty = false;
+        await PushProcessor.run();
+        await PullProcessor.run();
+      } while (this.dirty);
     } finally {
       this.running = false;
     }

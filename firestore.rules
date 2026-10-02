@@ -9,22 +9,58 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function membershipsPath(uid) {
+      return /databases/$(database)/documents/users/$(uid)/meta/memberships;
+    }
+
+    // True when the signed-in user's own membership list contains the scope.
+    function isScopeMember(scope_id) {
+      return signedIn()
+        && exists(membershipsPath(request.auth.uid))
+        && get(membershipsPath(request.auth.uid)).data.get('scopes', []).hasAny([scope_id]);
+    }
+
     // Public profile used to find a user by e-mail when sending a contact invite.
+    // A single profile can be fetched; listing is limited to small e-mail lookups (no scraping of all users).
     match /user_profiles/{uid} {
-      allow read: if signedIn();
+      allow get: if signedIn();
+      allow list: if signedIn() && request.query.limit <= 5;
       allow write: if isOwner(uid);
     }
 
-    // Synced scope data (tasks, groups, ...). Scope ids are random UUIDs.
-    // TODO: restrict to scope members once membership checks are verified against the emulator.
+    // Synced scope data (tasks, groups, members, ...). Only members of the scope may read or write it.
     match /scopes/{scope_id}/items/{item_id} {
-      allow read, write: if signedIn();
+      allow read, write: if isScopeMember(scope_id);
     }
 
     match /users/{uid} {
-      // Group owners read and write memberships on behalf of the members they add or remove.
       match /meta/{doc_id} {
-        allow read, write: if signedIn();
+        function scopesBefore() {
+          return resource == null ? [] : resource.data.get('scopes', []);
+        }
+
+        function scopesAfter() {
+          return request.resource.data.get('scopes', []);
+        }
+
+        // Scopes added to or removed from the list by this write.
+        function changedScopes() {
+          return scopesAfter().toSet().difference(scopesBefore().toSet())
+            .union(scopesBefore().toSet().difference(scopesAfter().toSet()));
+        }
+
+        // Group members add and remove scopes on behalf of the users they invite or remove.
+        // They may change at most one scope per write, and only one that they belong to themselves.
+        function isMemberManaging() {
+          return signedIn()
+            && doc_id == 'memberships'
+            && request.resource.data.keys().hasOnly(['scopes', 'updated_at'])
+            && changedScopes().size() <= 1
+            && changedScopes().difference(get(membershipsPath(request.auth.uid)).data.get('scopes', []).toSet()).size() == 0;
+        }
+
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) || isMemberManaging();
       }
 
       // Reserved for per-user private data such as push tokens: owner only (the Admin SDK bypasses rules).
@@ -34,10 +70,48 @@ service cloud.firestore {
 
       // Both parties of an invite keep a copy in their own inbox.
       match /invites/{invite_id} {
+        function invite() {
+          return request.resource.data;
+        }
+
+        function isValidRelationship() {
+          return invite().relationship_id == (invite().from_firebase_uid < invite().to_firebase_uid
+            ? invite().from_firebase_uid + ':' + invite().to_firebase_uid
+            : invite().to_firebase_uid + ':' + invite().from_firebase_uid);
+        }
+
+        // The inbox owner and the writer must both be a party of the invite, and the invite must be consistent.
+        function isWellFormed() {
+          return invite().id == invite_id
+            && invite().from_firebase_uid != invite().to_firebase_uid
+            && (invite().from_firebase_uid == uid || invite().to_firebase_uid == uid)
+            && (invite().from_firebase_uid == request.auth.uid || invite().to_firebase_uid == request.auth.uid)
+            && isValidRelationship();
+        }
+
+        function isAllowedTransition() {
+          return resource.data.from_firebase_uid == invite().from_firebase_uid
+            && resource.data.to_firebase_uid == invite().to_firebase_uid
+            && (
+              // The recipient answers a pending invite.
+              (resource.data.status == 'pending' && request.auth.uid == invite().to_firebase_uid
+                && invite().status in ['accepted', 'rejected'])
+              // The sender withdraws a pending invite.
+              || (resource.data.status == 'pending' && request.auth.uid == invite().from_firebase_uid
+                && invite().status == 'cancelled')
+              // Either party ends an accepted relationship.
+              || (resource.data.status == 'accepted' && invite().status == 'cancelled')
+              // Idempotent re-writes of the same state.
+              || resource.data.status == invite().status
+            );
+        }
+
         allow read: if isOwner(uid);
-        allow create, update: if signedIn()
-          && (request.resource.data.from_firebase_uid == request.auth.uid
-            || request.resource.data.to_firebase_uid == request.auth.uid);
+        // Only the sender can start an invite, and it always starts pending.
+        allow create: if signedIn() && isWellFormed()
+          && invite().from_firebase_uid == request.auth.uid
+          && invite().status == 'pending';
+        allow update: if signedIn() && isWellFormed() && isAllowedTransition();
       }
 
       // Anyone signed in may send a notification to a user; only the user can read or change it.

@@ -8,6 +8,7 @@ export const SyncQueue = {
       selector: {
         table_name: input.table_name,
         entity_id: input.entity_id,
+        scope_id: input.scope_id,
       },
     });
 
@@ -46,6 +47,7 @@ export const SyncQueue = {
         $or: items.map((item) => ({
           table_name: item.table_name,
           entity_id: item.entity_id,
+          scope_id: item.scope_id,
         })),
       },
     });
@@ -55,10 +57,10 @@ export const SyncQueue = {
     }
 
     const existing_items = existing_items_result.value;
-    const items_map = new Map(items.map((i) => [`${i.table_name}:${i.entity_id}`, i]));
+    const items_map = new Map(items.map((i) => [`${i.table_name}:${i.entity_id}:${i.scope_id}`, i]));
     await DB.sync_queue.updateMany(
       existing_items.map((existing) => {
-        const input = items_map.get(`${existing.table_name}:${existing.entity_id}`)!;
+        const input = items_map.get(`${existing.table_name}:${existing.entity_id}:${existing.scope_id}`)!;
         return {
           id: existing.id,
           changes: {
@@ -70,9 +72,9 @@ export const SyncQueue = {
       }),
     );
 
-    const existing_items_keys = new Set(existing_items.map((e) => `${e.table_name}:${e.entity_id}`));
+    const existing_items_keys = new Set(existing_items.map((e) => `${e.table_name}:${e.entity_id}:${e.scope_id}`));
     const new_items = items
-      .filter((item) => !existing_items_keys.has(`${item.table_name}:${item.entity_id}`))
+      .filter((item) => !existing_items_keys.has(`${item.table_name}:${item.entity_id}:${item.scope_id}`))
       .map((item) => ({
         id: crypto.randomUUID(),
         created_at: date,

@@ -11,6 +11,9 @@ import {
   setDoc,
   where,
   limit,
+  writeBatch,
+  arrayUnion,
+  arrayRemove,
 } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
 import { getAuth } from "$lib/logic/chunk/firebase-auth";
@@ -98,17 +101,29 @@ class Firestore {
     return (snap.data().scopes as string[]) ?? [];
   }
 
-  async scopeExists(scope_id: string): Promise<boolean> {
+  /**
+   * True only when the scope's group document exists and is soft-deleted. A missing document is NOT
+   * treated as deleted: the owner's push of the group may simply not have landed yet.
+   */
+  async scopeDeleted(scope_id: string): Promise<boolean> {
     const db = this.getDb();
     const ref = doc(db, "scopes", scope_id, "items", scope_id);
     const snap = await getDoc(ref);
-    return snap.exists() && !snap.data()?.soft_deleted;
+    return snap.exists() && !!snap.data()?.soft_deleted;
   }
 
-  async upsertMemberships(user_id: string, scopes: string[]): Promise<void> {
+  /** Atomically adds a scope to a user's membership list (safe against concurrent edits). */
+  async addMembership(user_id: string, scope_id: string): Promise<void> {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "meta", "memberships");
-    await setDoc(ref, { scopes: scopes.filter(Boolean), updated_at: new Date().toISOString() }, { merge: true });
+    await setDoc(ref, { scopes: arrayUnion(scope_id), updated_at: new Date().toISOString() }, { merge: true });
+  }
+
+  /** Atomically removes a scope from a user's membership list (safe against concurrent edits). */
+  async removeMembership(user_id: string, scope_id: string): Promise<void> {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "meta", "memberships");
+    await setDoc(ref, { scopes: arrayRemove(scope_id), updated_at: new Date().toISOString() }, { merge: true });
   }
 
   async fetchInvites(user_id: string, since?: string): Promise<DB.ContactInvite[]> {
@@ -122,10 +137,36 @@ class Firestore {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DB.ContactInvite);
   }
 
-  async upsertInvite(user_id: string, invite: DB.ContactInvite): Promise<void> {
+  /** Writes the invite to every given inbox in one atomic batch. */
+  async upsertInvite(user_ids: string[], invite: DB.ContactInvite): Promise<void> {
     const db = this.getDb();
-    const ref = doc(db, "users", user_id, "invites", invite.id);
-    await setDoc(ref, invite, { merge: true });
+    const batch = writeBatch(db);
+    for (const user_id of new Set(user_ids)) {
+      batch.set(doc(db, "users", user_id, "invites", invite.id), invite, { merge: true });
+    }
+    await batch.commit();
+  }
+
+  /**
+   * Attaches a real-time listener to the user's invite inbox. `callback` fires on remote changes only,
+   * not for the initial snapshot (the app pulls invites separately on start).
+   * Returns an unsubscribe function.
+   */
+  subscribeInvites(user_id: string, callback: () => void): () => void {
+    const db = this.getDb();
+    const ref = collection(db, "users", user_id, "invites");
+    let is_first = true;
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (is_first) {
+          is_first = false;
+          return;
+        }
+        if (snap.docChanges().length > 0 && !snap.metadata.hasPendingWrites) callback();
+      },
+      (error) => console.warn("[Firestore] invites listener failed:", error),
+    );
   }
 
   async fetchNotifications(user_id: string, since?: string, count = 50): Promise<DB.Notification[]> {
@@ -154,32 +195,46 @@ class Firestore {
     const db = this.getDb();
     const ref = collection(db, "scopes", scope_id, "items");
     const q = query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"));
-    return onSnapshot(q, (snap) => {
-      if (snap.docChanges().length > 0) callback();
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        if (snap.docChanges().length > 0) callback();
+      },
+      (error) => console.warn(`[Firestore] items listener for scope ${scope_id} failed:`, error),
+    );
   }
 
   /**
    * Attaches a real-time listener to the user's Firestore memberships document.
-   * Fires immediately with the current value (or [] if offline/missing), then on every change.
+   * Fires with the current value, then on every change. Cache-only snapshots of a missing document
+   * are ignored so an offline start can never wipe the local scope list.
    * Returns an unsubscribe function — call it to stop listening.
    */
   subscribeScopes(firebase_uid: string, callback: (scopes: string[]) => void): () => void {
     const db = this.getDb();
     const ref = doc(db, "users", firebase_uid, "meta", "memberships");
-    return onSnapshot(ref, (snap) => {
-      callback(snap.exists() ? ((snap.data().scopes as string[]) ?? []) : []);
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (!snap.exists()) {
+          if (snap.metadata.fromCache) return;
+          return callback([]);
+        }
+        callback((snap.data().scopes as string[]) ?? []);
+      },
+      (error) => console.warn("[Firestore] memberships listener failed:", error),
+    );
   }
 
   /** Looks up a user's uid and name by email address via the public user_profiles collection. */
   async fetchUserByEmail(email: string): Promise<{ uid: string; email_address: string; name: string } | null> {
     const db = this.getDb();
-    const q = query(collection(db, "user_profiles"), where("email_address", "==", email));
+    const candidates = [...new Set([email, email.toLowerCase()])];
+    const q = query(collection(db, "user_profiles"), where("email_address", "in", candidates), limit(5));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     const d = snap.docs[0];
-    return { uid: d.id, email_address: email, name: d.data().name ?? "" };
+    return { uid: d.id, email_address: d.data().email_address ?? email, name: d.data().name ?? "" };
   }
 }
 

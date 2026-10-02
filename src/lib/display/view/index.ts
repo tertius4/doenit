@@ -30,6 +30,7 @@ export default class View {
 
   static readonly groups = {
     getList: groups.getList,
+    getOne: groups.getOne,
   }
 
   static readonly group_tasks = {

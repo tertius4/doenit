@@ -54,6 +54,7 @@ export const context = $state(new ContextClass());
 
 let _user_subscriptions: Subscription | null = null;
 let _scope_unsubscribe: (() => void) | null = null;
+let _invite_unsubscribe: (() => void) | null = null;
 let _scope_generation = 0;
 let _app_subscriptions = new Subscription();
 
@@ -64,12 +65,22 @@ function subscribeForUser(user_id: string | null) {
   _scope_generation++;
   _scope_unsubscribe?.();
   _scope_unsubscribe = null;
+  _invite_unsubscribe?.();
+  _invite_unsubscribe = null;
 
   if (user_id) {
     const generation = _scope_generation;
     scopeManager
       .watchUserScopes(async (scopes) => {
+        const previous = await scopeManager.getUserScopes();
         await DB.user_state.upsert({ id: user_id, user_id, active_scopes: scopes });
+
+        // Scopes the user was removed from (left, removed or disbanded): drop their local data.
+        for (const scope_id of previous.filter((id) => !scopes.includes(id))) {
+          await scopeManager
+            .purgeLocalScope(scope_id)
+            .catch((err) => console.warn(`[context] purging scope ${scope_id} failed:`, err));
+        }
       })
       .then((unsub) => {
         // A newer subscribeForUser call already replaced this one, so drop the stale listener.
@@ -77,6 +88,17 @@ function subscribeForUser(user_id: string | null) {
         _scope_unsubscribe = unsub;
       })
       .catch((err) => console.warn("[context] watchUserScopes failed:", err));
+
+    // New invites and accepted/rejected replies show up without restarting the app.
+    scopeManager
+      .watchUserInvites(() => {
+        Api.invites.pull().catch((err) => console.warn("[context] invite pull failed:", err));
+      })
+      .then((unsub) => {
+        if (generation !== _scope_generation) return unsub();
+        _invite_unsubscribe = unsub;
+      })
+      .catch((err) => console.warn("[context] watchUserInvites failed:", err));
 
     _user_subscriptions.add(
       DB.user.subscribeOne$(user_id).subscribe((user) => {

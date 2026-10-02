@@ -5,6 +5,7 @@
   import CardInvite from "$display/features/contacts/CardInvite.svelte";
   import t from "$display/translate";
   import View from "$display/view";
+  import Api from "$logic/api";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -25,6 +26,11 @@
 
   onMount(View.contacts.getList(contacts));
   onMount(View.contacts.getInviteList(invites));
+
+  // Pick up anything that arrived while the app was open (the listener covers most, this covers a missed one).
+  onMount(() => {
+    Api.invites.pull().catch((err) => console.warn("[contacts] invite pull failed:", err));
+  });
 </script>
 
 <div class="flex flex-col gap-4 pt-2 pb-24">

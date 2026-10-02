@@ -6,6 +6,7 @@
 
 import firestore from "$services/firestore";
 import DB from "$domain/db";
+import { patchSyncCursors } from "$domain/sync/cursors";
 import { context } from "$logic/context.svelte";
 
 type CreateNotificationInput = {
@@ -126,12 +127,7 @@ export const NotificationService = {
     }
 
     const latest = remote[remote.length - 1].updated_at;
-    await DB.user_state.update(my_local_id, {
-      sync_cursors: {
-        ...(state.ok ? state.value.sync_cursors : {}),
-        __notifications: latest,
-      },
-    });
+    await patchSyncCursors(my_local_id, { __notifications: latest });
   },
 
   async markAsRead(notification: DB.Notification): AsyncResult<DB.Notification> {

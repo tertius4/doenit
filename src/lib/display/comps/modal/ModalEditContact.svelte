@@ -20,22 +20,38 @@
   let name = $state(initial_name ?? "");
   let error_message = $state("");
   let is_loading = $state(false);
-
-  const is_creating = $derived(!contact_id);
+  let is_confirming_delete = $state(false);
 
   $effect(() => {
     if (open) {
       name = initial_name ?? "";
       error_message = "";
+      is_confirming_delete = false;
     }
   });
 
   async function handleSave() {
+    if (is_loading) return;
+
     error_message = "";
     is_loading = true;
-    const result = await Api.contacts.update(contact_id, { name: name.trim() || null });
-    is_loading = false;
+    const result = await Api.contacts.update(contact_id, { name: name.trim() || null }).finally(
+      () => (is_loading = false),
+    );
 
+    if (!result.ok) {
+      error_message = result.error;
+      return;
+    }
+
+    open = false;
+  }
+
+  async function handleDelete() {
+    if (is_loading) return;
+
+    is_loading = true;
+    const result = await Api.contacts.delete(contact_id).finally(() => (is_loading = false));
     if (!result.ok) {
       error_message = result.error;
       return;
@@ -65,8 +81,36 @@
     <p class="text-sm text-error">{error_message}</p>
   {/if}
 
-  <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto" type="submit">
-    <Icon name={is_creating ? "plus" : "save"} size={20} />
-    <span>{is_creating ? t("create") : t("save")}</span>
+  <button
+    class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto disabled:opacity-50"
+    type="submit"
+    disabled={is_loading}
+  >
+    <Icon name="save" size={20} />
+    <span>{t("save")}</span>
   </button>
+
+  <hr class="border-default" />
+
+  {#if is_confirming_delete}
+    <p class="text-sm">{t("confirm_delete_contact")}</p>
+    <div class="flex gap-2 justify-between">
+      <button type="button" class="text-sm px-4 py-2 rounded-md bg-card" onclick={() => (is_confirming_delete = false)}>
+        {t("cancel")}
+      </button>
+      <button
+        type="button"
+        class="text-sm px-4 py-2 rounded-md bg-error text-alt disabled:opacity-50"
+        disabled={is_loading}
+        onclick={handleDelete}
+      >
+        {t("delete")}
+      </button>
+    </div>
+  {:else}
+    <button type="button" class="flex gap-1 items-center text-sm text-error" onclick={() => (is_confirming_delete = true)}>
+      <Icon name="trash" size={18} />
+      <span>{t("delete")}</span>
+    </button>
+  {/if}
 </Modal>

@@ -1,121 +1,61 @@
 <script>
   import InputText from "../input/InputText.svelte";
   import ModalHeader from "./ModalHeader.svelte";
-  import { context } from "$logic/context.svelte";
-  import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
 
   /**
+   * Creates a new group. Editing an existing group happens in EditGroup / ModalEditGroupInfo.
+   *
    * @typedef {Object} Props
    * @prop {boolean} [open=false] - Whether the modal is open.
-   * @prop {string} [id] - The ID of the group to edit (undefined if creating a new group).
-   * @prop {string} [owner_id] - The owner/admin user ID of the group.
-   * @prop {string} [name] - The name of the group.
-   * @prop {string} [description] - The description of the group.
-   * @prop {(id: string) => *} [onsubmit] - Callback when a group is created/saved.
+   * @prop {(id: string) => *} [onsubmit] - Callback when a group is created.
    * @prop {() => *} [onclose] - Callback when the modal is closed.
    */
 
-  /** @type {Props & Record<string, any>} */
-  let { open = $bindable(false), id, owner_id, name = "", description = "", ...props } = $props();
-  // svelte-ignore state_referenced_locally
-  const { onsubmit, onclose, ...rest } = props;
+  /** @type {Props} */
+  let { open = $bindable(false), onsubmit, onclose } = $props();
 
-  // svelte-ignore state_referenced_locally
-  let saved_id = $state(id);
-  // svelte-ignore state_referenced_locally
-  let saved_owner_user_id = $state(owner_id);
-
+  let name = $state("");
+  let description = $state("");
   let error_message = $state("");
-
-  /** @type {DB.Member[]} */
-  let members = $state([]);
-  /** @type {DB.Contact[]} */
-  let all_contacts = $state([]);
-
-  const is_creating = $derived(!id);
-
-  const is_admin = $derived(!saved_owner_user_id || saved_owner_user_id === (context.user?.id || "device"));
-
-  const member_contact_ids = $derived(new Set(members.map((m) => m.firebase_uid)));
-  const available_contacts = $derived(all_contacts.filter((c) => !member_contact_ids.has(c.firebase_uid)));
-
-  async function loadMembers() {
-    if (is_creating) return;
-
-    const [members_result, contacts_result] = await Promise.all([
-      Api.groups.getMembers(saved_id),
-      Api.groups.getContacts(),
-    ]);
-
-    if (members_result.ok) members = members_result.value;
-    if (contacts_result.ok) all_contacts = contacts_result.value;
-  }
-
-  $effect(() => {
-    if (open && !is_creating) loadMembers();
-    if (!open) {
-      members = [];
-      all_contacts = [];
-      error_message = "";
-    }
-  });
+  let is_loading = $state(false);
 
   async function saveGroup() {
+    if (is_loading) return;
+
     error_message = "";
+    is_loading = true;
 
-    const result = await Api.groups.save({ id: saved_id, name, description });
-    if (!result.ok) return (error_message = result.error);
+    try {
+      const result = await Api.groups.save({ name, description });
+      if (!result.ok) return (error_message = result.error);
 
-    saved_id = result.value.id;
-    saved_owner_user_id = result.value.owner_id;
+      if (onsubmit) await onsubmit(result.value.id);
 
-    await loadMembers();
-
-    if (onsubmit) await onsubmit(result.value.id);
-    open = false;
-  }
-
-  /** @param {string} contact_id */
-  async function addMember(contact_id) {
-    if (is_creating) return;
-
-    const result = await Api.groups.addMember(saved_id, contact_id);
-    if (!result.ok) return toast.error(result.error);
-    await loadMembers();
-  }
-
-  async function removeMember(member) {
-    const result = await Api.groups.removeMember(member.id);
-    if (!result.ok) return toast.error(result.error);
-    await loadMembers();
+      name = "";
+      description = "";
+      open = false;
+    } finally {
+      is_loading = false;
+    }
   }
 
   function handleClose() {
     error_message = "";
-    saved_id = id;
-    saved_owner_user_id = owner_id;
     if (onclose) onclose();
-  }
-
-  /**
-   * @param {DB.Contact} contact
-   */
-  function isMe(contact) {
-    return !!context.user?.id && contact.user_id === context.user.id;
   }
 </script>
 
-<Modal bind:is_open={open} onclose={handleClose} onsubmit={saveGroup} class="*:space-y-4" {...rest}>
-  <ModalHeader>{is_creating ? t("new_group") : t("edit_group")}</ModalHeader>
+<Modal bind:is_open={open} onclose={handleClose} onsubmit={saveGroup} class="*:space-y-4">
+  <ModalHeader>{t("new_group")}</ModalHeader>
 
   <InputText
     value={name}
     onchange={(value) => (name = value)}
-    focus_on_mount={is_creating}
+    focus_on_mount
     maxlength="100"
     placeholder={t("enter_group_name")}
     onfocus={() => (error_message = "")}
@@ -125,8 +65,7 @@
   />
 
   <textarea
-    value={description}
-    onchange={(e) => (description = e.target.value)}
+    bind:value={description}
     maxlength="250"
     placeholder={t("enter_group_description")}
     rows="3"
@@ -137,70 +76,12 @@
     <p class="text-sm text-error">{error_message}</p>
   {/if}
 
-  <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto" type="submit">
-    <Icon name={is_creating ? "plus" : "save"} size={20} />
-    <span>{is_creating ? t("create") : t("save")}</span>
+  <button
+    class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto disabled:opacity-50"
+    type="submit"
+    disabled={is_loading}
+  >
+    <Icon name="plus" size={20} />
+    <span>{t("create")}</span>
   </button>
-
-  {#if !is_creating}
-    <hr class="border-default" />
-
-    <!-- Current members -->
-    <div>
-      <p class="font-semibold mb-2">{t("group_members")}</p>
-
-      <ul class="space-y-1">
-        {#each members as member (member.id)}
-          {@const contact = member.contact}
-          {#if contact}
-            <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-5">
-              <span class="grow truncate text-sm">{contact.name}</span>
-              <span class="text-xs text-muted truncate">{contact.email_address}</span>
-
-              {#if is_admin || isMe(contact)}
-                <button
-                  type="button"
-                  title={isMe(contact) ? t("leave_group") : t("remove_from_group")}
-                  class="text-error shrink-0"
-                  onclick={() => removeMember(member)}
-                >
-                  <Icon name={isMe(contact) ? "leave" : "trash"} size={18} />
-                </button>
-              {/if}
-            </li>
-          {/if}
-        {:else}
-          <li class="text-sm text-muted">{t("no_members_yet")}</li>
-        {/each}
-      </ul>
-    </div>
-
-    <!-- Add contacts (admin only) -->
-    {#if is_admin}
-      <div>
-        <p class="font-semibold mb-2">{t("add_member")}</p>
-
-        {#if !available_contacts.length}
-          <p class="text-sm text-muted">{t("no_contacts_to_add")}</p>
-        {:else}
-          <ul class="space-y-1">
-            {#each available_contacts as contact (contact.id)}
-              <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
-                <span class="grow truncate text-sm">{contact.name}</span>
-                <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
-                <button
-                  type="button"
-                  title={t("add_member")}
-                  class="text-primary shrink-0"
-                  onclick={() => addMember(contact.id)}
-                >
-                  <Icon name="plus" size={18} />
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </div>
-    {/if}
-  {/if}
 </Modal>

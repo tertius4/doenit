@@ -20,28 +20,24 @@ export const MembershipService = {
   },
 
   /**
-   * Adds a scope to a user's Firestore membership list if not already present.
+   * Adds a scope to a user's Firestore membership list (idempotent, atomic).
    * Call this when a user joins or creates a shared scope (group).
    */
   async addScope(firebase_uid: string, scope_id: string): Promise<void> {
-    const existing = await firestore.fetchMemberships(firebase_uid);
-    if (existing.includes(scope_id)) return;
-    await firestore.upsertMemberships(firebase_uid, [...existing, scope_id]);
+    await firestore.addMembership(firebase_uid, scope_id);
   },
 
   /**
-   * Removes a scope from a user's Firestore membership list if present.
+   * Removes a scope from a user's Firestore membership list (idempotent, atomic).
    * Call this when a user leaves or is removed from a shared scope (group).
    */
   async removeScope(firebase_uid: string, scope_id: string): Promise<void> {
-    const existing = await firestore.fetchMemberships(firebase_uid);
-    if (!existing.includes(scope_id)) return;
-    await firestore.upsertMemberships(firebase_uid, existing.filter((s) => s !== scope_id));
+    await firestore.removeMembership(firebase_uid, scope_id);
   },
 
   /**
    * Reconciles a user's Firestore scope memberships against the live Firestore scope data.
-   * Any scope whose group document is absent or soft-deleted in Firestore is removed from memberships.
+   * Any scope whose group document is soft-deleted in Firestore is removed from memberships.
    * Call this on app startup after Firestore is initialised.
    * Returns the (cleaned) membership list so callers don't need to fetch it again.
    */
@@ -49,19 +45,22 @@ export const MembershipService = {
     const existing = await firestore.fetchMemberships(firebase_uid);
     if (existing.length === 0) return existing;
 
+    // Only a definite "deleted" answer marks a scope stale. A failed lookup (e.g. offline) keeps the scope.
     const stale: string[] = [];
     await Promise.all(
       existing.map(async (scope_id) => {
-        const exists = await firestore.scopeExists(scope_id);
-        if (!exists) stale.push(scope_id);
+        try {
+          if (await firestore.scopeDeleted(scope_id)) stale.push(scope_id);
+        } catch (err) {
+          console.warn(`[MembershipService] Could not verify scope ${scope_id}:`, err);
+        }
       }),
     );
 
     if (stale.length === 0) return existing;
 
     console.warn("[MembershipService] Reconciling stale scopes:", stale);
-    const cleaned = existing.filter((s) => !stale.includes(s));
-    await firestore.upsertMemberships(firebase_uid, cleaned);
-    return cleaned;
+    await Promise.all(stale.map((scope_id) => firestore.removeMembership(firebase_uid, scope_id)));
+    return existing.filter((s) => !stale.includes(s));
   },
 };
