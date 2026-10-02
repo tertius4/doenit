@@ -1,13 +1,14 @@
 <script>
   import { selected_categories, selected_tasks } from "$display/selected.svelte";
-  import CardTask from "$display/features/task-list/CardTask.svelte";
+  import TaskGroupList from "$display/features/task-list/TaskGroupList.svelte";
+  import { useDelayedEmpty } from "$display/features/task-list/delayed-empty.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";
   import { Haptics } from "@capacitor/haptics";
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import View from "$display/view";
-  import { filterTasks, wait } from "$lib";
+  import { filterTasks } from "$lib";
   import Api from "$logic/api";
   import { fade } from "svelte/transition";
   import toast from "$display/toast/toast.svelte";
@@ -15,23 +16,14 @@
 
   selected_tasks.clear();
 
-  const groupTitles = [
-    t('past'),
-    t('today'),
-    t('tomorrow'),
-    t('day_after_tomorrow'),
-    t('in_a_week'),
-    t('in_a_month'),
-    t('later'),
-    t('no_date'),
-  ];
-  
   const search_text = getContext("search_text");
 
   /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
 
   const tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
+
+  const show_empty = useDelayedEmpty(() => tasks.length);
 
   onMount(View.main_page.taskList(all_tasks));
 
@@ -67,14 +59,8 @@
    * @param {AL.MainPageTask} task
    */
   async function handleComplete(task) {
-    const task_element = document.getElementById(`task-${task.id}`);
-    if (task_element) task_element.className += " animate-complete";
-    await wait(200);
     const result = await Api.task.complete(task.id);
     if (!result.ok) return toast.error(result.error);
-
-    // Remove animation
-    if (task_element) task_element.className = task_element.className.replace(" animate-complete", "");
 
     selected_tasks.delete(task.id);
 
@@ -83,24 +69,9 @@
 </script>
 
 <div class="space-y-1.5">
-  {#each tasks as task, index (task.id)}
-    {@const group = task.time_group_number}
-    {@const previousGroup = index > 0 ? tasks[index - 1].time_group_number : -1}
+  <TaskGroupList {tasks} onclick={handleClick} oncheck={handleComplete} onlongpress={handleLongPress} />
 
-    {#if group !== previousGroup}
-      <h2 class="mb-2 text-lg font-semibold">
-        {groupTitles[group]}
-      </h2>
-    {/if}
-
-    <CardTask
-      {task}
-      is_selected={selected_tasks.has(task.id)}
-      onclick={() => handleClick(task)}
-      oncheck={() => handleComplete(task)}
-      onlongpress={() => handleLongPress(task)}
-    />
-  {:else}
+  {#if !tasks.length && show_empty.value}
     <div class="flex flex-col items-center gap-4 py-12" in:fade={{ delay: 150 }}>
       <span class="text-lg">
         {#if !selected_categories.size}
@@ -121,7 +92,7 @@
         <span class="text-lg">{t("create_new_task")}</span>
       </button>
     </div>
-  {/each}
+  {/if}
 </div>
 
 <!-- FAB -->

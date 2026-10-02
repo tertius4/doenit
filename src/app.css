@@ -127,6 +127,8 @@
   --color-bg-0: var(--color-primary-900); /* page - use once */
   --color-bg-1: var(--color-primary-800); /* surface - sit one page */
   --color-bg-2: var(--color-primary-700); /* card - interactive */
+  --color-selected: var(--color-secondary-800);
+  --color-selected-pill: var(--color-secondary-600);
 
   /* Borders */
   --color-border-0: var(--color-primary-700);
@@ -187,6 +189,8 @@
   --color-bg-0: var(--color-primary-100); /* page */
   --color-bg-1: var(--color-primary-200); /* surface */
   --color-bg-2: var(--color-primary-300); /* card */
+  --color-selected: var(--color-secondary-200);
+  --color-selected-pill: var(--color-secondary-300);
 
   /* Borders */
   --color-border-0: var(--color-primary-300);

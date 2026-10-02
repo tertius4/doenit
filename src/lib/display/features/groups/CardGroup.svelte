@@ -26,7 +26,7 @@
   class="relative w-full flex items-center gap-3 bg-surface rounded-lg px-3 py-2 text-left active:bg-card transition-colors"
 >
   <div class="flex-1">
-    <p class="text-secondary-300 font-semibold text-lg leading-none truncate">{name}</p>
+    <h1 class="text-secondary-400 font-semibold text-lg leading-none truncate">{name}</h1>
 
     <p class="text-sm text-muted truncate empty:hidden mt-px">{description}</p>
     <div class="flex gap-1 font-medium text-sm mt-1">

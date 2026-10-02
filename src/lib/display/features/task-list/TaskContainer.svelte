@@ -1,11 +1,11 @@
 <script>
   import { longpress } from "$logic/long-press";
-  import { slide } from "svelte/transition";
+  import { taskIn, taskOut } from "./task-transitions";
 
   const { children, onlongpress, ...rest } = $props();
 </script>
 
-<div class="relative min-h-10 rounded-lg duration-600! delay-100" out:slide in:slide={{ delay: 200 }}>
+<div class="relative min-h-10 rounded-lg" out:taskOut|global in:taskIn|global>
   <button
     type="button"
     {...rest}
@@ -17,11 +17,3 @@
   </button>
 </div>
 
-<style>
-  .animate-complete {
-    /* Transition slide to the right and fade out */
-    translate: 20% 0;
-    opacity: 0%;
-    transition: all 150ms ease-out;
-  }
-</style>

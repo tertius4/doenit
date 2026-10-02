@@ -41,8 +41,8 @@
       "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
       "bg-success/20 border-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
       "bg-error/20 border-error text-alt": is_past && !is_selected && !is_for_someone_else,
-      "bg-secondary-800 border-primary": is_selected,
-      "bg-primary-800": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
+      "bg-selected border-primary": is_selected,
+      "bg-surface": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
       "text-muted": is_for_someone_else,
     },
     rest.class || "",
@@ -60,8 +60,8 @@
             rounded: pill.type === "square",
             "bg-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
             "bg-error text-alt": is_past && !is_selected && !is_for_someone_else,
-            "bg-secondary-600 border-primary": is_selected,
-            "bg-primary-700": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
+            "bg-selected-pill border-primary": is_selected,
+            "bg-card": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
           }}
         >
           {#if pill.pre_icon}

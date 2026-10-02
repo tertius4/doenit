@@ -218,8 +218,8 @@ async function completeTaskHandler(task_id) {
 
     const result = await DB.task.update(task_id, task);
     if (next_repeat.is_repeat_task) {
-      // For the animation.
-      setTimeout(() => DB.task.update(task_id, { archived: false }), 300);
+      // Let the task finish sliding out of the list before it re-enters (see TASK_OUT_MS in task-transitions.js).
+      setTimeout(() => DB.task.update(task_id, { archived: false }), 500);
     }
 
     return result;
