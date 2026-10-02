@@ -53,7 +53,7 @@
     type="button"
     aria-label={t("log_in_with_google")}
     class={{
-      "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg mx-auto": true,
+      "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg mx-auto mt-4": true,
       "opacity-50": auth.is_loading,
     }}
     onclick={() => auth.signIn()}

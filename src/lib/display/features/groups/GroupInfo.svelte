@@ -18,7 +18,7 @@
   /** @type {AL.GroupListItem[]} */
   const groups = $state([]);
   const members = $derived(groups.find((g) => g.id === group.id)?.members ?? []);
-  const member_names = $derived(members.length === 1 ? t("just_you") : members.map(({ name }) => name).join(", "));
+  const member_names = $derived(!members.length ? t("just_you") : members.map(({ name }) => name).join(", "));
 
   onMount(View.groups.getList(groups));
 </script>

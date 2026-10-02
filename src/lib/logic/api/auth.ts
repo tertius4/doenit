@@ -11,6 +11,9 @@ export const signIn = apiLogger(signInHandler);
 export const signOut = apiLogger(signOutHandler);
 
 async function signInHandler(): AsyncResult {
+  // Google reports a missing connection as a confusing "[16] Account reauth failed", so check first.
+  if (!navigator.onLine) return { ok: false, error: "sign_in_error_offline" };
+
   const init_result = await auth.initialize({ web_client_id: config.google_web_client_id });
   if (!init_result.ok) return init_result;
 
@@ -26,7 +29,8 @@ async function signInHandler(): AsyncResult {
     const firebase_result = await signInWithCredential(firestore.getAuth(), credential);
     firebase_uid = firebase_result.user.uid;
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : JSON.stringify(e) };
+    const is_network_error = (e as { code?: string })?.code === "auth/network-request-failed";
+    return { ok: false, error: is_network_error ? "sign_in_error_offline" : e instanceof Error ? e.message : JSON.stringify(e) };
   }
 
   const local_result = await saveSignedInUser(result.value, firebase_uid);

@@ -458,6 +458,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     sign_in_error_no_user: "Geen gebruiker van Google teruggestuur nie.",
     sign_in_error_no_auth: "Geen verifikasie inligting van Google teruggestuur nie.",
     sign_in_error_no_idtoken: "Geen ID van Google teruggestuur nie.",
+    sign_in_error_offline: "Geen internetverbinding nie. Koppel aan die internet en probeer weer.",
     sign_in_failed: "Inteken fout",
     sign_out_failed: "Uitteken fout",
 
@@ -1053,6 +1054,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     sign_in_error_no_user: "No user returned from Google sign-in.",
     sign_in_error_no_auth: "No authentication object returned from Google sign-in.",
     sign_in_error_no_idtoken: "No ID token returned from Google sign-in.",
+    sign_in_error_offline: "No internet connection. Connect to the internet and try again.",
     sign_in_failed: "Sign in error",
     sign_out_failed: "Sign out error",
 
