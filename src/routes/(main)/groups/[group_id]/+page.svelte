@@ -1,6 +1,7 @@
 <script>
   import TaskGroupList from "$display/features/task-list/TaskGroupList.svelte";
   import { useDelayedEmpty } from "$display/features/task-list/delayed-empty.svelte";
+  import GroupInfo from "$display/features/groups/GroupInfo.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { selected_categories, selected_tasks } from "$display/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
@@ -71,6 +72,7 @@
 </script>
 
 <div class="space-y-1.5 mt-2">
+  <GroupInfo group={data.group} />
   <TaskGroupList {tasks} onclick={handleClick} oncheck={handleComplete} onlongpress={handleLongPress} />
 
   {#if !tasks.length && show_empty.value}

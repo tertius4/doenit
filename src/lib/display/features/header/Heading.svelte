@@ -10,12 +10,10 @@
   import { BACK_BUTTON_FUNCTION, capitalize } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
-  import EditGroup from "../groups/EditGroup.svelte";
   import ButtonBack from "./ButtonBack.svelte";
 
   const search_text = getContext("search_text");
 
-  let is_editing = $state(false);
   let show_searchbar = $state(false);
 
   /** @type {Record<string, string>} */
@@ -29,7 +27,7 @@
     "/(main)/settings": t("settings"),
     "/(main)/subscriptions": t("doenit_plus"),
     "/(main)/groups": t("groups"),
-    "/(main)/groups/[group_id]": page.data.group?.name ?? t("groups"),
+    "/(main)/groups/[group_id]": t("groups"),
     "/(main)/contacts": t("contact_list"),
     "/(main)/notifications": t("notifications"),
     "/db/[collection]": capitalize(t("database")),
@@ -37,7 +35,6 @@
   });
 
   const title = $derived(TITLES[page.route.id || ""] ?? t("task_list"));
-  const { id, name, description, owner_id } = $derived(page.data.group ?? {});
 
   $effect(() => {
     page.url;
@@ -69,11 +66,6 @@
     if (func) func.handler();
   }
 
-  function handleClick() {
-    if (!page.data.is_group_page) return;
-
-    is_editing = true;
-  }
 </script>
 
 <div class="bg-surface" style="padding-top: env(safe-area-inset-top);">
@@ -84,12 +76,7 @@
       {/if}
     </div>
 
-    <button
-      type="button"
-      class="w-fit mx-auto absolute inset-0 flex items-center justify-center gap-1 py-2 z-0"
-      class:pointer-events-none={!page.data.is_group_page}
-      onclick={handleClick}
-    >
+    <div class="w-fit mx-auto absolute inset-0 flex items-center justify-center gap-1 py-2 z-0 pointer-events-none">
       <div class="w-fit mx-auto flex items-center justify-center gap-0.5 py-2">
         <img alt="logo" src="/logo.png" class="w-3xl" />
         <div class="relative">
@@ -104,7 +91,7 @@
           {/key}
         </div>
       </div>
-    </button>
+    </div>
 
     <div class="flex gap-2 z-2 ml-auto shrink-0">
       {#if selected_tasks.size}
@@ -132,5 +119,3 @@
     </div>
   {/if}
 </div>
-
-<EditGroup bind:open={is_editing} {id} {name} {description} {owner_id} />
