@@ -40,6 +40,13 @@ class Firestore {
     return getAuth(getApp(env.PUBLIC_APP_ID));
   }
 
+  /** Resolves the uid of the persisted Firebase user once Auth has restored its session, or null when signed out. */
+  async getCurrentUid(): Promise<string | null> {
+    const auth = this.getAuth();
+    await auth.authStateReady();
+    return auth.currentUser?.uid ?? null;
+  }
+
   /**
    * Fetches all items for a scope from Firestore.
    * Pass `since` (ISO string) to only fetch items updated after that timestamp.

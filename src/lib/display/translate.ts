@@ -458,6 +458,8 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     sign_in_error_no_user: "Geen gebruiker van Google teruggestuur nie.",
     sign_in_error_no_auth: "Geen verifikasie inligting van Google teruggestuur nie.",
     sign_in_error_no_idtoken: "Geen ID van Google teruggestuur nie.",
+    sign_in_failed: "Inteken fout",
+    sign_out_failed: "Uitteken fout",
 
     // Backup & Data
     backup_label: "Rugsteun",
@@ -1051,6 +1053,8 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     sign_in_error_no_user: "No user returned from Google sign-in.",
     sign_in_error_no_auth: "No authentication object returned from Google sign-in.",
     sign_in_error_no_idtoken: "No ID token returned from Google sign-in.",
+    sign_in_failed: "Sign in error",
+    sign_out_failed: "Sign out error",
 
     // Backup & Data
     backup_label: "Backup",

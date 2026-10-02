@@ -1,7 +1,12 @@
 import { SocialLogin } from "@capgo/capacitor-social-login";
 
 class SocialLoginService {
+  private initialized = false;
+
+  /** Initialises the plugin once; later calls are no-ops. */
   async initialize(options: { web_client_id: string; ios_client_id?: string }): AsyncResult {
+    if (this.initialized) return { ok: true };
+
     try {
       await SocialLogin.initialize({
         google: {
@@ -9,6 +14,7 @@ class SocialLoginService {
           ...(options.ios_client_id ? { iOSClientId: options.ios_client_id } : {}),
         },
       });
+      this.initialized = true;
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : JSON.stringify(error) };

@@ -1,44 +1,23 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
   import { context } from "$logic/context.svelte";
-  import toast from "$display/toast/toast.svelte";
+  import { createAuthFlow } from "$display/auth.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import Api from "$logic/api";
 
   let is_open = $state(false);
-  let is_loading = $state(false);
+  const auth = createAuthFlow();
 
   const is_logged_in = $derived(context.user?.id);
 
-  async function handleSignIn() {
-    is_loading = true;
-    const result = await Api.auth.signIn();
-    is_loading = false;
-
-    if (!result.ok) {
-      if (result.error === "USER_CANCELED") {
-        return;
-      }
-
-      toast.error("Inteken fout", result.error || t("something_went_wrong"));
-    }
-  }
-
   async function handleSignOut() {
     is_open = false;
-
-    is_loading = true;
-    const result = await Api.auth.signOut();
-    is_loading = false;
-    if (result.ok) return;
-
-    toast.error("Uitteken fout", result.error || t("something_went_wrong"));
+    await auth.signOut();
   }
 </script>
 
 <div class="bg-surface rounded-lg items-center p-4 flex flex-col relative gap-4">
-  {#if is_loading}
+  {#if auth.is_loading}
     <div class="relative flex gap-x-2 w-full justify-start">
       <div class="w-13 h-13 rounded-full bg-card animate-pulse"></div>
       <div class="space-y-2">
@@ -63,11 +42,11 @@
       aria-label={t("log_in_with_google")}
       class={{
         "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg": true,
-        "opacity-50": is_loading,
+        "opacity-50": auth.is_loading,
       }}
-      onclick={handleSignIn}
+      onclick={() => auth.signIn()}
     >
-      {#if is_loading}
+      {#if auth.is_loading}
         <Icon name="loading" class="mr-3 animate-spin" />
         {t("loading")}
       {:else}

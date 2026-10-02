@@ -2,16 +2,16 @@
   import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
   import { backHandler } from "$logic/navigation";
   import { context } from "$logic/context.svelte";
-  import toast from "$display/toast/toast.svelte";
+  import { createAuthFlow } from "$display/auth.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { BACK_BUTTON_FUNCTION, wait } from "$lib";
   import { goto } from "$app/navigation";
   import Groups from "./comps/Groups.svelte";
   import { onMount } from "svelte";
   import t from "$display/translate";
-  import Api from "$logic/api";
 
   let show_create_modal = $state(false);
+  const auth = createAuthFlow();
 
   const is_logged_in = $derived(!!context.user?.id);
 
@@ -20,17 +20,6 @@
     BACK_BUTTON_FUNCTION.value = token;
     return () => backHandler.unregister(token);
   });
-
-  async function handleSignIn() {
-    const result = await Api.auth.signIn();
-    if (!result.ok) {
-      if (result.error === "USER_CANCELED") {
-        return;
-      }
-
-      toast.error("Inteken fout", result.error || t("something_went_wrong"));
-    }
-  }
 </script>
 
 {#if is_logged_in}
@@ -62,10 +51,19 @@
 
   <button
     type="button"
-    onclick={handleSignIn}
-    class="bg-card border border-default flex gap-1 items-center px-6 py-3 rounded-md ml-auto mx-auto mt-4"
+    aria-label={t("log_in_with_google")}
+    class={{
+      "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg mx-auto": true,
+      "opacity-50": auth.is_loading,
+    }}
+    onclick={() => auth.signIn()}
   >
-    <Icon name="google" size={20} />
-    <span class="font-medium">{t("log_in_with_google")}</span>
+    {#if auth.is_loading}
+      <Icon name="loading" class="mr-3 animate-spin" />
+      {t("loading")}
+    {:else}
+      <img src="google.svg" alt="Google" class="h-5 w-5 mr-3" />
+      {t("log_in_with_google")}
+    {/if}
   </button>
 {/if}

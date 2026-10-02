@@ -6,6 +6,7 @@ import { MembershipService } from "$lib/domain/sync/MembershipService";
 import { Subscription, distinctUntilChanged, map } from "rxjs";
 import Api from "$logic/api";
 import syncEngine from "$domain/sync/SyncEngine";
+import firestore from "$services/firestore";
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
@@ -53,22 +54,29 @@ export const context = $state(new ContextClass());
 
 let _user_subscriptions: Subscription | null = null;
 let _scope_unsubscribe: (() => void) | null = null;
+let _scope_generation = 0;
+let _app_subscriptions = new Subscription();
 
 function subscribeForUser(user_id: string | null) {
   _user_subscriptions?.unsubscribe();
   _user_subscriptions = new Subscription();
 
+  _scope_generation++;
   _scope_unsubscribe?.();
   _scope_unsubscribe = null;
 
   if (user_id) {
+    const generation = _scope_generation;
     scopeManager
       .watchUserScopes(async (scopes) => {
         await DB.user_state.upsert({ id: user_id, user_id, active_scopes: scopes });
       })
       .then((unsub) => {
+        // A newer subscribeForUser call already replaced this one, so drop the stale listener.
+        if (generation !== _scope_generation) return unsub();
         _scope_unsubscribe = unsub;
-      });
+      })
+      .catch((err) => console.warn("[context] watchUserScopes failed:", err));
 
     _user_subscriptions.add(
       DB.user.subscribeOne$(user_id).subscribe((user) => {
@@ -141,6 +149,26 @@ async function syncRemote(user_id: string | null, firebase_uid: string | null, r
 }
 
 /**
+ * A local session is only valid while Firebase still holds the same user; otherwise every Firestore call fails.
+ * Users without a firebase_uid, or an unreadable Firebase state, are left alone.
+ */
+async function firebaseSessionMatches(user_id: string | null): Promise<boolean> {
+  try {
+    if (!user_id) throw Error("No User ID");
+
+    const user_result = await DB.user.findById(user_id);
+    const firebase_uid = user_result.ok ? user_result.value?.firebase_uid : null;
+    if (!firebase_uid) return true;
+
+    const current_uid = await firestore.getCurrentUid();
+    return current_uid === firebase_uid;
+  } catch (err) {
+    console.warn("[initApp] Could not verify Firebase session:", err);
+    return true;
+  }
+}
+
+/**
  * Call on app open (no argument) or explicitly after sign-in / sign-out (pass user_id or null).
  * - App open: reads the session, initialises app state, then wires subscriptions.
  * - Sign-in / sign-out: skips app-state init and re-wires subscriptions for the new user.
@@ -154,6 +182,13 @@ export async function initApp(user_id?: string | null) {
     resolved_user_id = (result.ok && result.value.user_id) || null;
   } else {
     resolved_user_id = user_id;
+  }
+
+  const is_local_and_firebase_match = await firebaseSessionMatches(resolved_user_id);
+  if (is_app_open && resolved_user_id && !is_local_and_firebase_match) {
+    console.warn("[initApp] Firebase session missing or changed, signing out locally");
+    await DB.session.update({ user_id: null });
+    resolved_user_id = null;
   }
 
   // Ensure the correct settings document exists before subscribing.
@@ -214,12 +249,16 @@ export async function initApp(user_id?: string | null) {
       context.app_state = update_result.ok ? update_result.value : app_state_result.value;
     }
 
-    DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
-      context.app_state = app_state;
-    });
+    _app_subscriptions.unsubscribe();
+    _app_subscriptions = new Subscription();
+    _app_subscriptions.add(
+      DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
+        context.app_state = app_state;
+      }),
+    );
 
     // Tasks change locally and through sync pulls (which bypass the tables), so watch the collection itself.
-    DB.task.collection.$.subscribe(() => Api.notifications.schedule());
+    _app_subscriptions.add(DB.task.collection.$.subscribe(() => Api.notifications.schedule()));
     Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
   }
 }

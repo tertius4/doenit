@@ -19,32 +19,21 @@ async function signInHandler(): AsyncResult {
 
   // Sign into Firebase Auth with the Google id_token
   if (!result.value.id_token) return { ok: false, error: "sign_in_error_no_idtoken" };
-  const credential = GoogleAuthProvider.credential(result.value.id_token);
-  const firebase_result = await signInWithCredential(firestore.getAuth(), credential);
-  const firebase_uid = firebase_result.user.uid;
 
-  const user_result = await DB.user.findOne({ selector: { google_id: result.value.id } });
-  if (!user_result.ok) return user_result;
+  let firebase_uid: string;
+  try {
+    const credential = GoogleAuthProvider.credential(result.value.id_token);
+    const firebase_result = await signInWithCredential(firestore.getAuth(), credential);
+    firebase_uid = firebase_result.user.uid;
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : JSON.stringify(e) };
+  }
 
-  let user = user_result.value;
-  if (!user) {
-    const create_result = await DB.user.create({
-      google_id: result.value.id,
-      name: result.value.name,
-      email_address: result.value.email,
-      avatar: result.value.avatar,
-      firebase_uid,
-    });
-    if (!create_result.ok) return create_result;
-    user = create_result.value;
-  } else {
-    const update_result = await DB.user.update(user.id, {
-      name: result.value.name,
-      email_address: result.value.email,
-      avatar: result.value.avatar,
-      firebase_uid,
-    });
-    if (!update_result.ok) return update_result;
+  const local_result = await saveSignedInUser(result.value, firebase_uid);
+  if (!local_result.ok) {
+    // Don't leave Firebase signed in while the local session is not.
+    await signOutFirebase(firestore.getAuth()).catch((e) => console.warn("[auth] Firebase rollback failed:", e));
+    return local_result;
   }
 
   // Publish user profile so other users can look up this firebase_uid by email
@@ -58,20 +47,49 @@ async function signInHandler(): AsyncResult {
     console.warn("[auth] Failed to publish user profile:", e);
   }
 
-  const session_result = await DB.session.update({ user_id: user.id });
-  if (!session_result.ok) return session_result;
-
-  await initApp(user.id);
+  await initApp(local_result.value);
 
   return { ok: true };
 }
 
-async function signOutHandler(): AsyncResult {
-  const init_result = await auth.initialize({ web_client_id: config.google_web_client_id });
-  if (!init_result.ok) return init_result;
+/** Creates or refreshes the local user and points the session at it. Returns the user id. */
+async function saveSignedInUser(profile: AL.GoogleUserProfile, firebase_uid: string): AsyncResult<string> {
+  const user_result = await DB.user.findOne({ selector: { google_id: profile.id } });
+  if (!user_result.ok) return user_result;
 
-  const result = await auth.signOut();
-  if (!result.ok) return result;
+  const details = {
+    name: profile.name,
+    email_address: profile.email,
+    avatar: profile.avatar,
+    firebase_uid,
+  };
+
+  let user = user_result.value;
+  if (!user) {
+    const create_result = await DB.user.create({ google_id: profile.id, ...details });
+    if (!create_result.ok) return create_result;
+    user = create_result.value;
+  } else if (
+    user.name !== details.name ||
+    user.email_address !== details.email_address ||
+    user.avatar !== details.avatar ||
+    user.firebase_uid !== details.firebase_uid
+  ) {
+    const update_result = await DB.user.update(user.id, details);
+    if (!update_result.ok) return update_result;
+  }
+
+  const session_result = await DB.session.update({ user_id: user.id });
+  if (!session_result.ok) return session_result;
+
+  return { ok: true, value: user.id };
+}
+
+async function signOutHandler(): AsyncResult {
+  // Google/plugin failures must not block clearing the Firebase and local session.
+  const init_result = await auth.initialize({ web_client_id: config.google_web_client_id });
+  const result = init_result.ok ? await auth.signOut() : init_result;
+  if (!result.ok) console.warn("[auth] Google sign-out failed:", result.error);
 
   try {
     await signOutFirebase(firestore.getAuth());
