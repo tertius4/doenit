@@ -36,16 +36,16 @@
     const task = typeof data.task_name === "string" ? data.task_name : "";
     const user = typeof data.user_name === "string" ? data.user_name : "";
 
-    /** @type {Partial<Record<DB.NotificationType, string>>} What each type needs before it can be translated. */
+    /** @type {Partial<Record<DB.NotificationType, boolean>>} What each type needs before it can be translated. */
     const required = {
-      invite_received: email,
-      invite_accepted: email,
-      group_added: group,
-      group_removed: group,
-      group_deleted: group,
-      user_left_group: group && user,
-      task_assigned: task,
-      task_completed: task && group && user,
+      invite_received: !!email,
+      invite_accepted: !!email,
+      group_added: !!group,
+      group_removed: !!group,
+      group_deleted: !!group,
+      user_left_group: !!group && !!user,
+      task_assigned: !!task,
+      task_completed: !!task && !!group && !!user,
     };
 
     if (!required[notification.type]) return { title: notification.title, body: notification.body };

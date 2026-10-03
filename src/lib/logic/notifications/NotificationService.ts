@@ -164,7 +164,7 @@ export const NotificationService = {
         task_id: task.id,
         task_name: task.name,
         group_id: group.id,
-        category_name: group.name,
+        group_name: group.name,
         user_name,
       },
     });
