@@ -45,7 +45,7 @@
 {:else}
   <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
     <Icon name="user" size={48} class="text-muted opacity-40" />
-    <p class="text-muted">{t("log_in_to_see_contacts")}</p>
+    <p class="text-muted">{t("log_in_to_see_groups")}</p>
   </div>
 
   <button
