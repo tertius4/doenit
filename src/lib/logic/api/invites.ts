@@ -3,18 +3,23 @@ import { InviteService } from "$logic/invites/InviteService";
 import { NotificationService } from "$logic/notifications/NotificationService";
 
 export const send = apiLogger(sendInviteHandler);
+export const setContactName = apiLogger(setContactNameHandler);
 export const accept = apiLogger(acceptInviteHandler);
 export const reject = apiLogger(rejectInviteHandler);
 export const cancel = apiLogger(cancelInviteHandler);
 export const pull = () => InviteService.pull();
 
-async function sendInviteHandler(to_email: string): AsyncResult {
+async function sendInviteHandler(to_email: string): AsyncResult<DB.ContactInvite> {
   const result = await InviteService.send(to_email);
   if (!result.ok) return result;
 
   const notified = await NotificationService.createInviteReceived(result.value);
   if (!notified.ok) console.warn("[invites] failed to create notification:", notified.error);
-  return { ok: true };
+  return result;
+}
+
+async function setContactNameHandler(invite_id: string, name: string): AsyncResult {
+  return InviteService.setContactName(invite_id, name);
 }
 
 async function acceptInviteHandler(invite_id: string): AsyncResult {

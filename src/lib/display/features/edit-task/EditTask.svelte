@@ -1,6 +1,7 @@
 <script>
   import SelectRepeatInterval from "$display/features/repeat/SelectRepeatInterval.svelte";
   import DropdownCategory from "$display/features/edit-task/DropdownCategory.svelte";
+  import SelectGroup from "$display/features/edit-task/SelectGroup.svelte";
   import SelectAssignee from "$display/features/edit-task/SelectAssignee.svelte";
   import InputName from "$display/features/edit-task/InputName.svelte";
   import t from "$display/translate";
@@ -29,6 +30,11 @@
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
   const scope_id = $derived(/** @type {any} */ (task).scope_id);
+
+  // The assignee must be a member of the task's group.
+  $effect(() => {
+    if (!scope_id && task.assigned_firebase_uid) task.assigned_firebase_uid = undefined;
+  });
 
   /**
    * Handle form submission
@@ -66,6 +72,8 @@
     <label class="font-semibold" for="category">{t("category")}</label>
     <DropdownCategory bind:category_id={task.category_id} />
   </div>
+
+  <SelectGroup bind:value={task.scope_id} />
 
   <SelectAssignee {scope_id} bind:value={task.assigned_firebase_uid} />
 

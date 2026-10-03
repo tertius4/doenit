@@ -4,6 +4,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import Modal from "./Modal.svelte";
+  import toast from "$display/toast/toast.svelte";
   import Api from "$logic/api";
 
   /**
@@ -21,6 +22,7 @@
   const { onsubmit, onclose, ...rest } = props;
 
   let error_message = $state("");
+  let is_confirming_delete = $state(false);
 
   const is_creating = $derived(!id);
 
@@ -34,7 +36,17 @@
     name = "";
   }
 
+  async function deleteCategory() {
+    if (!id) return;
+
+    const result = await Api.cats.delete(id);
+    if (!result.ok) return toast.error(t("failed_to_delete_category"), result.error);
+
+    open = false;
+  }
+
   function handleClose() {
+    is_confirming_delete = false;
     if (onclose) onclose();
   }
 </script>
@@ -61,4 +73,25 @@
     <Icon name={is_creating ? "plus" : "save"} size={20} />
     <span>{is_creating ? t("create") : t("save")}</span>
   </button>
+
+  {#if !is_creating}
+    <hr class="border-default" />
+
+    {#if is_confirming_delete}
+      <p class="text-sm">{t("confirm_delete_category")}</p>
+      <div class="flex gap-2 justify-between">
+        <button type="button" class="text-sm px-4 py-2 rounded-md bg-card" onclick={() => (is_confirming_delete = false)}>
+          {t("cancel")}
+        </button>
+        <button type="button" class="text-sm px-4 py-2 rounded-md bg-error text-alt" onclick={deleteCategory}>
+          {t("delete")}
+        </button>
+      </div>
+    {:else}
+      <button type="button" class="flex gap-1 items-center text-sm text-error" onclick={() => (is_confirming_delete = true)}>
+        <Icon name="trash" size={18} />
+        <span>{t("delete_category")}</span>
+      </button>
+    {/if}
+  {/if}
 </Modal>

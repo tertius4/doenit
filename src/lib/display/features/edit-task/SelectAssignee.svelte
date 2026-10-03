@@ -6,7 +6,6 @@
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
   import OptionCategory from "./OptionCategory.svelte";
   import Api from "$logic/api";
-  import { onMount } from "svelte";
   import { wait } from "$lib";
 
   /**
@@ -21,10 +20,16 @@
   /** @type {(DB.Member & { contact: { name?: string, email_address: string } | null })[]} */
   let members = $state([]);
 
-  onMount(async () => {
-    if (!scope_id) return;
-    const result = await Api.groups.getMembers(scope_id);
-    if (result.ok) members = result.value;
+  $effect(() => {
+    const id = scope_id;
+    if (!id) {
+      members = [];
+      return;
+    }
+
+    Api.groups.getMembers(id).then((result) => {
+      if (id === scope_id && result.ok) members = result.value;
+    });
   });
 
   let is_open = $state(false);

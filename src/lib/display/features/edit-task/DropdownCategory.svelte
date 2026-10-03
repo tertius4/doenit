@@ -23,12 +23,6 @@
 
   const category = $derived(await Api.cats.getCategoryById(category_id));
 
-  $effect(() => {
-    if (category_id === null) {
-      is_adding = true;
-    }
-  });
-
   /**
    * Select a category
    * @param {string} id

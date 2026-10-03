@@ -142,8 +142,10 @@ class Firestore {
   async upsertInvite(user_ids: string[], invite: DB.ContactInvite): Promise<void> {
     const db = this.getDb();
     const batch = writeBatch(db);
+    // contact_name is private to the sender's device.
+    const { contact_name: _contact_name, ...shared } = invite;
     for (const user_id of new Set(user_ids)) {
-      batch.set(doc(db, "users", user_id, "invites", invite.id), invite, { merge: true });
+      batch.set(doc(db, "users", user_id, "invites", invite.id), shared, { merge: true });
     }
     await batch.commit();
   }

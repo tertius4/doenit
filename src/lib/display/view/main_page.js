@@ -34,15 +34,19 @@ async function subscribeTaskList() {
   });
   const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  return combineLatest([tasks$, categories$]).pipe(
-    map(([tasks, categories]) => {
+  const groups$ = DB.group.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+
+  return combineLatest([tasks$, categories$, groups$]).pipe(
+    map(([tasks, categories, groups]) => {
       /** @type {Map<string, DB.Category>} */
       const categoryMap = new Map(categories.map((c) => [c.id, c]));
+      /** @type {Map<string, string>} */
+      const groupMap = new Map(groups.map((g) => [g.id, g.name]));
       const today = new Date();
 
       tasks.sort(compareTasks);
 
-      return tasks.map((task) => formatTask(task, categoryMap, today));
+      return tasks.map((task) => formatTask(task, categoryMap, groupMap, today));
     }),
   );
 }
@@ -50,10 +54,11 @@ async function subscribeTaskList() {
 /**
  * @param {DB.Task} task
  * @param {Map<string, DB.Category>} category_map
+ * @param {Map<string, string>} group_map
  * @param {Date} today
  * @returns {AL.MainPageTask}
  */
-function formatTask(task, category_map, today) {
+function formatTask(task, category_map, group_map, today) {
   const start_date = DateUtil.startOfDay(task.start_date);
   const due_date = DateUtil.endOfDay(task.due_date);
 
@@ -76,6 +81,9 @@ function formatTask(task, category_map, today) {
     const category = category_map.get(task.category_id);
     if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
   }
+
+  const group_name = task.scope_id ? group_map.get(task.scope_id) : undefined;
+  if (group_name) pills.push({ type: "square", label: group_name, pre_icon: "users" });
 
   /** @type {AL.MainPageTask['top_right_icons']} */
   const top_right_icons = [];

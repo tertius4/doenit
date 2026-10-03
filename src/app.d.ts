@@ -59,6 +59,7 @@ declare global {
 
       category_id?: string;
       // No group_id; Scope_id will be same as group_id
+      scope_id?: string | null;
     }
 
     interface Category {
@@ -195,6 +196,8 @@ declare global {
     interface ContactInvite {
       id: string;
       relationship_id: string;
+      /** Local only (never synced): name the sender chose for the invitee, copied to the contact on acceptance. */
+      contact_name?: string | null;
       from_firebase_uid: string;
       from_email: string;
       to_firebase_uid: string;
