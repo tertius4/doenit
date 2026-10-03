@@ -1,6 +1,7 @@
 <script>
   import { selected_categories, selected_tasks } from "$display/selected.svelte";
   import TaskGroupList from "$display/features/task-list/TaskGroupList.svelte";
+  import { markCompleting } from "$display/features/task-list/task-transitions";
   import { useDelayedEmpty } from "$display/features/task-list/delayed-empty.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";
@@ -59,6 +60,7 @@
    * @param {AL.MainPageTask} task
    */
   async function handleComplete(task) {
+    markCompleting(task.id);
     const result = await Api.task.complete(task.id);
     if (!result.ok) return toast.error(result.error);
 

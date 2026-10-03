@@ -5,7 +5,7 @@
   const { children, onlongpress, ...rest } = $props();
 </script>
 
-<div class="relative min-h-10 rounded-lg" out:taskOut|global in:taskIn|global>
+<div class="relative min-h-10 rounded-lg" out:taskOut|global={{ key: rest.id }} in:taskIn|global>
   <button
     type="button"
     {...rest}
