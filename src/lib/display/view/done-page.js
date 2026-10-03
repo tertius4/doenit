@@ -80,12 +80,12 @@ function formatDateRange(start_date, due_date) {
   if (!date) return "";
 
   if (!start_date || !due_date || DateUtil.isSameDay(start_date, due_date)) {
-    return DateUtil.format(date, "D MMM. YYYY");
+    return DateUtil.format(date, "D MMM YYYY");
   }
 
   if (start_date.getFullYear() === due_date.getFullYear() && start_date.getMonth() === due_date.getMonth()) {
-    return `${DateUtil.format(start_date, "D")}-${DateUtil.format(due_date, "D MMM. YYYY")}`;
+    return `${DateUtil.format(start_date, "D")}-${DateUtil.format(due_date, "D MMM YYYY")}`;
   }
 
-  return `${DateUtil.format(start_date, "D MMM")} - ${DateUtil.format(due_date, "D MMM. YYYY")}`;
+  return `${DateUtil.format(start_date, "D MMM")} - ${DateUtil.format(due_date, "D MMM YYYY")}`;
 }
