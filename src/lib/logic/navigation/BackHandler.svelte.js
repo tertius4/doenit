@@ -11,7 +11,7 @@
  */
 class BackHandlerService {
   /** @type {Map<symbol, { handler: () => boolean | void | Promise<boolean | void>, priority: number }>} */
-  handlers = $state(new Map());
+  handlers = new Map();
 
   /**
    * Register a back handler

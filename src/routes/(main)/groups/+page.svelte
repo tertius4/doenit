@@ -1,10 +1,10 @@
 <script>
   import ModalGroup from "$display/comps/modal/ModalGroup.svelte";
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, navHistory } from "$logic/navigation";
   import { context } from "$logic/context.svelte";
   import { createAuthFlow } from "$display/auth.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { BACK_BUTTON_FUNCTION, wait } from "$lib";
+  import { wait } from "$lib";
   import { goto } from "$app/navigation";
   import Groups from "./comps/Groups.svelte";
   import { onMount } from "svelte";
@@ -16,8 +16,7 @@
   const is_logged_in = $derived(!!context.user?.id);
 
   onMount(() => {
-    const token = backHandler.register(() => goto(`/`), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);
   });
 </script>

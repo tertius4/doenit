@@ -630,6 +630,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     you: "Jy",
     offline: "U is tans vanlyn",
+    press_again_to_exit: "Druk weer terug om die app toe te maak",
 
     // Bottombar
     all_tasks: "Alle take",
@@ -1245,6 +1246,7 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
 
     you: "You",
     offline: "You are offline",
+    press_again_to_exit: "Press back again to exit",
 
     // Bottombar
     all_tasks: "All Tasks",

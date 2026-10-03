@@ -1,10 +1,8 @@
 <script>
   import CardCategory from "$display/features/categories/CardCategory.svelte";
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, navHistory } from "$logic/navigation";
   import t from "$display/translate";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
   import View from "$display/view";
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import Api from "$logic/api";
   import alert from "$display/toast/toast.svelte";;
@@ -22,8 +20,7 @@
 
   onMount(View.categories.categoryList(categories));
   onMount(() => {
-    const token = backHandler.register(() => goto(`/`), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);
   });
 

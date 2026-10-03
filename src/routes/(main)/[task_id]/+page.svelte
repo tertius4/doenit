@@ -3,7 +3,7 @@
   import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import InputCheckbox from "$display/comps/input/InputCheckbox.svelte";
   import EditTask from "$display/features/edit-task/EditTask.svelte";
-  import { goto } from "$app/navigation";
+  import { navHistory } from "$logic/navigation";
   import t from "$display/translate";
   import Api from "$logic/api";
   import { page } from "$app/state";
@@ -25,7 +25,7 @@
     const result = await Api.task.updateTask(task);
     if (!result.ok) return result;
 
-    await goto(redirect_to);
+    navHistory.back(redirect_to);
     return { ok: true };
   }
 
@@ -36,7 +36,7 @@
     const result = await Api.task.deleteTask(task.id);
     if (!result.ok) return result;
 
-    await goto(redirect_to);
+    navHistory.back(redirect_to);
     return { ok: true };
   }
 
@@ -51,7 +51,7 @@
    * @returns {AsyncResult}
    */
   async function handleCancel() {
-    await goto(redirect_to);
+    navHistory.back(redirect_to);
     return { ok: true };
   }
 </script>

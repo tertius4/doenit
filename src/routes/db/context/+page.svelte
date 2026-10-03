@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import DB from "$domain/db";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
   import { context } from "$logic/context.svelte";
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, navHistory } from "$logic/navigation";
   import { onMount } from "svelte";
 
   let session = $state<DB.Session | null>(null);
@@ -16,8 +14,7 @@
   });
 
   onMount(() => {
-    const token = backHandler.register(() => goto("/db"), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back("/db"), -1);
 
     return () => backHandler.unregister(token);
   });

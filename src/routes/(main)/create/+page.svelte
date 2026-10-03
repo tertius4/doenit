@@ -2,7 +2,7 @@
   import SaveChanges from "$display/features/edit-task/SaveChanges.svelte";
   import EditTask from "$display/features/edit-task/EditTask.svelte";
   import Api from "$logic/api";
-  import { goto } from "$app/navigation";
+  import { navHistory } from "$logic/navigation";
   import { selected_categories } from "$display/selected.svelte";
   import { page } from "$app/state";
 
@@ -26,7 +26,7 @@
     const result = await Api.task.createTask(task);
     if (!result.ok) return result;
 
-    await goto(redirect_to);
+    navHistory.back(redirect_to);
     return { ok: true };
   }
 
@@ -34,7 +34,7 @@
    * @returns {AsyncResult}
    */
   async function handleCancel() {
-    await goto(redirect_to);
+    navHistory.back(redirect_to);
     return { ok: true };
   }
 </script>

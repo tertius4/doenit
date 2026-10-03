@@ -1,8 +1,6 @@
 import { logApiExecutionTime } from "$logic/index.remote";
 import DateUtil from "$display/date-util";
 
-export const BACK_BUTTON_FUNCTION: { value: symbol | null } = { value: null };
-
 const REPEAT_INTERVALS: Record<string, (arg0: { date: Date; num?: number; specific_days?: number[] }) => number> = {
   daily: ({ date, num = 1 }) => date.setDate(date.getDate() + 1 * num),
   workdaily: ({ date }) => {

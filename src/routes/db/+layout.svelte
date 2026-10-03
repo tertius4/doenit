@@ -3,18 +3,15 @@
   import { context } from "$logic/context.svelte";
   import { onMount } from "svelte";
   import "../../app.css";
-  import { Capacitor } from "@capacitor/core";
-  import { App } from "@capacitor/app";
-  import { backHandler } from "$logic/navigation";
+  import { installHardwareBack, navHistory } from "$logic/navigation";
+  import { afterNavigate } from "$app/navigation";
+  import t from "$display/translate";
 
   const { children } = $props();
 
-  onMount(() => {
-    if (!Capacitor.isNativePlatform()) return;
+  onMount(() => installHardwareBack(() => t("press_again_to_exit")));
 
-    const listener = App.addListener("backButton", () => backHandler.handle());
-    return () => listener.then((l) => l.remove());
-  });
+  afterNavigate((navigation) => navHistory.record(navigation));
 
   $effect(() => {
     document.documentElement.setAttribute("data-theme", context._settings?.theme || "dark");

@@ -1,15 +1,12 @@
 <script>
-  import { goto } from "$app/navigation";
   import DB from "$domain/db";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, navHistory } from "$logic/navigation";
   import { onMount } from "svelte";
 
   const names = DB.collectionNames;
 
   onMount(() => {
-    const token = backHandler.register(() => goto(`/`), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);
   });
 </script>

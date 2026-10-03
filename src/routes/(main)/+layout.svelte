@@ -2,9 +2,9 @@
   import Footer from "$display/features/footer/Footer.svelte";
   import Heading from "$display/features/header/Heading.svelte";
   import { context } from "$logic/context.svelte";
-  import { backHandler } from "$logic/navigation";
+  import { installHardwareBack, navHistory } from "$logic/navigation";
+  import { afterNavigate } from "$app/navigation";
   import { Capacitor } from "@capacitor/core";
-  import { App } from "@capacitor/app";
   import { setContext, onMount, mount, untrack } from "svelte";
   import "../../app.css";
   import syncEngine from "$domain/sync/SyncEngine";
@@ -50,12 +50,9 @@
     };
   });
 
-  onMount(() => {
-    if (!Capacitor.isNativePlatform()) return;
+  onMount(() => installHardwareBack(() => t("press_again_to_exit")));
 
-    const listener = App.addListener("backButton", () => backHandler.handle());
-    return () => listener.then((l) => l.remove());
-  });
+  afterNavigate((navigation) => navHistory.record(navigation));
 
   // The initial sync is flushed by initApp; only react to later changes here.
   onMount(() => {

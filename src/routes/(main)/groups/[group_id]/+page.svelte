@@ -10,8 +10,8 @@
   import { context } from "$logic/context.svelte";
   import { getContext, onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { BACK_BUTTON_FUNCTION, filterTasks } from "$lib";
-  import { backHandler } from "$logic/navigation";
+  import { filterTasks } from "$lib";
+  import { backHandler, navHistory } from "$logic/navigation";
   import View from "$display/view";
   import Api from "$logic/api";
   import t from "$display/translate";
@@ -29,8 +29,7 @@
   const show_empty = useDelayedEmpty(() => tasks.length);
 
   onMount(() => {
-    const token = backHandler.register(() => goto("/groups"), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back("/groups"), -1);
     return () => backHandler.unregister(token);
   });
 

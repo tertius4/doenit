@@ -1,8 +1,8 @@
 <script>
   import TaskCompleted from "$display/features/task-list/TaskCompleted.svelte";
   import { selected_tasks } from "$display/selected.svelte";
-  import { BACK_BUTTON_FUNCTION, normalize } from "$lib";
-  import { backHandler } from "$logic/navigation";
+  import { normalize } from "$lib";
+  import { backHandler, navHistory } from "$logic/navigation";
   import { Haptics } from "@capacitor/haptics";
   import { getContext, onMount } from "svelte";
   import { goto } from "$app/navigation";
@@ -22,8 +22,7 @@
 
   onMount(View.done_page.taskList(completed_tasks));
   onMount(() => {
-    const token = backHandler.register(async () => goto(`/`), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);
   });
 

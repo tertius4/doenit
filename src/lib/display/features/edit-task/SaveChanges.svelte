@@ -4,7 +4,6 @@
   import toast from "$display/toast/toast.svelte";
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
   import t from "$display/translate";
   import { onMount } from "svelte";
   import Api from "$logic/api";
@@ -25,17 +24,17 @@
   onMount(() => {
     const token = backHandler.register(async () => {
       const has_changes = await Api.task.isTaskUpdated(task_id, changed);
-      await tempMediaManager.discardAll();
 
       if (!has_changes) {
+        await tempMediaManager.discardAll();
         await oncancel();
-        return;
+        return true;
       }
 
       is_open = true;
+      return true;
     }, -1);
 
-    BACK_BUTTON_FUNCTION.value = token;
     return () => backHandler.unregister(token);
   });
 
@@ -52,6 +51,7 @@
   }
 
   async function handleDiscard() {
+    await tempMediaManager.discardAll();
     const result = await oncancel();
     if (!result.ok) return toast.error(result.error);
 

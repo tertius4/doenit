@@ -5,16 +5,13 @@
   import NotificationList from "$display/notifications/NotificationList.svelte";
   import t from "$display/translate";
   import { onMount, onDestroy } from "svelte";
-  import { backHandler } from "$logic/navigation";
-  import { goto } from "$app/navigation";
-  import { BACK_BUTTON_FUNCTION } from "$lib";
+  import { backHandler, navHistory } from "$logic/navigation";
 
   let notifications = $state.raw(/** @type {DB.Notification[]} */ ([]));
   let unsubscribe = () => {};
   
   onMount(() => {
-    const token = backHandler.register(() => goto("/"), -1);
-    BACK_BUTTON_FUNCTION.value = token;
+    const token = backHandler.register(() => navHistory.back("/"), -1);
     return () => backHandler.unregister(token);
   });
 

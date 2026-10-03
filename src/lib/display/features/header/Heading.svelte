@@ -5,9 +5,9 @@
   import { selected_tasks } from "$display/selected.svelte";
   import { getContext, onMount, untrack } from "svelte";
   import { fade, slide } from "svelte/transition";
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, navHistory } from "$logic/navigation";
   import ButtonMore from "./ButtonMore.svelte";
-  import { BACK_BUTTON_FUNCTION, capitalize } from "$lib";
+  import { capitalize } from "$lib";
   import t from "$display/translate";
   import { page } from "$app/state";
   import ButtonBack from "./ButtonBack.svelte";
@@ -58,14 +58,9 @@
     return () => backHandler.unregister(token);
   });
 
-  function handleBackButton() {
-    const token = BACK_BUTTON_FUNCTION.value;
-    if (!token) return;
-
-    const func = backHandler.handlers.get(token);
-    if (func) func.handler();
+  async function handleBackButton() {
+    if (!(await backHandler.handle())) navHistory.back("/");
   }
-
 </script>
 
 <div class="bg-surface" style="padding-top: env(safe-area-inset-top);">
