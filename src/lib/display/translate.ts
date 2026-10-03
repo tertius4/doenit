@@ -1025,7 +1025,6 @@ const translations: Record<"af" | "en", Record<string | symbol, string>> = {
     notification_granted: "Permissions granted",
     notification_denied: "Permissions denied",
     notification_pending: "Permissions needed",
-    notification_permission_denied: "Notification permission is not granted.",
     notification_problem: "Notification problem:",
     notification_time: "Notification time",
     request_permission: "Grant permission",
