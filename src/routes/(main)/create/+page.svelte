@@ -26,6 +26,9 @@
     const result = await Api.task.createTask(task);
     if (!result.ok) return result;
 
+    // A task without dates is not a "Do Now" task, so show all tasks to keep the new one visible.
+    if (!task.start_date && !task.due_date) await Api.settings.setHomeMode("all");
+
     navHistory.back(redirect_to);
     return { ok: true };
   }

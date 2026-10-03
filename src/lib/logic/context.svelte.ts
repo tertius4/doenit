@@ -31,6 +31,12 @@ class ContextClass {
     this._settings = value;
   }
 
+  /** Which tasks the home list shows. Lives on the user's state when signed in, else on the device's. */
+  get home_mode(): DB.HomeMode {
+    const state = this._user ? this._user_state : this._app_state;
+    return state?.home_mode ?? "now";
+  }
+
   get app_state(): DB.AppState {
     if (!this._app_state) throw Error("App state not loaded");
     return this._app_state;

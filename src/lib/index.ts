@@ -107,6 +107,23 @@ export function filterTasks(
 }
 
 /**
+ * Whether a task is applicable to do right now.
+ * A task with a start date is applicable once that day has arrived, whatever its due date.
+ * A task with only a due date is applicable from 2 days before it is due (overdue included).
+ * A task without dates is never applicable.
+ */
+export function isDoNowTask(task: DB.Task, today: Date): boolean {
+  const start_date = DateUtil.startOfDay(task.start_date);
+  if (start_date) return start_date <= today;
+
+  const due_date = DateUtil.endOfDay(task.due_date);
+  if (!due_date) return false;
+
+  const limit = DateUtil.endOfDay(DateUtil.add(today, { days: 2 }));
+  return !!limit && due_date <= limit;
+}
+
+/**
  * Normalize a string by trimming whitespace and converting to lowercase.
  */
 export function normalize(str: any): string {
