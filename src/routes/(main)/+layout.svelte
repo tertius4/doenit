@@ -16,6 +16,7 @@
   import toast from "$display/toast/toast.svelte";
   import { InAppReview } from "@capacitor-community/in-app-review";
   import { Widget } from "$services/widget";
+  import { Theme } from "$services/theme";
   import Api from "$logic/api";
   import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
 
@@ -96,7 +97,9 @@
   });
 
   $effect(() => {
-    document.documentElement.setAttribute("data-theme", context._settings?.theme || "dark");
+    // Until settings load, keep the theme the inline script in app.html applied from the cache.
+    const theme = context._settings?.theme;
+    if (theme) Theme.apply(theme);
   });
 
   $effect(() => {
