@@ -261,12 +261,12 @@
             {#each members as member (member.id)}
               {@const contact = member.contact}
               <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
-                <span class="grow truncate text-sm">{memberLabel(member)}</span>
-                {#if member.role === "admin"}
-                  <span class="text-xs rounded-full bg-primary/15 text-primary px-2 py-0.5 shrink-0">
-                    {t("group_owner")}
-                  </span>
-                {/if}
+                <span class="grow flex items-center gap-1 truncate text-sm">
+                  {#if member.role === "admin"}
+                    <Icon name="crown" size={12} />
+                  {/if}
+                  <span class="truncate">{memberLabel(member)}</span>
+                </span>
                 {#if contact?.name && contact.email_address}
                   <span class="text-xs text-muted truncate">{contact.email_address}</span>
                 {/if}
