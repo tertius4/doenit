@@ -93,6 +93,8 @@ async function subscribeHotbarCategoryList() {
       const hash = new Map();
 
       for (const task of tasks) {
+        if (task.archived) continue;
+
         const category_id = task.category_id || "default";
 
         const current_count = hash.get(category_id) || 0;

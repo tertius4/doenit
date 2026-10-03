@@ -41,7 +41,7 @@ android {
         applicationId appId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 198
+        versionCode 200
         versionName "2.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -63,6 +63,11 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                // Helps with debugging if app crashes in production.
+                debugSymbolLevel 'SYMBOL_TABLE'
+            }
+
         }
     }
 }
