@@ -1,5 +1,5 @@
 <script>
-  import { backHandler } from "$logic/navigation";
+  import { backHandler, modalStack } from "$logic/navigation";
   import CloseButton from "./CloseButton.svelte";
   import { quadInOut } from "svelte/easing";
   import { fade } from "svelte/transition";
@@ -28,10 +28,14 @@
     ...rest
   } = props;
 
+  /** @type {symbol | undefined} */
+  let stack_token;
+
   onMount(() => {
     const token = backHandler.register(() => {
-      if (is_open) handleClose();
-      return is_open;
+      if (!is_open || !stack_token || !modalStack.isTop(stack_token)) return false;
+      handleClose();
+      return true;
     }, 1000);
 
     return () => backHandler.unregister(token);
@@ -56,18 +60,22 @@
     if (onsubmit) onsubmit(event);
   }
 
-  // Prevent body scroll when modal is open.
+  // Register in the modal stack (locks body scroll, lets only the topmost modal react to Esc/back).
   $effect(() => {
     if (!is_open) return;
 
-    document.body.style.overflow = "hidden";
+    const token = modalStack.push();
+    stack_token = token;
 
-    return () => (document.body.style.overflow = "");
+    return () => {
+      modalStack.remove(token);
+      stack_token = undefined;
+    };
   });
 
   function closeOnEsc() {
     return on(window, "keydown", (e) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key === "Escape" && stack_token && modalStack.isTop(stack_token)) handleClose();
     });
   }
 </script>

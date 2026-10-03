@@ -1,79 +1,85 @@
 <script>
-  import InputText from "$display/comps/input/InputText.svelte";
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
   import Icon from "$display/comps/Icon.svelte";
+  import GroupForm from "./GroupForm.svelte";
   import t from "$display/translate";
   import Modal from "$display/comps/modal/Modal.svelte";
-  import Api from "$logic/api";
+  import { untrack } from "svelte";
 
   /**
    * @typedef {Object} Props
    * @prop {boolean} [open=false]
-   * @prop {string} [id]
    * @prop {string} [name=""]
    * @prop {string} [description=""]
-   * @prop {(name: string, description: string | undefined) => *} [onsubmit]
+   * @prop {(name: string, description: string) => Promise<{ ok: boolean, error?: string }> | { ok: boolean, error?: string }} [onsubmit]
    * @prop {() => *} [onclose]
    */
 
   /** @type {Props} */
-  let { open = $bindable(false), id, name = "", description = "", onsubmit, onclose } = $props();
+  let { open = $bindable(false), name = "", description = "", onsubmit, onclose } = $props();
 
-  // svelte-ignore state_referenced_locally
-  let local_name = $state(name);
-  // svelte-ignore state_referenced_locally
-  let local_description = $state(description);
+  let local_name = $state("");
+  let local_description = $state("");
   let error_message = $state("");
+  let name_invalid = $state(false);
+  let is_loading = $state(false);
 
+  // Only (re)initialise when the modal opens; later prop updates (e.g. sync) must not wipe what the user typed.
   $effect(() => {
-    if (open) {
+    if (!open) return;
+
+    untrack(() => {
       local_name = name;
       local_description = description;
-      error_message = "";
-    }
+      clearError();
+    });
   });
 
-  async function handleSave() {
-    if (!onsubmit) return;
-
+  function clearError() {
     error_message = "";
+    name_invalid = false;
+  }
 
-    const result = await onsubmit(local_name, local_description);
-    if (!result.ok) return (error_message = result.error);
+  async function handleSave() {
+    if (!onsubmit || is_loading) return;
 
-    open = false;
+    clearError();
+
+    if (!local_name.trim()) {
+      name_invalid = true;
+      error_message = t("group_name_required");
+      return;
+    }
+
+    const unchanged = local_name.trim() === name && local_description.trim() === description;
+    if (unchanged) {
+      open = false;
+      return;
+    }
+
+    is_loading = true;
+    try {
+      const result = await onsubmit(local_name, local_description);
+      if (!result.ok) return (error_message = result.error ?? t("something_went_wrong"));
+
+      open = false;
+    } finally {
+      is_loading = false;
+    }
   }
 </script>
 
-<Modal bind:is_open={open} {onclose} onsubmit={handleSave}>
+<Modal bind:is_open={open} {onclose} onsubmit={handleSave} class="*:space-y-3">
   <ModalHeader>{t("edit_group")}</ModalHeader>
 
-  <div class="space-y-3 mt-4">
-    <InputText
-      value={local_name}
-      onchange={(v) => (local_name = v)}
-      maxlength="100"
-      placeholder={t("enter_group_name")}
-      focus_on_mount
-      onfocus={() => (error_message = "")}
-      class={{ "placeholder:text-error! border-error! bg-error/20!": !!error_message }}
-    />
+  <GroupForm bind:name={local_name} bind:description={local_description} error={error_message} {name_invalid} onedit={clearError} />
 
-    <textarea
-      bind:value={local_description}
-      maxlength="250"
-      placeholder={t("enter_group_description")}
-      rows="3"
-      class="bg-card border border-default p-2 w-full rounded-lg placeholder:text-muted outline-none focus:ring-1 ring-primary resize-none"
-    ></textarea>
-
-    {#if error_message}
-      <p class="text-sm text-error">{error_message}</p>
-    {/if}
-
-    <button class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto" type="submit">
-      <Icon name="save" size={20} />
-      <span>{t("save")}</span>
-    </button>
-  </div>
+  <button
+    class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto disabled:opacity-50"
+    type="submit"
+    disabled={is_loading}
+  >
+    <Icon name="save" size={20} />
+    <span>{t("save")}</span>
+  </button>
 </Modal>

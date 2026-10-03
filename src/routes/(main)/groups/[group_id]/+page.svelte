@@ -36,9 +36,10 @@
   onMount(() => View.group_tasks.taskList(data.group.id, all_tasks));
 
   // Re-run the access check in +page.js when memberships change, it redirects to /groups if access was lost
+  const scopes_key = $derived(context.user_state.active_scopes.join(","));
   let first_scopes_run = true;
   $effect(() => {
-    context.user_state.active_scopes.join(",");
+    scopes_key;
     if (first_scopes_run) {
       first_scopes_run = false;
       return;

@@ -40,7 +40,10 @@ async function saveGroupHandler({ id, name, description }: Partial<DB.Group>): A
 
     if (!result.ok) throw Error(result.error);
 
-    await enqueueMembership(context.user.firebase_uid, result.value.id);
+    // The group exists at this point; a failed enqueue must not make the caller retry and create a duplicate.
+    await enqueueMembership(context.user.firebase_uid, result.value.id).catch((err) =>
+      console.warn("[groups] failed to enqueue owner membership:", err),
+    );
 
     return result;
   } catch (err) {
@@ -53,6 +56,9 @@ async function deleteGroupHandler(id: string): AsyncResult {
   try {
     const admin = await requireAdmin(id);
     if (!admin.ok) return admin;
+    if (admin.value.owner_id !== context.user?.id) {
+      return { ok: false, error: "Only the group owner can disband it" };
+    }
 
     const group = admin.value;
     const group_scope_id = group.scope_id;
@@ -114,7 +120,7 @@ async function deleteGroupHandler(id: string): AsyncResult {
   }
 }
 
-async function addMemberHandler(group_id: string, contact_id: string): AsyncResult<DB.Member> {
+async function addMemberHandler(group_id: string, contact_id: string): AsyncResult<GroupMember> {
   try {
     const admin = await requireAdmin(group_id);
     if (!admin.ok) return admin;
@@ -128,6 +134,7 @@ async function addMemberHandler(group_id: string, contact_id: string): AsyncResu
     const firebase_uid = contact.firebase_uid;
     if (!firebase_uid) return { ok: false, error: "Contact is not linked to a user" };
 
+    const had_scope = !!admin.value.scope_id;
     const group = await ensureGroupScope(admin.value);
     if (!group.ok) return group;
 
@@ -141,12 +148,20 @@ async function addMemberHandler(group_id: string, contact_id: string): AsyncResu
     if (!result.ok) return result;
 
     // The owner's own membership is needed as well, or the owner never subscribes to the new scope.
-    await enqueueMembership(context.user?.firebase_uid, group.value.id);
+    if (!had_scope) await enqueueMembership(context.user?.firebase_uid, group.value.id);
     await enqueueMembership(firebase_uid, group.value.id);
     if (!existing_member.value || existing_member.value.soft_deleted) {
       await NotificationService.createAddedToGroup(firebase_uid, group.value).then(warnOnFailure);
     }
-    return result;
+
+    return {
+      ok: true,
+      value: {
+        ...result.value,
+        is_me: false,
+        contact: { name: contact.name || "", email_address: contact.email_address || "" },
+      },
+    };
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };
@@ -210,15 +225,19 @@ async function getMembersHandler(group_id: string): AsyncResult<GroupMember[]> {
     if (!result.ok) return result;
 
     const members = result.value;
-    const contact_result = await DB.contact.findMany({
-      selector: { user_id: context.user?.id, firebase_uid: { $in: members.map((gc) => gc.firebase_uid) } },
-    });
+    const contact_result = context.user?.id
+      ? await DB.contact.findMany({
+          selector: { user_id: context.user.id, firebase_uid: { $in: members.map((gc) => gc.firebase_uid) } },
+        })
+      : null;
 
     const my_uid = context.user?.firebase_uid;
     const hash: Record<string, { name?: string; email_address: string }> = {};
-    if (contact_result.ok) {
+    if (contact_result?.ok) {
       for (const contact of contact_result.value) {
         if (!contact.firebase_uid) continue;
+        // Several contacts can point at the same user; keep the one that has a name.
+        if (hash[contact.firebase_uid]?.name && !contact.name) continue;
 
         hash[contact.firebase_uid] = {
           email_address: contact.email_address || "",
@@ -245,11 +264,17 @@ async function getMembersHandler(group_id: string): AsyncResult<GroupMember[]> {
   }
 }
 
+/** Contacts that can be added to a group, i.e. the ones linked to a user. */
 async function getContactsHandler(): AsyncResult<DB.Contact[]> {
-  return DB.contact.findMany({
-    selector: { user_id: context.user?.id },
+  if (!context.user?.id) return { ok: true, value: [] };
+
+  const result = await DB.contact.findMany({
+    selector: { user_id: context.user.id },
     sort: [{ name: "asc" }],
   });
+  if (!result.ok) return result;
+
+  return { ok: true, value: result.value.filter((contact) => !!contact.firebase_uid) };
 }
 
 async function getByIdHandler(id: string): AsyncResult<DB.Group> {

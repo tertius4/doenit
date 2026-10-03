@@ -42,7 +42,7 @@
     <Icon name="new-group" size={28} class="text-white" />
   </button>
 
-  <ModalGroup bind:open={show_create_modal} />
+  <ModalGroup bind:open={show_create_modal} onsubmit={(id) => goto(`/groups/${id}`)} />
 {:else}
   <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
     <Icon name="user" size={48} class="text-muted opacity-40" />
