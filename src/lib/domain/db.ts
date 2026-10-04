@@ -198,10 +198,12 @@ async function initDB() {
       schema: schema.app_state,
       migrationStrategies: {
         1: (doc) => ({ ...doc, migration_1_complete: false }),
+        // Version 2 adds the optional home_mode: documents are unchanged.
+        2: (doc) => doc,
       },
     },
-    // Version 1 adds the optional fcm_token fields: documents are unchanged.
-    user_state: { schema: schema.user_state, migrationStrategies: { 1: (doc) => doc } },
+    // Version 1 adds the optional fcm_token fields and version 2 the optional home_mode: documents are unchanged.
+    user_state: { schema: schema.user_state, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
 
     // Version 1 only adds indexes: documents are unchanged.
     contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },

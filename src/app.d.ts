@@ -140,6 +140,7 @@ declare global {
       last_opened_at: string;
       open_count: number;
       migration_1_complete?: boolean;
+      home_mode?: HomeMode;
       app_version: string;
       updated_at: string;
     }
@@ -158,6 +159,7 @@ declare global {
       has_rated: boolean;
       fcm_token?: string; // push token of this device for this user ("" = none)
       fcm_token_updated_at?: string;
+      home_mode?: HomeMode;
       updated_at: string;
     }
 
@@ -222,6 +224,8 @@ declare global {
     type SyncQueueItem = DB.MetaDataPrivate & Domain.SyncQueueItem;
   }
 
+  type HomeMode = 'all' | 'now';
+
   type Result<T = void> = T extends void
     ? { ok: true } | { ok: false; error: string }
     : { ok: true; value: T } | { ok: false; error: string };
@@ -255,6 +259,7 @@ declare global {
       name: string;
       category_id?: string;
       is_for_someone_else?: boolean;
+      is_do_now?: boolean;
       is_ongoing: boolean;
       is_past: boolean;
       onclick: () => void;

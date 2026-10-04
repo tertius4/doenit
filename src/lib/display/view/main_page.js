@@ -2,7 +2,7 @@ import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
-import { compareTasks, getGroup } from "$lib";
+import { compareTasks, getGroup, isDoNowTask } from "$lib";
 
 /**
  *
@@ -94,6 +94,7 @@ function formatTask(task, category_map, group_map, today) {
     id: task.id,
     name: task.name,
     time_group_number: getGroup(task),
+    is_do_now: isDoNowTask(task, today),
     is_ongoing,
     is_past,
     category_id: task.category_id,

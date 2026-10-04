@@ -7,6 +7,7 @@ import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 
 export const update = apiLogger(updateSettingsHandler);
+export const setHomeMode = apiLogger(setHomeModeHandler);
 export const openStorePage = apiLogger(openStorePageHandler);
 export const email = apiLogger(sendSupportEmailHandler);
 
@@ -49,6 +50,16 @@ async function updateSettingsHandler(settings: Partial<Domain.Settings>): AsyncR
   }
 
   return { ok: true };
+}
+
+async function setHomeModeHandler(mode: HomeMode): AsyncResult {
+  if (!["now", "all"].includes(mode)) return { ok: false, error: "Invalid home mode" };
+
+  const result = context.user
+    ? await DB.user_state.update(context.user.id, { home_mode: mode })
+    : await DB.app_state.update({ home_mode: mode });
+
+  return result.ok ? { ok: true } : result;
 }
 
 async function openStorePageHandler(): AsyncResult {

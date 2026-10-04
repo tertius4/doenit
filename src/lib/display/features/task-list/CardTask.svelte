@@ -39,8 +39,8 @@
   class={[
     {
       "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
-      "bg-success/20 border-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
-      "bg-error/20 border-error text-alt": is_past && !is_selected && !is_for_someone_else,
+      "bg-success/20 border-success/50 text-alt": is_ongoing && !is_selected && !is_for_someone_else,
+      "bg-error/20 border-error/50 text-alt": is_past && !is_selected && !is_for_someone_else,
       "bg-selected border-primary": is_selected,
       "bg-surface": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
       "text-muted": is_for_someone_else,
@@ -58,8 +58,8 @@
             "inline-flex items-center gap-0.5 text-xs font-medium px-1 py-0.5": true,
             "rounded-full": pill.type === "round",
             rounded: pill.type === "square",
-            "bg-success text-alt": is_ongoing && !is_selected && !is_for_someone_else,
-            "bg-error text-alt": is_past && !is_selected && !is_for_someone_else,
+            "bg-success/50 text-alt": is_ongoing && !is_selected && !is_for_someone_else,
+            "bg-error/50 text-alt": is_past && !is_selected && !is_for_someone_else,
             "bg-selected-pill border-primary": is_selected,
             "bg-card": (!is_selected && !is_past && !is_ongoing) || is_for_someone_else,
           }}

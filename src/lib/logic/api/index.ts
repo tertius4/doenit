@@ -11,6 +11,7 @@ import * as widget from "./widget";
 export default class Api {
   static readonly settings = {
     update: settings.update,
+    setHomeMode: settings.setHomeMode,
     openStorePage: settings.openStorePage,
     email: settings.email,
   };
