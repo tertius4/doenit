@@ -19,14 +19,7 @@
   /** @type {Props & Record<string, any>} */
   let { is_open = $bindable(true), ...props } = $props();
   // svelte-ignore state_referenced_locally
-  const {
-    close_button = true,
-    close_on_outside_click = true,
-    onsubmit,
-    onclose,
-    children,
-    ...rest
-  } = props;
+  const { close_button = true, close_on_outside_click = true, onsubmit, onclose, children, ...rest } = props;
 
   /** @type {symbol | undefined} */
   let stack_token;
@@ -83,7 +76,10 @@
 {#if is_open}
   <div
     {...rest}
-    class="fixed top-0 left-0 z-50 flex h-dvh w-dvw items-center justify-center bg-black/40"
+    class={[
+      "fixed top-0 left-0 z-50 flex h-dvh w-dvw items-center justify-center bg-black/40",
+      "text-normal **:select-none **:transition-all **:duration-300",
+    ]}
     transition:fade={{ duration: 150, easing: quadInOut }}
     onclick={handleBackdropClick}
     role="none"
@@ -92,7 +88,10 @@
       aria-modal="true"
       {@attach closeOnEsc}
       role="dialog"
-      class={["relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4", rest.class || ""]}
+      class={[
+        "relative shadow-lg max-h-[90dvh] w-125 max-w-[90dvw] overflow-y-auto rounded-lg bg-surface p-4",
+        rest.class || "",
+      ]}
     >
       <CloseButton class="absolute top-2 right-2" hidden={!close_button} onclose={handleClose} />
       <form onsubmit={handleSubmit}>

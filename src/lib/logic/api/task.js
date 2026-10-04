@@ -134,6 +134,14 @@ async function updateTaskHandler(task) {
       }
     }
 
+    // A task can be assigned to a group, but not unassigned or moved to another group.
+    if (original_task.scope_id) {
+      task.scope_id = original_task.scope_id;
+    } else if (task.scope_id) {
+      const scope_result = await ensureGroupScope(task.scope_id);
+      if (!scope_result.ok) return scope_result;
+    }
+
     const updated_task = await DB.task.update(task.id, task);
     if (!updated_task.ok) throw Error(updated_task.error);
 
@@ -152,11 +160,33 @@ async function updateTaskHandler(task) {
 }
 
 /**
+ * Makes sure the group exists and syncs under its own scope, so tasks assigned to it reach its members.
+ * @param {string} group_id
+ * @returns {AsyncResult}
+ */
+async function ensureGroupScope(group_id) {
+  const group = await DB.group.findById(group_id);
+  if (!group.ok) return group;
+  if (!group.value || group.value.soft_deleted) return { ok: false, error: t("group_not_found") };
+  if (group.value.scope_id) return { ok: true };
+
+  const updated = await DB.group.update(group.value.id, { scope_id: group.value.id });
+  if (!updated.ok) return updated;
+
+  return { ok: true };
+}
+
+/**
  * @param {Domain.Task} task
  * @returns {AsyncResult}
  */
 async function createTaskHandler(task) {
   try {
+    if (task.scope_id) {
+      const scope_result = await ensureGroupScope(task.scope_id);
+      if (!scope_result.ok) return scope_result;
+    }
+
     const result = await DB.task.create(task);
     if (!result.ok) throw Error(result.error);
 

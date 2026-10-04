@@ -29,7 +29,7 @@
 </script>
 
 <div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg pl-2">
-  <button type="button" {onclick} class="grid grid-cols-[40px_1fr] items-center w-full text-left">
+  <button type="button" {onclick} class="grid grid-cols-[40px_1fr_auto] items-center w-full text-left">
     <div class="relative bg-card h-8 mr-2 aspect-square rounded-full overflow-hidden">
       {#if avatar_url}
         <img
@@ -54,11 +54,16 @@
       </div>
     </div>
 
-    <div class="py-3 pr-4 w-full truncate">
+    <div class="py-3 w-full truncate">
       <p class="text-lg font-semibold truncate">{name ?? email_address ?? ""}</p>
       {#if name && email_address}
         <p class="text-sm text-muted truncate">{email_address}</p>
+      {:else if !name}
+        <p class="text-sm text-muted truncate">{t("tap_to_add_name")}</p>
       {/if}
+    </div>
+    <div class="rounded-full p-2 mr-2 bg-card flex justify-center items-center">
+      <Icon name="edit" class="w-4 h-4" />
     </div>
   </button>
 </div>

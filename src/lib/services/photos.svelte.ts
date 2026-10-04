@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { config } from "$lib/config";
 import t from "$display/translate";
 
-const PHOTO_DIR = "doenit_photos";
+export const PHOTO_DIR = "doenit_photos";
 
 const PHOTO_OPTIONS: TakePhotoOptions = {
   quality: 30,

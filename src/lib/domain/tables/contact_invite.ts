@@ -16,6 +16,11 @@ export class ContactInviteTable extends BaseTable<DB.ContactInvite> {
     }
   }
 
+  /** A relationship can have many invites over time (rejected, cancelled, accepted...). */
+  async findAllByRelationshipId(relationship_id: string): AsyncResult<DB.ContactInvite[]> {
+    return this.findMany({ selector: { relationship_id } });
+  }
+
   async findByRelationshipId(relationship_id: string): AsyncResult<DB.ContactInvite | null> {
     return this.findOne({ selector: { relationship_id } });
   }

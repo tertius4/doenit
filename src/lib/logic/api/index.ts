@@ -50,6 +50,7 @@ export default class Api {
     accept: invites.accept,
     reject: invites.reject,
     cancel: invites.cancel,
+    setContactName: invites.setContactName,
     pull: invites.pull,
   };
 

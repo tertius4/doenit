@@ -39,12 +39,9 @@ export const InviteService = {
 
     const relationship_id = relationshipId(my_uid, target.uid);
 
-    const existing = await DB.contact_invite.findByRelationshipId(relationship_id);
-    if (existing.ok && existing.value) {
-      const s = existing.value.status;
-      if (s === "pending" || s === "accepted") {
-        return { ok: false, error: "Invite or relationship already exists" };
-      }
+    const existing = await DB.contact_invite.findAllByRelationshipId(relationship_id);
+    if (existing.ok && existing.value.some((i) => i.status === "pending" || i.status === "accepted")) {
+      return { ok: false, error: "Invite or relationship already exists" };
     }
 
     const now = new Date().toISOString();
@@ -86,8 +83,9 @@ export const InviteService = {
           continue;
         }
 
-        await this._store(invite);
-        await this._process(invite);
+        // A stale remote copy (older than ours, e.g. "accepted" after we removed the contact) must not be acted on.
+        const is_stored = await this._store(invite);
+        if (is_stored) await this._process(invite);
       } catch (error) {
         const message = error instanceof Error ? error.message : JSON.stringify(error);
         console.error("Failed to process invite", { invite, error: message });
@@ -106,23 +104,46 @@ export const InviteService = {
     const my_uid = myFirebaseUid();
     if (!my_uid) return { ok: false, error: "Not authenticated" };
 
-    const result = await DB.contact_invite.findByRelationshipId(relationship_id);
+    const result = await DB.contact_invite.findAllByRelationshipId(relationship_id);
     if (!result.ok) return result;
-    if (!result.value || result.value.status !== "accepted") return { ok: true };
 
-    const updated: DB.ContactInvite = { ...result.value, status: "cancelled", updated_at: new Date().toISOString() };
-    await firestore.upsertInvite([updated.from_firebase_uid, updated.to_firebase_uid], updated);
-    await DB.contact_invite.upsert(updated);
+    // There can be several invites for one relationship; cancel every accepted one, not just the first found.
+    for (const invite of result.value.filter((i) => i.status === "accepted")) {
+      const updated: DB.ContactInvite = { ...invite, status: "cancelled", updated_at: new Date().toISOString() };
+      // Record it locally first, so the contact stays removed even if the remote write fails.
+      await DB.contact_invite.upsert(updated);
+      try {
+        await firestore.upsertInvite([updated.from_firebase_uid, updated.to_firebase_uid], updated);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : JSON.stringify(error);
+        console.warn("[InviteService] could not end relationship remotely:", message);
+        return { ok: false, error: message };
+      }
+    }
     return { ok: true };
   },
 
   /** Stores a remote invite locally unless the local copy is already newer. */
-  async _store(invite: DB.ContactInvite): Promise<void> {
+  async _store(invite: DB.ContactInvite): Promise<boolean> {
     const local = await DB.contact_invite.findById(invite.id);
-    if (local.ok && local.value && local.value.updated_at > invite.updated_at) return;
+    if (local.ok && local.value && local.value.updated_at > invite.updated_at) return false;
 
-    const result = await DB.contact_invite.upsert(invite);
+    // Remote copies never carry contact_name, so keep the one saved locally.
+    const contact_name = local.ok && local.value ? local.value.contact_name : undefined;
+    const result = await DB.contact_invite.upsert(contact_name ? { ...invite, contact_name } : invite);
     if (!result.ok) throw new Error(result.error);
+    return true;
+  },
+
+  /** Saves the name the sender wants for the invitee. Local only; applied to the contact once the invite is accepted. */
+  async setContactName(invite_id: string, name: string): AsyncResult {
+    const result = await DB.contact_invite.findById(invite_id);
+    if (!result.ok || !result.value) return { ok: false, error: "Invite not found" };
+
+    const saved = await DB.contact_invite.upsert({ ...result.value, contact_name: name.trim() || null });
+    console.log("[InviteService] saved contact name", { invite_id, name, saved });
+    if (!saved.ok) return saved;
+    return { ok: true };
   },
 
   async accept(invite_id: string): AsyncResult<DB.ContactInvite> {
@@ -220,11 +241,17 @@ async function createContact(invite: DB.ContactInvite): Promise<void> {
   const firebase_uid = invite.from_firebase_uid === my_uid ? invite.to_firebase_uid : invite.from_firebase_uid;
   const contact_email = invite.from_firebase_uid === my_uid ? invite.to_email : invite.from_email;
 
+  // The remote copy never carries the sender's chosen name, so read it from the local invite.
+  let local_invite = await DB.contact_invite.findById(invite.id);
+  if (!local_invite.ok || !local_invite.value) local_invite = await DB.contact_invite.findByRelationshipId(invite.relationship_id);
+  const name = (invite.contact_name ?? (local_invite.ok ? local_invite.value?.contact_name : null)) || null;
+  console.log("[InviteService] creating contact", { invite_id: invite.id, name, local_invite });
+
   await DB.contact.create({
     user_id: my_local_id,
     firebase_uid,
     relationship_id: invite.relationship_id,
-    name: null,
+    name,
     avatar_url: null,
     email_address: contact_email,
   });

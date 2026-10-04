@@ -207,7 +207,8 @@ async function initDB() {
 
     // Version 1 only adds indexes: documents are unchanged.
     contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
-    contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc } },
+    // Version 2 adds the optional local-only contact_name: documents are unchanged.
+    contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
     // Version 1 only widens the type enum: documents are unchanged.
     notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
     group: { schema: schema.group },

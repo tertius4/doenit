@@ -4,7 +4,7 @@ export const contact_invite: RxJsonSchema<DB.ContactInvite> = {
   primaryKey: "id",
   required: ["id", "relationship_id", "from_firebase_uid", "to_firebase_uid", "status"],
   type: "object",
-  version: 1,
+  version: 2,
   title: "contact_invite",
   description: "Local cache of user-level invite documents from Firestore. Not scope-synced.",
   properties: {
@@ -18,6 +18,7 @@ export const contact_invite: RxJsonSchema<DB.ContactInvite> = {
     created_at: { type: "string" },
     updated_at: { type: "string" },
     responded_at: { type: ["string", "null"] },
+    contact_name: { type: ["string", "null"] },
   },
   indexes: ["relationship_id", "status"],
 };

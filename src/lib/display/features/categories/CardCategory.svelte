@@ -3,6 +3,7 @@
   import toast from "$display/toast/toast.svelte";
   import { fly, slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
+  import t from "$display/translate";
   import Api from "$logic/api";
 
   /**
@@ -16,16 +17,13 @@
   /** @type {Props} */
   const { id, name, task_count, disabled = false } = $props();
 
-  let error_message = $state("");
   let is_editing = $state(false);
 
   async function deleteCategory() {
-    error_message = "";
-
     const result = await Api.cats.delete(id);
     if (result.ok) return;
 
-    toast.error("Failed to delete category", result.error);
+    toast.error(t("failed_to_delete_category"), result.error);
   }
 
   function handleEdit() {
