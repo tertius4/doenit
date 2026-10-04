@@ -1,15 +1,17 @@
-<script>
+<script lang="ts">
   import Api from "$logic/api";
   import Icon from "$display/comps/Icon.svelte";
-  import t from "$display/translate";
+  import t, { type TranslationKey } from "$display/translate";
   import DateUtil from "$display/date-util";
   import { context } from "$logic/context.svelte";
 
-  /** @type {{ notifications: DB.Notification[] }} */
-  const { notifications = [] } = $props();
+  interface Props {
+    notifications: DB.Notification[];
+  }
 
-  /** @param {DB.Notification} notification */
-  async function open(notification) {
+  const { notifications = [] }: Props = $props();
+
+  async function open(notification: DB.Notification) {
     if (!notification.read_at) {
       await Api.notifications.markAsRead(notification);
     }
@@ -17,18 +19,15 @@
     await Api.notifications.open(notification);
   }
 
-  /** @param {string} timestamp */
-  function formatDate(timestamp) {
+  function formatDate(timestamp: string) {
     const locale = context.settings.language == "en" ? "en-GB" : "af-ZA";
     return DateUtil.format(timestamp, "D MMM YYYY, HH:mm", { locale });
   }
 
   /**
-   *
-   * @param {DB.Notification} notification
    * @return {{ title: string; body: string }}
    */
-  function notificationText(notification) {
+  function notificationText(notification: DB.Notification) {
     const data = notification.data ?? {};
     const email = typeof data.email === "string" ? data.email : "";
     const group = typeof data.group_name === "string" ? data.group_name : "";
@@ -36,8 +35,8 @@
     const task = typeof data.task_name === "string" ? data.task_name : "";
     const user = typeof data.user_name === "string" ? data.user_name : "";
 
-    /** @type {Partial<Record<DB.NotificationType, boolean>>} What each type needs before it can be translated. */
-    const required = {
+    /** What each type needs before it can be translated. */
+    const required: Partial<Record<DB.NotificationType, boolean>> = {
       invite_received: !!email,
       invite_accepted: !!email,
       group_added: !!group,
@@ -51,8 +50,8 @@
     if (!required[notification.type]) return { title: notification.title, body: notification.body };
 
     return {
-      title: t(`notification_${notification.type}_title`),
-      body: t(`notification_${notification.type}_body`, { email, group, task, user }),
+      title: t(`notification_${notification.type}_title` as TranslationKey),
+      body: t(`notification_${notification.type}_body` as TranslationKey, { email, group, task, user }),
     };
   }
 </script>

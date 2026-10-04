@@ -61,7 +61,7 @@
 
   /**
    * Handle date selection from Calendar
-   * @param {{ start_date: Date, start_time?: string | null, end_date?: Date | null, end_time?: string | null }} update
+   * @param {{ start_date: Date | null, start_time?: string | null, end_date?: Date | null, end_time?: string | null }} update
    */
   function handleSelection(update) {
     if (update.start_time !== undefined) {

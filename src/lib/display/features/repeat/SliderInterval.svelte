@@ -17,7 +17,7 @@
       weekly: t("weeks"),
       monthly: t("months"),
       yearly: t("years"),
-    }[interval],
+    }[interval] ?? '',
   );
 
   /** @type {Record<string, string>} */

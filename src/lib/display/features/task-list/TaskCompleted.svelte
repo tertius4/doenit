@@ -5,7 +5,7 @@
 
   /**
    * @typedef {Object} Props
-   * @prop {Logic.DonePageTask} task - The task to display.
+   * @prop {AL.DonePageTask} task - The task to display.
    * @prop {boolean} is_selected - Whether the task is currently selected.
    * @prop {(checked: boolean) => void} [oncheck] - Callback function to call when the checkbox is toggled.
    * @prop {() => void} [onclick] - Callback function to call when the task is clicked.
