@@ -1,68 +1,54 @@
 <script>
   import t from "$display/translate";
   import Accordion from "$display/comps/button/Accordion.svelte";
-  import ButtonRestore from "./comps/ButtonRestore.svelte";
-  import InputSwitch from "$display/comps/input/InputSwitch.svelte";
-  import Icon from "$display/comps/Icon.svelte";
-  import { context } from "$logic/context.svelte";
   import ButtonBackup from "./comps/ButtonBackup.svelte";
-  import Api from "$logic/api";
+  import ButtonRestore from "./comps/ButtonRestore.svelte";
+  import Icon from "$display/comps/Icon.svelte";
   import toast from "$display/toast/toast.svelte";
-  import { ExportService } from "$services/backup/ExportService";
+  import { createBackup, restoreBackup } from "$services/backup";
 
-  const has_backup = $derived(false);
+  let is_backing_up = $state(false);
+  let is_restoring = $state(false);
 
-  let is_loading = $state(false);
+  /** @param {boolean} photos */
+  async function handleBackup(photos) {
+    is_backing_up = true;
+    const result = await createBackup({ photos });
+    is_backing_up = false;
 
-  async function createBackup() {
-    is_loading = true;
-    const result = await ExportService.export();
-    if (!result.ok) {
-      toast.error(result.error);
-      is_loading = false;
-      return;
-    }
-    
-    is_loading = false;
+    if (!result.ok) toast.error(t("backup_failed"), result.error);
   }
 
-  async function restoreBackup() {
-    toast.success("Kom binnekort");
-  }
+  /** @param {string} base64 */
+  async function handleRestore(base64) {
+    is_restoring = true;
+    const result = await restoreBackup(base64);
+    is_restoring = false;
 
-  async function handleBackup() {
-    toast.success("Kom binnekort");
+    if (!result.ok) return toast.error(t("backup_restoration_failed"), result.error);
+
+    const { added, updated, skipped } = result.value;
+
+    toast.show({
+      body: t("restore_summary", { added, updated, skipped }),
+      title: t("restore_success"),
+      duration: 2000,
+      type: "success",
+    });
   }
 </script>
 
-<Accordion label={t("backup_label")} disabled_message={t("log_in_first")} loading={!context.user}>
-  <div>
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <p class="font-medium">{t("automatic_backup")}</p>
-      </div>
-      <InputSwitch
-        value={context.settings.automatic_backup}
-        onchange={(value) => Api.settings.update({ automatic_backup: value })}
-      />
-    </div>
+<Accordion label={t("backup_label")}>
+  <div class="space-y-3">
+    <ButtonBackup is_loading={is_backing_up} disabled={is_restoring} onclick={handleBackup} />
+    <ButtonRestore is_loading={is_restoring} disabled={is_backing_up} onclick={handleRestore} />
 
-    <ButtonBackup is_loading={is_loading} onclick={() => createBackup()} class="mb-4" />
-    {#if has_backup}
-      <ButtonRestore is_loading={is_loading} onclick={restoreBackup} getBackup={handleBackup} />
-    {/if}
-
-    <div
-      class={{
-        "border rounded-lg px-2 flex flex-col gap-1 justify-center mt-2": true,
-        "text-muted py-1.5 border border-default bg-page": true,
-      }}
-    >
+    <div class="border rounded-lg px-2 py-1.5 flex flex-col gap-1 justify-center text-muted border-default bg-page">
       <div class="flex gap-1 items-center">
         <Icon name="info" class="text-lg" />
         <p class="leading-none font-semibold">{t("warning")}:</p>
       </div>
-      <p class="leading-none">{t("backup_photos_warning")}</p>
+      <p class="leading-none">{t("backup_keep_safe")}</p>
     </div>
   </div>
 </Accordion>
