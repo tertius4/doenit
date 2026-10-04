@@ -35,13 +35,6 @@ declare global {
       language?: "af" | "en";
     }
 
-    interface Permissions {
-      user_id: string;
-
-      share_tasks: boolean;
-      backup_data: boolean;
-    }
-
     interface Task {
       name: string;
       archived: boolean;

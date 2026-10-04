@@ -98,6 +98,9 @@
     if (onclose) onclose();
   }
 
+  /**
+   * @param {KeyboardEvent} e
+   */
   function handleKeydown(e) {
     if (e.key === "Escape" && is_open) {
       close();

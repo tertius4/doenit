@@ -12,7 +12,6 @@ type tables =
   | tables.task
   | tables.category
   | tables.user
-  // | tables.permissions
   | tables.settings
   // | tables.session
   // | tables.app_state
@@ -30,7 +29,6 @@ class DBClass {
   private _category: tables.category | undefined;
   private _user: tables.user | undefined;
   private _task: tables.task | undefined;
-  private _permissions: tables.permissions | undefined;
   private _settings: tables.settings | undefined;
   private _session: tables.session | undefined;
   private _app_state: tables.app_state | undefined;
@@ -50,7 +48,6 @@ class DBClass {
     this._task = new tables.task(db.collections.task);
     this._category = new tables.category(db.collections.category);
     this._user = new tables.user(db.collections.user);
-    this._permissions = new tables.permissions(db.collections.permission);
     this._settings = new tables.settings(db.collections.settings);
     this._session = new tables.session(db.collections.session);
     this._app_state = new tables.app_state(db.collections.app_state);
@@ -69,7 +66,6 @@ class DBClass {
       task: this._task,
       category: this._category,
       user: this._user,
-      permissions: this._permissions,
       settings: this._settings,
       contact: this._contact,
       contact_invite: this._contact_invite,
@@ -101,11 +97,6 @@ class DBClass {
   get user() {
     if (!this._user) throw new Error("DB not initialized");
     return this._user;
-  }
-
-  get permissions() {
-    if (!this._permissions) throw new Error("DB not initialized");
-    return this._permissions;
   }
 
   get settings() {
@@ -185,7 +176,6 @@ async function initDB() {
     user: { schema: schema.user },
     // Version 1 adds the optional push_notifications_enabled: documents are unchanged.
     settings: { schema: schema.settings, migrationStrategies: { 1: (doc) => doc } },
-    permission: { schema: schema.permissions },
     task: {
       schema: schema.task,
       migrationStrategies: {
