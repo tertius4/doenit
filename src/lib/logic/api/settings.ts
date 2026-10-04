@@ -52,7 +52,7 @@ async function updateSettingsHandler(settings: Partial<Domain.Settings>): AsyncR
   return { ok: true };
 }
 
-async function setHomeModeHandler(mode: DB.HomeMode): AsyncResult {
+async function setHomeModeHandler(mode: HomeMode): AsyncResult {
   if (!["now", "all"].includes(mode)) return { ok: false, error: "Invalid home mode" };
 
   const result = context.user

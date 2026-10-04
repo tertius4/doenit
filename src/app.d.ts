@@ -163,9 +163,6 @@ declare global {
       updated_at: string;
     }
 
-    /** Which tasks the home list shows: only the applicable ones, or all of them. */
-    type HomeMode = "now" | "all";
-
     interface MetaDataShared {
       id: string;
 
@@ -226,6 +223,8 @@ declare global {
     type Settings = DB.MetaDataPrivate & Domain.Settings;
     type SyncQueueItem = DB.MetaDataPrivate & Domain.SyncQueueItem;
   }
+
+  type HomeMode = 'all' | 'now';
 
   type Result<T = void> = T extends void
     ? { ok: true } | { ok: false; error: string }
