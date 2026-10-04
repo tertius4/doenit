@@ -18,7 +18,7 @@ export type ScheduleInput = {
   present_time: string | null | undefined;
   past_time: string | null | undefined;
   now: Date;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: typeof import("$display/translate").default;
 };
 
 type LocalDate = { date: Date; has_time: boolean };

@@ -1,11 +1,11 @@
 import toast from "$display/toast/toast.svelte";
-import t from "$display/translate";
+import t, { type TranslationKey } from "$display/translate";
 import Api from "$logic/api";
 
 /** Translates known error keys (e.g. "sign_in_error_no_idtoken"); anything else is shown as-is. */
 function errorMessage(error: string | undefined) {
   if (!error) return t("something_went_wrong");
-  return error.startsWith("sign_in_error_") ? t(error) : error;
+  return error.startsWith("sign_in_error_") ? t(error as TranslationKey) : error;
 }
 
 /** Shared sign-in / sign-out flow with loading state and error toasts. Ignores calls while one is running. */

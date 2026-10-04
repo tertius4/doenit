@@ -5,6 +5,7 @@ import scopeManager from "$lib/domain/sync/ScopeManager";
 import { MembershipService } from "$lib/domain/sync/MembershipService";
 import { Subscription, distinctUntilChanged, map } from "rxjs";
 import Api from "$logic/api";
+import { applyLanguage } from "$display/language.svelte";
 import syncEngine from "$domain/sync/SyncEngine";
 import firestore from "$services/firestore";
 
@@ -132,6 +133,7 @@ function subscribeForUser(user_id: string | null) {
   _user_subscriptions.add(
     DB.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
       context.settings = settings;
+      applyLanguage(settings?.language);
     }),
   );
 
@@ -243,6 +245,7 @@ export async function initApp(user_id?: string | null) {
     console.error("Failed to load settings:", settings_result.error);
   } else {
     context.settings = settings_result.value;
+    await applyLanguage(settings_result.value.language);
   }
 
   // Ensure user state document exists before subscribing.
