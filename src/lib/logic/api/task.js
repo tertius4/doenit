@@ -109,15 +109,14 @@ async function updateTaskHandler(task) {
     }
 
     const original_task = original_task_result.value;
+    let is_repeat_completion = false;
     if (original_task.archived !== task.archived) {
       if (original_task.archived) {
         task.completed = 0;
         task.archived = false;
         task.completed_at = null;
       } else {
-        task.completed++;
-        task.archived = true;
-        task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
+        is_repeat_completion = markTaskDone(task).is_repeat_task;
       }
     }
 
@@ -147,6 +146,10 @@ async function updateTaskHandler(task) {
 
     TaskNotifier.assigned(updated_task.value, original_task.assigned_firebase_uid);
     if (!original_task.archived && updated_task.value.archived) TaskNotifier.completed(updated_task.value);
+    if (is_repeat_completion) {
+      // Same as completing from the list: the repeating task comes back with its next dates.
+      setTimeout(() => DB.task.update(task.id, { archived: false }), 500);
+    }
 
     // Delete removed photos
     await tempMediaManager.commit(task.photo_ids);
@@ -221,6 +224,26 @@ async function deleteTaskHandler(task_id) {
 }
 
 /**
+ * Marks an open task as done. A repeating task also moves on to its next dates.
+ * @param {DB.Task | Domain.Task} task - Mutated in place.
+ * @returns {ReturnType<typeof getNextRepeatDates>}
+ */
+function markTaskDone(task) {
+  const next_repeat = getNextRepeatDates(task);
+
+  task.completed += 1;
+  task.archived = true;
+  task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
+
+  if (next_repeat.is_repeat_task) {
+    task.start_date = next_repeat.start_date;
+    task.due_date = next_repeat.due_date;
+  }
+
+  return next_repeat;
+}
+
+/**
  *
  * @param {string} task_id
  * @returns {AsyncResult<DB.Task>}
@@ -233,28 +256,20 @@ async function completeTaskHandler(task_id) {
     }
 
     const task = task_result.value;
-    const next_repeat = getNextRepeatDates(task);
     const was_open = !task.archived;
+    let is_repeat_task = false;
 
     if (task.archived) {
       task.completed = 0;
       task.archived = false;
       task.completed_at = null;
-    } else if (next_repeat.is_repeat_task) {
-      task.archived = true;
-      task.completed += 1;
-      task.start_date = next_repeat.start_date;
-      task.due_date = next_repeat.due_date;
-      task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
     } else {
-      task.completed += 1;
-      task.archived = true;
-      task.completed_at = DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss");
+      is_repeat_task = markTaskDone(task).is_repeat_task;
     }
 
     const result = await DB.task.update(task_id, task);
     if (result.ok && was_open) TaskNotifier.completed(result.value);
-    if (next_repeat.is_repeat_task) {
+    if (is_repeat_task) {
       // Let the task finish sliding out of the list before it re-enters (see TASK_OUT_MS in task-transitions.js).
       setTimeout(() => DB.task.update(task_id, { archived: false }), 500);
     }

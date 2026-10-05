@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import Api from "$logic/api";
   import alert from "$display/toast/toast.svelte";
-  import { fade } from "svelte/transition";
+  import { fade, fly, slide } from "svelte/transition";
   import InputText from "$display/comps/input/InputText.svelte";
 
   let error_message = $state("");
@@ -64,7 +64,9 @@
     <CardCategory id="default" name={t("DEFAULT_NAME")} disabled task_count={tasks_count_map.get("default") || 0} />
 
     {#each filtered_categories as { id, name, task_count } (id)}
-      <CardCategory {id} {name} {task_count} />
+      <div in:slide out:fly={{ x: 100 }}>
+        <CardCategory {id} {name} {task_count} />
+      </div>
     {/each}
   </div>
 </div>

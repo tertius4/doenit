@@ -1,7 +1,6 @@
 <script>
   import ModalCategory from "$display/comps/modal/ModalCategory.svelte";
   import toast from "$display/toast/toast.svelte";
-  import { fly, slide } from "svelte/transition";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
   import Api from "$logic/api";
@@ -33,7 +32,7 @@
   }
 </script>
 
-<div in:slide out:fly={{ x: 100 }} class="bg-surface rounded-lg">
+<div class="bg-surface rounded-lg">
   <div class="grid {disabled ? 'grid-cols-1 px-4' : 'grid-cols-[48px_1fr_48px]'} items-center justify-between">
     <button type="button" class="h-full w-full flex justify-center items-center" onclick={handleEdit} hidden={disabled}>
       <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
