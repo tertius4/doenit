@@ -60,7 +60,7 @@ async function updateCategoryHandler(id: string, update: { name: string }): Asyn
 
 async function deleteCategoryHandler(id: string): AsyncResult {
   try {
-    if (!id) return { ok: false, error: t("cannot_delete_default_category") };
+    if (!id || id === "default") return { ok: false, error: t("cannot_delete_default_category") };
 
     const tasks = await DB.task.findMany({ selector: { category_id: id } });
     if (tasks.ok && tasks.value.length) {

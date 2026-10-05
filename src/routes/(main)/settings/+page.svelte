@@ -1,6 +1,7 @@
 <script>
   import About from "./About.svelte";
   import Backup from "./Backup.svelte";
+  import Share from "./Share.svelte";
   import Notifications from "./Notifications.svelte";
   // import DailySummary from "./DailySummary.svelte";
   // import DoenitPlus from "./DoenitPlus.svelte";
@@ -24,4 +25,5 @@
   <!-- <DoenitPlus /> -->
   <Backup />
   <About />
+  <Share />
 </div>

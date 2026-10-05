@@ -46,6 +46,14 @@
     });
   });
 
+  $effect(() => {
+    if (show_searchbar) return;
+
+    untrack(() => {
+      if (search_text) search_text.value = "";
+    });
+  });
+
   onMount(() => {
     const token = backHandler.register(() => {
       if (show_searchbar) {

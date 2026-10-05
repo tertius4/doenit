@@ -5,7 +5,7 @@
   import View from "$display/view";
   import { onMount } from "svelte";
   import Api from "$logic/api";
-  import alert from "$display/toast/toast.svelte";;
+  import alert from "$display/toast/toast.svelte";
   import { fade } from "svelte/transition";
   import InputText from "$display/comps/input/InputText.svelte";
 
@@ -17,6 +17,7 @@
   let new_name = $state("");
 
   const tasks_count_map = $derived(await Api.cats.mapTasksCountToCategories());
+  const filtered_categories = $derived(categories.filter((category) => category.id !== "default"));
 
   onMount(View.categories.categoryList(categories));
   onMount(() => {
@@ -62,7 +63,7 @@
   <div class="flex flex-col space-y-2">
     <CardCategory id="default" name={t("DEFAULT_NAME")} disabled task_count={tasks_count_map.get("default") || 0} />
 
-    {#each categories as { id, name, task_count } (id)}
+    {#each filtered_categories as { id, name, task_count } (id)}
       <CardCategory {id} {name} {task_count} />
     {/each}
   </div>

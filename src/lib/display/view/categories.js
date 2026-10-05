@@ -114,7 +114,9 @@ async function subscribeHotbarCategoryList() {
         task_count: hash.get("default") || 0,
       };
 
-      return [default_category, ...cats.map(formatCategory)];
+      const sorted = cats.map(formatCategory).sort((a, b) => b.task_count - a.task_count || a.name.localeCompare(b.name));
+
+      return [default_category, ...sorted];
     }),
   );
 }

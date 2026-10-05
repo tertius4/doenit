@@ -9,6 +9,9 @@
   import t from "$display/translate";
   import View from "$display/view";
   import Api from "$logic/api";
+  import Modal, { ModalHeader } from "$display/comps/modal";
+  import toast from "$display/toast/toast.svelte";
+  import Icon from "$display/comps/Icon.svelte";
 
   selected_tasks.clear();
 
@@ -25,6 +28,15 @@
     const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);
   });
+
+  let is_deleting_all = $state(false);
+
+  async function deleteAllDone() {
+    const result = await Api.task.deleteAll({ ids: completed_tasks.map((task) => task.id) });
+    if (!result.ok) toast.error(result.error);
+
+    is_deleting_all = false;
+  }
 
   /**
    * Handles long press on a task to toggle its selection state.
@@ -88,4 +100,25 @@
       </span>
     </div>
   {/each}
+
+  {#if completed_tasks.length}
+    <button
+      type="button"
+      onclick={() => (is_deleting_all = true)}
+      class="w-full mt-4 h-12 bg-card border border-default rounded-md flex items-center justify-center gap-2 text-error"
+    >
+      <Icon name="trash" size={20} />
+      <span>{t("delete_all_done")}</span>
+    </button>
+  {/if}
 </div>
+
+<Modal bind:is_open={is_deleting_all} onclose={() => (is_deleting_all = false)} class="*:space-y-4" onsubmit={deleteAllDone}>
+  <ModalHeader>{t("delete_all_done")}</ModalHeader>
+  <p>{t("delete_all_done_confirmation")}</p>
+
+  <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md">
+    <Icon name="trash" size={28} class="h-full" />
+    <span>{t("delete")}</span>
+  </button>
+</Modal>

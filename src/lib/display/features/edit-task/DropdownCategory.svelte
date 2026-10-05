@@ -69,7 +69,7 @@
     {#each categories as category (category.id)}
       <OptionCategory
         is_selected={category.id === category_id}
-        label={category.name || t("DEFAULT_NAME")}
+        label={category.id === "default" ? t("no_category") : category.name}
         onclick={() => selectCategory(category.id)}
       />
     {:else}

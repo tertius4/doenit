@@ -353,10 +353,13 @@ async function deleteAllHandler({ ids }) {
     for (const task of tasks) {
       const is_repeat_task = task.repeat_interval && (task.due_date || task.start_date);
 
-      if (!task.archived || !is_repeat_task) {
-        tasks_to_delete.push(task.id);
+      // A completed recurring task is un-archived again shortly after completion, so check the completed count.
+      const is_done = task.archived || task.completed > 0;
+
+      if (is_done && is_repeat_task) {
+        tasks_to_update.push({ id: task.id, changes: { archived: false, completed: 0, completed_at: null } });
       } else {
-        tasks_to_update.push({ id: task.id, changes: { archived: false, completed: 0 } });
+        tasks_to_delete.push(task.id);
       }
     }
 
