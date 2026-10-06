@@ -165,6 +165,14 @@
     return result;
   }
 
+  // The group id is what the public API expects as `group_id`.
+  async function copyGroupId() {
+    if (!id) return;
+
+    const result = await Api.clipboard.copy(id);
+    if (!result.ok) toast.error(t("copy_failed"));
+  }
+
   function handleClose() {
     open = false;
     if (onclose) onclose();
@@ -247,6 +255,12 @@
             >
               <Icon name="edit" size={16} />
               <span>{t("edit_group")}</span>
+            </button>
+          {/if}
+
+          {#if id}
+            <button type="button" onclick={copyGroupId} class="mx-auto block text-xs text-muted underline active:opacity-70">
+              {t("copy_group_id")}
             </button>
           {/if}
         </div>
