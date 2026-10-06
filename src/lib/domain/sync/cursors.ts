@@ -30,3 +30,14 @@ export async function patchSyncCursors(user_id: string, cursors: Record<string, 
     updated_at: new Date().toISOString(),
   }));
 }
+
+/** Removes a cursor from the user's `sync_cursors`, so the next pull of that key starts from scratch. */
+export async function removeSyncCursor(user_id: string, key: string): Promise<void> {
+  const doc = await DB.user_state.collection.findOne(user_id).exec();
+  if (!doc) return;
+
+  await doc.incrementalModify((data) => {
+    const { [key]: _, ...sync_cursors } = data.sync_cursors ?? {};
+    return { ...data, sync_cursors, updated_at: new Date().toISOString() };
+  });
+}

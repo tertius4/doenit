@@ -85,7 +85,12 @@ function subscribeGroupList(group_id) {
         else members_map.set(member.scope_id, [member]);
       }
 
-      return groups.map((group) => {
+      // Shared groups only show while the user is an active member, so a left group disappears before sync confirms it.
+      const visible = groups.filter(
+        (group) => group.owner_id === user_id || members_map.get(group.id)?.some((m) => m.firebase_uid === my_uid),
+      );
+
+      return visible.map((group) => {
         /** @type {AL.GroupListItem["members"]} */
         const formatted_names = [];
 
