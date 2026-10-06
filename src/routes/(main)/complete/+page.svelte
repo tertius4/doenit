@@ -32,7 +32,7 @@
   let is_deleting_all = $state(false);
 
   async function deleteAllDone() {
-    const result = await Api.task.deleteAll({ ids: completed_tasks.map((task) => task.id) });
+    const result = await Api.task.deleteAll({ ids: completed_tasks.map((task) => task.id), reset_repeating: true });
     if (!result.ok) toast.error(result.error);
 
     is_deleting_all = false;

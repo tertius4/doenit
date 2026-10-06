@@ -354,9 +354,10 @@ async function getShareTaskTextHandler({ ids }) {
 /**
  * @param {Object} param0
  * @param {string[]} param0.ids
+ * @param {boolean} [param0.reset_repeating] - Reset completed repeating tasks instead of deleting them (done page).
  * @returns {AsyncResult}
  */
-async function deleteAllHandler({ ids }) {
+async function deleteAllHandler({ ids, reset_repeating = false }) {
   try {
     const result = await DB.task.findMany({ selector: { id: { $in: ids } } });
     if (!result.ok) return result;
@@ -371,7 +372,7 @@ async function deleteAllHandler({ ids }) {
       // A completed recurring task is un-archived again shortly after completion, so check the completed count.
       const is_done = task.archived || task.completed > 0;
 
-      if (is_done && is_repeat_task) {
+      if (reset_repeating && is_done && is_repeat_task) {
         tasks_to_update.push({ id: task.id, changes: { archived: false, completed: 0, completed_at: null } });
       } else {
         tasks_to_delete.push(task.id);

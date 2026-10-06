@@ -250,27 +250,28 @@ export function compareTasks(a: DB.Task, b: DB.Task): number {
 
 export function getGroup(task: DB.Task): number {
   const dueDate = DateUtil.endOfDay(task.due_date) ?? DateUtil.startOfDay(task.start_date);
-  if (!dueDate) return 7; // geen datum
+  if (!dueDate) return 9; // geen datum
 
   const today = DateUtil.startOfDay(new Date());
-  if (!today) return 7;
+  if (!today) return 9;
   const tomorrow = DateUtil.add(today, { days: 1 });
-  if (!tomorrow) return 7;
   const dayAfterTomorrow = DateUtil.add(today, { days: 2 });
-  if (!dayAfterTomorrow) return 7;
-  const nextWeek = DateUtil.add(today, { days: 7 });
-  if (!nextWeek) return 7;
-  const nextMonth = DateUtil.add(today, { months: 1 });
-  if (!nextMonth) return 7;
   const in_three_days = DateUtil.add(today, { days: 3 });
-  if (!in_three_days) return 7;
+  // Weke begin Maandag
+  const nextWeek = DateUtil.add(today, { days: 7 - ((today.getDay() + 6) % 7) });
+  const weekAfterNext = DateUtil.add(nextWeek, { days: 7 });
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const monthAfterNext = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+  if (!tomorrow || !dayAfterTomorrow || !in_three_days || !nextWeek || !weekAfterNext) return 9;
 
   if (dueDate < today) return 0; // past
   if (dueDate < tomorrow) return 1; // today
   if (dueDate < dayAfterTomorrow) return 2; // tomorrow
   if (dueDate < in_three_days) return 3; // day after tomorrow
-  if (dueDate < nextWeek) return 4; // next week
-  if (dueDate < nextMonth) return 5; // next month
+  if (dueDate < nextWeek) return 4; // this week
+  if (dueDate < weekAfterNext) return 5; // next week
+  if (dueDate < nextMonth) return 6; // this month
+  if (dueDate < monthAfterNext) return 7; // next month
 
-  return 6; // later
+  return 8; // later
 }

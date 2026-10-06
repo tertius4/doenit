@@ -20,8 +20,10 @@
     t("today"),
     t("tomorrow"),
     t("day_after_tomorrow"),
-    t("in_a_week"),
-    t("in_a_month"),
+    t("this_week"),
+    t("next_week"),
+    t("this_month"),
+    t("next_month"),
     t("later"),
     t("no_date"),
   ];

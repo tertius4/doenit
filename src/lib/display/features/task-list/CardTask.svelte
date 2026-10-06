@@ -38,7 +38,7 @@
   id="task-{task.id}"
   class={[
     {
-      "shadow-sm grid grid-cols-[auto_1fr] gap-2": true,
+      "shadow-sm grid grid-cols-[auto_minmax(0,1fr)] gap-2": true,
       "bg-success/20 border-success/50 text-alt": is_ongoing && !is_selected && !is_for_someone_else,
       "bg-error/20 border-error/50 text-alt": is_past && !is_selected && !is_for_someone_else,
       "bg-selected border-primary": is_selected,
@@ -49,13 +49,14 @@
   ]}
 >
   <InputCheckbox {checked} onchange={handleClick} class="my-auto" />
-  <div class="my-auto">
+  <div class="my-auto min-w-0">
     <div class="text-start my-auto leading-none" class:font-medium={!is_for_someone_else}>{name}</div>
     <div class="flex gap-1 mt-1" hidden={!pills?.length}>
       {#each pills as pill}
         <span
           class={{
-            "inline-flex items-center gap-0.5 text-xs font-medium px-1 py-0.5": true,
+            "inline-flex items-center gap-0.5 text-xs font-medium px-1 py-0.5 min-w-0": true,
+            "shrink-0": pill.type === "round",
             "rounded-full": pill.type === "round",
             rounded: pill.type === "square",
             "bg-success/50 text-alt": is_ongoing && !is_selected && !is_for_someone_else,
@@ -65,11 +66,11 @@
           }}
         >
           {#if pill.pre_icon}
-            <Icon name={pill.pre_icon} class="text-current h-fit" size={12} />
+            <Icon name={pill.pre_icon} class="text-current h-fit shrink-0" size={12} />
           {/if}
-          {pill.label}
+          <span class="truncate">{pill.label}</span>
           {#if pill.post_icon}
-            <Icon name={pill.post_icon} class="text-current h-fit" size={12} />
+            <Icon name={pill.post_icon} class="text-current h-fit shrink-0" size={12} />
           {/if}
         </span>
       {/each}

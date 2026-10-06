@@ -4,6 +4,7 @@
   import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { onNavigate } from "$app/navigation";
+  import { page } from "$app/state";
   import { fade } from "svelte/transition";
   import t from "$display/translate";
   import Api from "$logic/api";
@@ -17,6 +18,7 @@
   async function deleteAll() {
     const result = await Api.task.deleteAll({
       ids: [...selected_tasks.values()],
+      reset_repeating: !!page.data.is_completed_page,
     });
     if (!result.ok) toast.error(result.error);
 
