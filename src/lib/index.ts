@@ -235,11 +235,15 @@ export function getInitials(str: string, maxLength = 2): string {
 
 /** Most urgent first: by group, then important, then closest date. */
 export function compareTasks(a: DB.Task, b: DB.Task): number {
-  const groupDiff = getGroup(a) - getGroup(b);
-  if (groupDiff !== 0) return groupDiff;
+  const group_a = getGroup(a);
+  const group_b = getGroup(b);
+  if (group_a !== group_b) return group_a - group_b;
 
   // Belangrike take eerste binne groep
   if (a.important !== b.important) return a.important ? -1 : 1;
+
+  // No date: alphabetical
+  if (group_a === 9) return a.name.localeCompare(b.name);
 
   // Daarna op datum
   const aDate = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
