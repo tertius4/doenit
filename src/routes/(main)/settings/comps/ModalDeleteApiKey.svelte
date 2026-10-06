@@ -19,12 +19,12 @@
 </script>
 
 <Modal class="space-y-4" {onclose} onsubmit={handleSubmit}>
-  <ModalHeader>{t("api_key_delete_question")}</ModalHeader>
-  <p class="text-muted break-all">{label}</p>
+  <ModalHeader>{t("delete")}?</ModalHeader>
+  <p class="pt-2 text-muted break-all">{t("api_key_delete_question", { label })}</p>
 
   <button
     type="submit"
-    class="w-full mt-4 h-12 p-2 bg-primary text-alt rounded-lg font-semibold flex items-center justify-center gap-2"
+    class="ml-auto mt-4 h-12 p-2 bg-error rounded-lg font-semibold flex items-center justify-center gap-2 px-3"
   >
     {t("delete")}
   </button>

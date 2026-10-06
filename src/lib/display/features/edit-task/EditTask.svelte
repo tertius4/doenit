@@ -14,6 +14,7 @@
   import PhotoGallery from "./PhotoGallery.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
+  import DescriptionEditor from "./DescriptionEditor.svelte";
 
   /**
    * @typedef {Object} Props
@@ -27,6 +28,7 @@
   let is_loading = $state(false);
   let name_invalid = $state(false);
   let is_prompting = $state(false);
+  let is_editing_description = $state(false);
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
   const scope_id = $derived(/** @type {any} */ (task).scope_id);
@@ -66,7 +68,28 @@
 </script>
 
 <form class="space-y-4" onsubmit={handleSubmit}>
-  <InputName value={task.name} onchange={onchangeName} invalid={name_invalid} focus_on_mount />
+  <div>
+    <InputName value={task.name} onchange={onchangeName} invalid={name_invalid} focus_on_mount />
+
+    {#if task.description}
+      <button
+        type="button"
+        class="mt-1 w-full flex items-start gap-2 text-start text-sm bg-card border border-default rounded-lg px-3 py-2"
+        onclick={() => (is_editing_description = true)}
+      >
+        <span class="flex-1 min-w-0 line-clamp-2 whitespace-pre-line text-muted">{task.description}</span>
+        <Icon name="edit" size={16} class="shrink-0 mt-0.5" />
+      </button>
+    {:else}
+      <button type="button" class="mt-1 px-1 text-sm text-primary" onclick={() => (is_editing_description = true)}>
+        + {t("add_description")}
+      </button>
+    {/if}
+  </div>
+
+  {#if is_editing_description}
+    <DescriptionEditor bind:value={task.description} onclose={() => (is_editing_description = false)} />
+  {/if}
 
   <div>
     <label class="font-semibold" for="category">{t("category")}</label>

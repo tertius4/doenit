@@ -8,6 +8,7 @@
   import Api from "$logic/api";
   import { API_URL, DOCS_URL, MAX_KEYS } from "$logic/api/api-keys";
   import { Browser } from "@capacitor/browser";
+  import { Toast } from "@capacitor/toast";
   import { mount, unmount } from "svelte";
   import ModalDeleteApiKey from "./comps/ModalDeleteApiKey.svelte";
 
@@ -63,7 +64,7 @@
     if (!result.ok) return toast.error(result.error);
 
     keys = keys.filter(({ id }) => id !== key.id);
-    toast.success(t("api_key_revoked"));
+    Toast.show({ text: t("api_key_revoked"), duration: "short" });
   }
 
   /** @param {string} text */
@@ -94,7 +95,10 @@
         <p class="font-semibold">{t("api_key_created")}</p>
         <p class="text-muted">{t("api_key_shown_once")}</p>
         <code class="block break-all bg-card rounded p-2 select-all">{new_key}</code>
-        <Button onclick={() => copy(new_key)}>{t("api_key_copy")}</Button>
+        <Button onclick={() => copy(new_key)}>
+          <Icon name="copy" size={18} />
+          <span>{t("api_key_copy")}</span>
+        </Button>
       </div>
     {/if}
 
@@ -104,17 +108,13 @@
         <p class="text-muted">{t("api_no_keys")}</p>
       {/if}
       {#each keys as key (key.id)}
-        <div class="flex items-center gap-2 bg-card rounded-md p-3">
-          <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 bg-card rounded-md">
+          <div class="flex-1 min-w-0 p-3">
             <p class="font-medium truncate">{key.label}</p>
             <p class="text-muted text-xs">{key.prefix} · {t("api_key_last_used")}: {formatDate(key.last_used_at)}</p>
           </div>
-          <button
-            type="button"
-            class="px-3 py-2 rounded-md border border-default text-xs"
-            onclick={() => confirmRevoke(key)}
-          >
-            {t("api_key_revoke")}
+          <button type="button" class="p-3" onclick={() => confirmRevoke(key)}>
+            <Icon name="trash" class="text-error" size={18} />
           </button>
         </div>
       {/each}
@@ -128,7 +128,7 @@
           placeholder={t("api_key_label_placeholder")}
           onchange={(/** @type {string} */ value) => (label = value)}
         />
-        <Button onclick={createKey} disabled={busy || !label.trim()}>
+        <Button onclick={createKey} disabled={busy}>
           <Icon name="plus" size={20} />
           {t("api_key_create")}
         </Button>
@@ -138,9 +138,15 @@
     <div class="space-y-2">
       <p class="font-semibold">{t("api_example")}</p>
       <pre class="bg-card rounded-md p-3 text-xs overflow-x-auto whitespace-pre">{example}</pre>
-      <Button onclick={() => copy(example)}>{t("api_example_copy")}</Button>
+      <Button onclick={() => copy(example)}>
+        <Icon name="copy" size={18} />
+        <span>{t("api_example_copy")}</span>
+      </Button>
     </div>
 
-    <Button onclick={() => Browser.open({ url: DOCS_URL })}>{t("api_read_docs")}</Button>
+    <Button onclick={() => Browser.open({ url: DOCS_URL })}>
+      <Icon name="file-lines" size={18} />
+      <span>{t("api_read_docs")}</span>
+    </Button>
   </div>
 </Accordion>

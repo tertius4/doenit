@@ -1,3 +1,4 @@
+<!-- NOTE: Keep this alphabetical -->
 <!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
 <svg xmlns="http://www.w3.org/2000/svg">
   <symbol id="tasks" viewBox="0 0 640 640" fill="currentColor">
@@ -148,6 +149,9 @@
     <circle cx="12" cy="12" r="10" />
     <polyline points="12,6 12,12 16,14" />
   </symbol>
+  <symbol id="copy" viewBox="0 0 640 640" fill="currentColor">
+    <path d="M288 64C252.7 64 224 92.7 224 128L224 384C224 419.3 252.7 448 288 448L480 448C515.3 448 544 419.3 544 384L544 183.4C544 166 536.9 149.3 524.3 137.2L466.6 81.8C454.7 70.4 438.8 64 422.3 64L288 64zM160 192C124.7 192 96 220.7 96 256L96 512C96 547.3 124.7 576 160 576L352 576C387.3 576 416 547.3 416 512L416 496L352 496L352 512L160 512L160 256L176 256L176 192L160 192z"/>
+  </symbol>
   <symbol id="crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path
       d="M2 19H22V21H2V19ZM2 5L7 9L12 2L17 9L22 5V17H2V5ZM12 11.5C11.17 11.5 10.5 10.83 10.5 10C10.5 9.17 11.17 8.5 12 8.5C12.83 8.5 13.5 9.17 13.5 10C13.5 10.83 12.83 11.5 12 11.5Z"
@@ -189,6 +193,9 @@
     <path
       d="M16.862 3.487l3.65 3.65a1.5 1.5 0 010 2.121l-9.193 9.193a1 1 0 01-.502.27l-4 1a1 1 0 01-1.263-1.263l1-4a1 1 0 01.27-.502l9.193-9.193a1.5 1.5 0 012.121 0z"
     />
+  </symbol>
+  <symbol id="file-lines" viewBox="0 0 640 640" fill="currentColor">
+    <path d="M128 128C128 92.7 156.7 64 192 64L341.5 64C358.5 64 374.8 70.7 386.8 82.7L493.3 189.3C505.3 201.3 512 217.6 512 234.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM336 122.5L336 216C336 229.3 346.7 240 360 240L453.5 240L336 122.5zM248 320C234.7 320 224 330.7 224 344C224 357.3 234.7 368 248 368L392 368C405.3 368 416 357.3 416 344C416 330.7 405.3 320 392 320L248 320zM248 416C234.7 416 224 426.7 224 440C224 453.3 234.7 464 248 464L392 464C405.3 464 416 453.3 416 440C416 426.7 405.3 416 392 416L248 416z"/>
   </symbol>
   <symbol
     id="gallery"
@@ -266,6 +273,17 @@
       stroke-linejoin="round"
       d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
     />
+  </symbol>
+  <symbol
+    id="message"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
   </symbol>
   <symbol id="moon" viewBox="0 0 24 24" fill="none">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor" />

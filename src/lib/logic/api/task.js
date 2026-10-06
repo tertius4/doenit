@@ -91,6 +91,7 @@ async function getTaskByIdHandler(task_id) {
 async function updateTaskHandler(task) {
   try {
     task.name = task.name?.trim();
+    task.description = task.description?.trim() ?? "";
     if (!task.name) {
       return { ok: false, error: t("task_name_required") };
     }

@@ -89,6 +89,7 @@ function formatTask(task, category_map, group_map, today) {
   const top_right_icons = [];
   if (task.important) top_right_icons.push({ name: "important" });
   if (task.photo_ids?.length) top_right_icons.push({ name: "camera" });
+  if (task.description) top_right_icons.push({ name: "message" });
 
   return {
     id: task.id,
