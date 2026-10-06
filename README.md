@@ -1,406 +1,109 @@
-# Doenit - Die eerste Afrikaanse Taaklys toepassing.
+# Doenit
 
-## Doelwit: 20 Junie 2026
-- iOS en Android apps en payment systems.
-    - Gebruiker kan subscriptions: koop/los
-- Deel van take werk perfek.
-    - Users kan 'n kontaklys opbou deur uitnodigings uit te stuur en aanvaar
-    - Users kan groups vorm en hulle kontaks daarin sit.
-    - Users kan take in die groups sit.
-    - Users moet kan rolle wysig in 'n group.
-    
+**Doenit** is the first Afrikaans task-list app: offline-first, with shared tasks, groups and an Android home-screen widget. The app is available in Afrikaans and English.
 
+Doenit is die eerste Afrikaanse taaklys-toepassing. Dit werk sonder internet en sinkroniseer wanneer jy weer aanlyn is.
 
-# Kode
-- Svelte 5
-- Capacitor 8
-- RxDB met Dexie databasis (lokaal)
-- Firebase databasis (aanlyn sinkronisasie)
+## Kenmerke
 
-# Kode reëls
+- Take met kategorieë, sperdatums en herhaling
+- Kontaklys: stuur en aanvaar uitnodigings aan ander gebruikers
+- Groepe met jou mense om take te deel
+- Android-widget wat take wys wat nou gedoen moet word.
+- Kennisgewings, rugsteun en subscriptions
+- Publieke API om take van buite die app af te skep (sien [Publieke API](#publieke-api))
 
-Perfect.
-Let’s consolidate everything into one **clean, final architecture map** for your app.
+## Tegnologie
 
-This will include:
+| Area | Gereedskap |
+| --- | --- |
+| UI | Svelte 5, SvelteKit (`adapter-static`), Tailwind 4 |
+| Mobiel | Capacitor 8 (Android en iOS) |
+| Lokale data | RxDB |
+| Wolk | Firebase: Auth, Firestore, Functions, Hosting, Messaging |
 
-* All layers/components
-* Their responsibilities
-* What they are allowed to talk to
-* What they must NOT talk to
+## Kom aan die gang
 
-This will be your architectural contract.
+Vereistes: Node.js 22+ en npm.
 
----
+```bash
+npm i
+cp .env.example .env     # vul jou Firebase-waardes in
+npm run dev              # ontwikkelbediener
+```
 
-# 🏗 High-Level Architecture
+Die `.env` bevat die `PUBLIC_FIREBASE_*`-sleutels, `PUBLIC_APP_ID` en `PUBLIC_APP_NAME`. Gebruik `.env.development` en `.env.production` vir die twee omgewings.
+
+## Bou en deploy
+
+### Android
+
+Vereistes: Android SDK, `adb`, `android/app/google-services.{dev,prod}.json` en 'n keystore (`tools/generate-production-keystore.sh` skep die produksie-keystore).
+
+```bash
+npm run app        # interaktiewe CLI (./tools/doenit-cli.sh)
+npm run app 1      # produksie AAB + APK  -> app-output/
+npm run app 2      # dev: web-bou + installeer op gekoppelde toestel
+npm run app 3      # dev: installeer net die app
+npm run app 4      # kyk app-logs
+```
+
+### Firebase
+
+```bash
+firebase deploy --only firestore:rules   # firestore.rules
+cd functions
+npm run deploy                           # produksie
+npm run deploy-dev                       # dev
+```
+
+## Projekstruktuur
 
 ```text
-UI
- ↓
-Context
- ↓
-View        API
-   ↓         ↓
-        DB (Domain Persistence)
-               ↓
-           Table<T>
-               ↓
-             RxDB
-               ↓
-           SyncEngine ↔ Firestore
-
-API also talks to:
-Services (Billing, Backup, Widgets, Notifications, Auth)
+src/lib/
+  display/    UI: komponente, feature-skerms, vertalings
+  logic/      API (skryf/besigheidsreëls), Context, invites, inbox
+  domain/     DB, tabelle, skema en sync
+  services/   Eksterne stelsels: backup, widget, notifications, auth
+src/routes/   SvelteKit-bladsye
+functions/    Firebase Cloud Functions (publieke API, subscriptions)
+android/      Android-projek (widget, billing-plugin)
+ios/          iOS-projek
+docs/         Verdere dokumentasie
+tools/        Bou- en deploy-skripte
 ```
 
-Now let’s define everything clearly.
+## Argitektuur
 
----
-
-# 1️⃣ UI Layer (Svelte Components)
-
-### Responsibility
-
-* Render
-* Handle user interaction
-* Call API
-* Read from Context
-
-### Can talk to:
-
-* API
-* Context
-
-### Must NOT talk to:
-
-* DB
-* RxDB
-* SyncEngine
-* Services
-* Firestore
-* View (directly)
-
-UI is presentation only.
-
----
-
-# 2️⃣ Context Layer (Reactive Projection Holder)
-
-Example: `TasksContext`
-
-### Responsibility
-
-* Hold reactive UI-ready data
-* Store filtered/sorted projections
-* Provide lookup maps for UI convenience
-
-### Can talk to:
-
-* View (subscribe to it)
-
-### Must NOT talk to:
-
-* API
-* DB (directly, ideally)
-* Services
-* SyncEngine
-
-Context is read-only projection storage.
-
-It does not mutate domain data.
-
----
-
-# 3️⃣ View Layer (`View.*`)
-
-Read-only projection builder.
-
-Example:
-
-```ts
-View.tasks.dashboard()
-View.user.profile()
-```
-
-### Responsibility
-
-* Combine tables
-* Build derived read models
-* Join entities
-* Aggregate counts
-* Shape data for screens
-
-### Can talk to:
-
-* DB (read methods only)
-
-### Must NOT talk to:
-
-* API
-* Services
-* UI
-* SyncEngine
-
-View never writes.
-
----
-
-# 4️⃣ API Layer (`API.*`)
-
-Mutation + business logic authority.
-
-Example:
-
-```ts
-API.task.create()
-API.user.upgrade()
-```
-
-### Responsibility
-
-* Validate
-* Enforce business rules
-* Orchestrate multi-entity changes
-* Call services
-* Write to DB
-
-### Can talk to:
-
-* DB (write + read)
-* Services
-
-### Must NOT talk to:
-
-* UI
-* Context
-* RxDB directly
-* Firestore directly
-
-API is the only write authority.
-
----
-
-# 5️⃣ DB Layer (`DB.*`)
-
-Domain persistence boundary.
-
-Example:
-
-```ts
-DB.tasks.create()
-DB.tasks.mergeRemote()
-DB.users.get()
-```
-
-### Responsibility
-
-* Persist entities
-* Attach metadata (updatedAt, deviceId)
-* Soft delete
-* Enqueue sync
-* Merge remote updates
-
-### Can talk to:
-
-* Table<T>
-* SyncEngine (through defined methods)
-
-### Must NOT talk to:
-
-* UI
-* Context
-* API (no callbacks upward)
-* Services (except maybe auth initialization)
-
-DB knows nothing about presentation or billing.
-
----
-
-# 6️⃣ Table<T> Layer (Storage Adapter)
-
-Example:
-
-```ts
-Table<Task>
-```
-
-### Responsibility
-
-* Wrap RxDB
-* Execute raw collection ops
-* Convert documents to JSON
-
-### Can talk to:
-
-* RxDB
-
-### Must NOT talk to:
-
-* API
-* UI
-* Services
-* SyncEngine
-* View
-
-It is intentionally dumb.
-
----
-
-# 7️⃣ SyncEngine
-
-Handles cloud replication.
-
-### Responsibility
-
-* Flush outbox
-* Listen to Firestore
-* Call DB.mergeRemote()
-* Retry failures
-
-### Can talk to:
-
-* DB
-* Firestore
-
-### Must NOT talk to:
-
-* UI
-* API
-* Context
-* Services
-
-SyncEngine reconciles persistence only.
-
----
-
-# 8️⃣ Services Layer (Infrastructure)
-
-Examples:
-
-* BillingService
-* BackupService
-* NotificationService
-* WidgetService
-* AuthService
-
-### Responsibility
-
-* Talk to external systems
-* Return results/events
-* No business meaning
-
-### Can talk to:
-
-* External SDKs
-* API (called by API)
-* DB (read-only if needed)
-
-### Must NOT:
-
-* Contain business rules
-* Update DB directly (except Auth coordinating identity scope)
-* Talk to UI
-
-API interprets service results.
-
----
-
-# 9️⃣ Firestore (External Cloud Persistence)
-
-### Responsibility
-
-* Cloud replication
-* Cross-device sync
-
-Only SyncEngine talks to it.
-
----
-
-# 🔐 Interaction Rules Summary
-
-### Writes
-
-Only API and SyncEngine may cause DB mutations.
-
-### Reads
-
-* View
-* API
-* Context (via View)
-* Services (read-only)
-* SyncEngine
-
-### Projection
-
-Only View builds cross-entity models.
-
-### Business Rules
-
-Only API enforces them.
-
----
-
-# 🧠 Clean Dependency Direction
-
-Dependencies always go downward.
+Die kode volg 'n streng laag-struktuur. Afhanklikhede gaan altyd afwaarts:
 
 ```text
-UI → API → DB → Table → RxDB
-        ↓
-      Services
+UI -> API -> DB -> Table -> RxDB
+        |
+        +-> Services
 
-Context → View → DB
-SyncEngine → DB
+UI -> Context -> View -> DB
+SyncEngine <-> DB, Firestore
 ```
 
-Nothing points back up.
+| Laag | Doel | Skryf | Praat met |
+| --- | --- | :-: | --- |
+| UI | Vertoon en gebruikersinteraksie | nee | API, Context |
+| Context | Reaktiewe data vir die UI | nee | View |
+| View | Lees-modelle (joins, tellings) | nee | DB |
+| API | Besigheidsreëls en alle skryfwerk | ja | DB, Services |
+| DB | Persistering, metadata, sync-tou | ja | Table, SyncEngine |
+| Table | Dun adapter oor RxDB | ja | RxDB |
+| SyncEngine | Replikasie met Firestore | ja | DB, Firestore |
+| Services | Eksterne SDK's | nee | Eksterne SDK's |
 
-No circular dependencies.
+Kernreëls: net die API (en SyncEngine) verander data; net View bou modelle oor verskeie entiteite; die UI praat nooit direk met DB, RxDB, Services of Firestore nie.
 
----
+Meer detail: [display](src/lib/display/README.md), [logic](src/lib/logic/README.md), [domain](src/lib/domain/README.md), [services](src/lib/services/README.md).
 
-# 🔥 Final Responsibility Table
+## Publieke API
 
-| Layer      | Purpose                    | Writes | Combines  | Talks To      |
-| ---------- | -------------------------- | ------ | --------- | ------------- |
-| UI         | Presentation               | ❌      | ❌         | API, Context  |
-| Context    | Reactive projection holder | ❌      | ❌         | View          |
-| View       | Read models                | ❌      | ✅         | DB            |
-| API        | Business logic             | ✅      | Sometimes | DB, Services  |
-| DB         | Domain persistence         | ✅      | ❌         | Table         |
-| Table      | Storage adapter            | ✅      | ❌         | RxDB          |
-| SyncEngine | Cloud replication          | ✅      | ❌         | DB, Firestore |
-| Services   | External adapters          | ❌      | ❌         | External SDKs |
-
----
-
-# 🎯 If You Follow This
-
-You get:
-
-* Offline-first stability
-* Clean collaboration handling
-* Scalable UI architecture
-* Testable services
-* Replaceable storage
-* Replaceable billing
-* Replaceable sync
-
-This is a production-grade architecture.
-
----
-
-If you'd like next, we can:
-
-* Stress-test this with a real complex scenario
-* Or simplify it slightly if you feel it's too heavy
-
-You’ve now reached “architecting a serious app” level.
-
-# 🔌 Publieke API (Public API)
-
-Users can create tasks from outside the app (scripts, Zapier, iOS Shortcuts, …) with a personal API key from **Settings → API access**.
+Skep take van buite die app (skripte, Zapier, iOS Shortcuts, ...) met 'n persoonlike API-sleutel uit **Settings -> API access**.
 
 ```bash
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
@@ -409,6 +112,6 @@ curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -d '{"name": "Buy milk", "due_date": "2026-10-10", "category": "Shopping"}'
 ```
 
-How it fits together: the `api` Cloud Function validates the request and writes it to `users/{uid}/inbox_tasks`. The app listens to that inbox (`InboxService`) and turns each entry into a normal local task through `createTask`, then deletes it. Keys are created by the app itself and stored only as a SHA-256 hash in `users/{uid}/api_keys`.
+Hoe dit werk: die `api` Cloud Function valideer die versoek en skryf dit na `users/{uid}/inbox_tasks`. Die app luister na daardie inbox (`InboxService`), skep 'n gewone plaaslike taak met `createTask` en vee die inskrywing uit. Sleutels word deur die app geskep en slegs as SHA-256-hash in `users/{uid}/api_keys` gestoor.
 
-Full reference: [docs/API.md](docs/API.md).
+Volledige verwysing: [docs/API.md](docs/API.md).
