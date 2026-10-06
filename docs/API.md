@@ -25,7 +25,7 @@ Create Doenit tasks from anywhere: scripts, Zapier, Make, iOS Shortcuts, Android
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -H "Authorization: Bearer dk_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Buy milk"}'
+  -d '{"name": "Koop melk"}'
 ```
 
 ## When will my task show up?
@@ -63,12 +63,12 @@ Content-Type: application/json
 
 | Field | Type | Required | Rules | Example |
 |---|---|---|---|---|
-| `name` | string | **yes** | 1–500 characters | `"Buy milk"` |
-| `description` | string | no | Up to 5000 characters | `"2 litres, full cream"` |
+| `name` | string | **yes** | 1–500 characters | `"Koop melk"` |
+| `description` | string | no | Up to 5000 characters | `"2 liter, volroom"` |
 | `due_date` | string | no | A date, optionally with a time. See [Dates](#dates). Sent on its own, it becomes the task's date. | `"2026-10-10 17:00"` |
 | `start_date` | string | no | Same as `due_date`; must be on or before it. Send both for a date range. | `"2026-10-09"` |
 | `important` | boolean | no | Default `false` | `true` |
-| `category` | string | no | Up to 100 characters. Matched by name, ignoring case. **A missing category is created.** | `"Shopping"` |
+| `category` | string | no | Up to 100 characters. Matched by name, ignoring case. **A missing category is created.** | `"Inkopies"` |
 | `group_id` | string | no | A group you belong to. In Doenit, open the group and tap **Copy group ID**. | `"3f2c…"` |
 | `repeat` | object | no | Makes the task repeat. Needs a `due_date` or `start_date`. See [Repeating tasks](#repeating-tasks). | `{"interval": "weekly"}` |
 
@@ -111,13 +111,13 @@ Add a `repeat` object to make a task come back when you complete it, just like c
 Every second week:
 
 ```json
-{ "name": "Put out the bins", "due_date": "2026-10-12 07:00", "repeat": { "interval": "weekly", "every": 2 } }
+{ "name": "Sit die vullisdromme buite", "due_date": "2026-10-12 07:00", "repeat": { "interval": "weekly", "every": 2 } }
 ```
 
 Mondays, Wednesdays and Fridays:
 
 ```json
-{ "name": "Gym", "due_date": "2026-10-12 06:00", "repeat": { "interval": "weekly_custom_days", "days": ["mon", "wed", "fri"] } }
+{ "name": "Oefen", "due_date": "2026-10-12 06:00", "repeat": { "interval": "weekly_custom_days", "days": ["mon", "wed", "fri"] } }
 ```
 
 Leave `repeat` out (or send `null`) for a task that doesn't repeat. An unknown `interval`, an unknown field inside `repeat`, or `every`/`days` used with an interval that doesn't support them is rejected with a `400`.
@@ -161,7 +161,7 @@ Every response uses the same shape.
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -H "Authorization: Bearer dk_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Pay rent", "due_date": "2026-11-01", "important": true, "category": "Finances"}'
+  -d '{"name": "Betaal huur", "due_date": "2026-11-01", "important": true, "category": "Finansies"}'
 ```
 
 A repeating task, due on the 1st of every month:
@@ -170,7 +170,7 @@ A repeating task, due on the 1st of every month:
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -H "Authorization: Bearer dk_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Pay rent", "due_date": "2026-11-01", "repeat": {"interval": "monthly"}}'
+  -d '{"name": "Betaal huur", "due_date": "2026-11-01", "repeat": {"interval": "monthly"}}'
 ```
 
 ### JavaScript
@@ -179,7 +179,7 @@ curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
 const response = await fetch("https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks", {
   method: "POST",
   headers: { Authorization: "Bearer dk_YOUR_KEY", "Content-Type": "application/json" },
-  body: JSON.stringify({ name: "Call the plumber", due_date: "2026-10-12 09:00" }),
+  body: JSON.stringify({ name: "Bel die loodgieter", due_date: "2026-10-12 09:00" }),
 });
 const result = await response.json();
 if (!result.ok) console.error(result.error);
@@ -193,7 +193,7 @@ import requests
 result = requests.post(
     "https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks",
     headers={"Authorization": "Bearer dk_YOUR_KEY"},
-    json={"name": "Water the plants", "category": "Home"},
+    json={"name": "Gee die plante water", "category": "Huis"},
 ).json()
 
 if not result["ok"]:
