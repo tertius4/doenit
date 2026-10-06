@@ -235,6 +235,10 @@ declare global {
       important: boolean;
       category: string | null;
       group_id: string | null;
+      /** Missing on inbox docs written before the API supported repeats. */
+      repeat_interval?: string;
+      repeat_interval_number?: number;
+      repeat_specific_days?: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
       created_at: string;
     };
 

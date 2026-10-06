@@ -53,6 +53,9 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
       due_date: inbox_task.due_date ?? null,
       start_date: inbox_task.start_date ?? null,
       important: !!inbox_task.important,
+      repeat_interval: inbox_task.repeat_interval ?? "",
+      repeat_interval_number: inbox_task.repeat_interval_number ?? 1,
+      repeat_specific_days: inbox_task.repeat_specific_days ?? [],
       category_id,
       scope_id: inbox_task.group_id ?? undefined,
     });

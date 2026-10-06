@@ -8,8 +8,18 @@ import { type Result, sendResult } from "../shared/result";
 const INBOX_LIMIT = 100;
 /** last_used_at is only rewritten once a day to save Firestore writes. */
 const LAST_USED_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/;
-const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "category", "group_id"];
+/** Year first only (never 05/06/2026), optional time; seconds and a timezone (Z, +02:00) may follow and are ignored. */
+const DATE_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/i;
+const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "category", "group_id", "repeat"];
+/** Same keys as REPEAT_INTERVALS in the app (src/lib/index.ts). */
+const REPEAT_INTERVALS = ["daily", "workdaily", "weekly", "weekly_custom_days", "monthly", "yearly"];
+/** Intervals that honour `every`; the app ignores the number for the others. */
+const NUMBERED_INTERVALS = ["daily", "weekly", "monthly", "yearly"];
+const REPEAT_FIELDS = ["interval", "every", "days"];
+/** Index matches Date.getDay(): 0 = Sunday. */
+const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+/** Same as MAX_CUSTOM_INTERVAL in the app's repeat picker. */
+const MAX_REPEAT_EVERY = 500;
 
 type InboxTask = {
   id: string;
@@ -20,6 +30,10 @@ type InboxTask = {
   important: boolean;
   category: string | null;
   group_id: string | null;
+  /** The app's own repeat fields, so it can copy them as is. "" means no repeat. */
+  repeat_interval: string;
+  repeat_interval_number: number;
+  repeat_specific_days: number[];
   key_id: string;
   created_at: string;
 };
@@ -130,6 +144,15 @@ function parseTask(body: unknown): Result<Omit<InboxTask, "id" | "key_id" | "cre
     return { ok: true, value: trimmed || null };
   };
 
+  const optionalDate = (key: string): Result<string | null> => {
+    const value = optionalString(key, 30);
+    if (!value.ok || !value.value) return value;
+
+    const date = parseDate(value.value);
+    if (!date) return bad(`${key} is not a valid date, e.g. 2026-05-05 or 2026-05-05 09:00`);
+    return { ok: true, value: date };
+  };
+
   const name = optionalString("name", 500);
   if (!name.ok) return name;
   if (!name.value) return bad("name is required");
@@ -137,17 +160,18 @@ function parseTask(body: unknown): Result<Omit<InboxTask, "id" | "key_id" | "cre
   const description = optionalString("description", 5000);
   if (!description.ok) return description;
 
-  const due_date = optionalString("due_date", 16);
+  const due_date = optionalDate("due_date");
   if (!due_date.ok) return due_date;
-  if (due_date.value && !DATE_PATTERN.test(due_date.value)) return bad("due_date must be YYYY-MM-DD or YYYY-MM-DD HH:mm");
 
-  const start_date = optionalString("start_date", 16);
+  const start_date = optionalDate("start_date");
   if (!start_date.ok) return start_date;
-  if (start_date.value && !DATE_PATTERN.test(start_date.value)) {
-    return bad("start_date must be YYYY-MM-DD or YYYY-MM-DD HH:mm");
-  }
   if (start_date.value && due_date.value && start_date.value > due_date.value) {
     return bad("start_date must be on or before due_date");
+  }
+  // The app keeps a single date in start_date (due_date is only the end of a range), so a lone due_date moves there.
+  if (due_date.value && !start_date.value) {
+    start_date.value = due_date.value;
+    due_date.value = null;
   }
 
   if (input.important !== undefined && typeof input.important !== "boolean") return bad("important must be a boolean");
@@ -157,6 +181,9 @@ function parseTask(body: unknown): Result<Omit<InboxTask, "id" | "key_id" | "cre
 
   const group_id = optionalString("group_id", 50);
   if (!group_id.ok) return group_id;
+
+  const repeat = parseRepeat(input.repeat, !!(due_date.value || start_date.value));
+  if (!repeat.ok) return repeat;
 
   return {
     ok: true,
@@ -168,6 +195,67 @@ function parseTask(body: unknown): Result<Omit<InboxTask, "id" | "key_id" | "cre
       important: input.important === true,
       category: category.value ?? null,
       group_id: group_id.value ?? null,
+      ...repeat.value!,
     },
   };
+}
+
+/** Returns the date in the app's format ("YYYY-MM-DD" or "YYYY-MM-DD HH:mm"). Out-of-range parts roll over. */
+function parseDate(value: string): string | null {
+  const match = value.match(DATE_PATTERN);
+  if (!match) return null;
+
+  const [year, month, day, hour, minute] = match.slice(1).map((part) => Number(part ?? 0));
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const formatted = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+  return match[4] === undefined ? formatted : `${formatted} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}
+
+type RepeatFields = Pick<InboxTask, "repeat_interval" | "repeat_interval_number" | "repeat_specific_days">;
+
+/** Maps the public `repeat` object onto the app's repeat fields. */
+function parseRepeat(value: unknown, has_date: boolean): Result<RepeatFields> {
+  const bad = (error: string) => ({ ok: false, error, status_code: 400 }) as const;
+
+  if (value == null) {
+    return { ok: true, value: { repeat_interval: "", repeat_interval_number: 1, repeat_specific_days: [] } };
+  }
+  if (typeof value !== "object" || Array.isArray(value)) return bad("repeat must be an object");
+  const input = value as Record<string, unknown>;
+
+  const unknown_fields = Object.keys(input).filter((key) => !REPEAT_FIELDS.includes(key));
+  if (unknown_fields.length) return bad(`Unknown repeat field(s): ${unknown_fields.join(", ")}`);
+
+  const interval = input.interval;
+  if (typeof interval !== "string" || !REPEAT_INTERVALS.includes(interval)) {
+    return bad(`repeat.interval must be one of: ${REPEAT_INTERVALS.join(", ")}`);
+  }
+  if (!has_date) return bad("repeat needs a due_date or start_date");
+
+  const every = input.every ?? 1;
+  if (input.every != null && !NUMBERED_INTERVALS.includes(interval)) {
+    return bad(`repeat.every only works with: ${NUMBERED_INTERVALS.join(", ")}`);
+  }
+  if (typeof every !== "number" || !Number.isInteger(every) || every < 1 || every > MAX_REPEAT_EVERY) {
+    return bad(`repeat.every must be a whole number from 1 to ${MAX_REPEAT_EVERY}`);
+  }
+
+  let days: number[] = [];
+  if (interval === "weekly_custom_days") {
+    if (!Array.isArray(input.days) || !input.days.length) {
+      return bad('repeat.days is required for weekly_custom_days, e.g. ["mon", "fri"]');
+    }
+    for (const day of input.days) {
+      const index = typeof day === "string" ? DAY_NAMES.indexOf(day.trim().toLowerCase()) : -1;
+      if (index === -1) return bad(`repeat.days may only contain: ${DAY_NAMES.join(", ")}`);
+      if (!days.includes(index)) days.push(index);
+    }
+    days.sort((a, b) => a - b);
+  } else if (input.days !== undefined) {
+    return bad("repeat.days only works with weekly_custom_days");
+  }
+
+  return { ok: true, value: { repeat_interval: interval, repeat_interval_number: every, repeat_specific_days: days } };
 }
