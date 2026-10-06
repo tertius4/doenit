@@ -263,6 +263,46 @@ class Firestore {
     );
   }
 
+  /**
+   * Attaches a real-time listener to the user's API task inbox. `callback` receives the waiting tasks straight
+   * from the snapshot (including the initial one), so draining needs no extra fetch.
+   * Returns an unsubscribe function.
+   */
+  subscribeInboxTasks(user_id: string, callback: (tasks: AL.InboxTask[]) => void): () => void {
+    const db = this.getDb();
+    const ref = collection(db, "users", user_id, "inbox_tasks");
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.empty || snap.metadata.hasPendingWrites) return;
+        callback(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as AL.InboxTask));
+      },
+      (error) => console.warn("[Firestore] inbox listener failed:", error),
+    );
+  }
+
+  async deleteInboxTask(user_id: string, task_id: string): Promise<void> {
+    const db = this.getDb();
+    await deleteDoc(doc(db, "users", user_id, "inbox_tasks", task_id));
+  }
+
+  async fetchApiKeys(user_id: string): Promise<AL.ApiKey[]> {
+    const db = this.getDb();
+    const snap = await getDocs(query(collection(db, "users", user_id, "api_keys"), orderBy("created_at", "asc")));
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as AL.ApiKey);
+  }
+
+  /** Stores an API key under the sha256 of its secret. The secret itself never leaves the device. */
+  async createApiKey(user_id: string, key_hash: string, data: Omit<AL.ApiKey, "id" | "last_used_at">): Promise<void> {
+    const db = this.getDb();
+    await setDoc(doc(db, "users", user_id, "api_keys", key_hash), data);
+  }
+
+  async deleteApiKey(user_id: string, key_hash: string): Promise<void> {
+    const db = this.getDb();
+    await deleteDoc(doc(db, "users", user_id, "api_keys", key_hash));
+  }
+
   /** Looks up a user's uid and name by email address via the public user_profiles collection. */
   async fetchUserByEmail(email: string): Promise<{ uid: string; email_address: string; name: string } | null> {
     const db = this.getDb();

@@ -3,6 +3,8 @@
   import EditGroup from "./EditGroup.svelte";
   import View from "$display/view";
   import t from "$display/translate";
+  import toast from "$display/toast/toast.svelte";
+  import Api from "$logic/api";
   import { onMount } from "svelte";
 
   /**
@@ -22,6 +24,12 @@
 
   // svelte-ignore state_referenced_locally
   onMount(View.groups.getOne(group.id, groups));
+
+  // The group id is what the public API expects as `group_id`.
+  async function copyGroupId() {
+    const result = await Api.clipboard.copy(group.id);
+    if (!result.ok) toast.error(t("copy_failed"));
+  }
 </script>
 
 <button
@@ -41,6 +49,10 @@
     <span class="flex-1 truncate">{member_names}</span>
     <Icon name="chevron-right" size={18} class="shrink-0 text-muted" />
   </div>
+</button>
+
+<button type="button" onclick={copyGroupId} class="text-xs text-muted underline px-1 active:opacity-70">
+  {t("copy_group_id")}
 </button>
 
 <EditGroup

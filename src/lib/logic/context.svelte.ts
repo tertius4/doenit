@@ -63,6 +63,7 @@ let _user_subscriptions: Subscription | null = null;
 let _scope_unsubscribe: (() => void) | null = null;
 let _invite_unsubscribe: (() => void) | null = null;
 let _notification_unsubscribe: (() => void) | null = null;
+let _inbox_unsubscribe: (() => void) | null = null;
 let _scope_generation = 0;
 let _app_subscriptions = new Subscription();
 
@@ -77,6 +78,8 @@ function subscribeForUser(user_id: string | null) {
   _invite_unsubscribe = null;
   _notification_unsubscribe?.();
   _notification_unsubscribe = null;
+  _inbox_unsubscribe?.();
+  _inbox_unsubscribe = null;
 
   if (user_id) {
     const generation = _scope_generation;
@@ -120,6 +123,17 @@ function subscribeForUser(user_id: string | null) {
         _notification_unsubscribe = unsub;
       })
       .catch((err) => console.warn("[context] watchUserNotifications failed:", err));
+
+    // Tasks sent through the public API are added while the app is open (the first snapshot covers the backlog).
+    scopeManager
+      .watchUserInboxTasks((tasks) => {
+        Api.inbox.drain(tasks).catch((err) => console.warn("[context] inbox drain failed:", err));
+      })
+      .then((unsub) => {
+        if (generation !== _scope_generation) return unsub();
+        _inbox_unsubscribe = unsub;
+      })
+      .catch((err) => console.warn("[context] watchUserInboxTasks failed:", err));
 
     _user_subscriptions.add(
       DB.user.subscribeOne$(user_id).subscribe((user) => {

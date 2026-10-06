@@ -220,11 +220,33 @@ declare global {
   type HomeMode = 'all' | 'now';
 
   type Result<T = void> = T extends void
-    ? { ok: true } | { ok: false; error: string }
-    : { ok: true; value: T } | { ok: false; error: string };
+    ? { ok: true } | { ok: false; error: string; status_code?: number }
+    : { ok: true; value: T } | { ok: false; error: string; status_code?: number };
   type AsyncResult<T = void> = Promise<Result<T>>;
 
   namespace AL {
+    /** A task sent through the public API, waiting in users/{uid}/inbox_tasks until the app adds it. */
+    type InboxTask = {
+      id: string;
+      name: string;
+      description: string;
+      due_date: string | null;
+      start_date: string | null;
+      important: boolean;
+      category: string | null;
+      group_id: string | null;
+      created_at: string;
+    };
+
+    /** users/{uid}/api_keys/{id}; `id` is the sha256 of the key's secret. */
+    type ApiKey = {
+      id: string;
+      label: string;
+      prefix: string;
+      created_at: string;
+      last_used_at?: string;
+    };
+
     type Notification = {
       id: number;
       title: string;

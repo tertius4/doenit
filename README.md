@@ -397,3 +397,18 @@ If you'd like next, we can:
 * Or simplify it slightly if you feel it's too heavy
 
 You’ve now reached “architecting a serious app” level.
+
+# 🔌 Publieke API (Public API)
+
+Users can create tasks from outside the app (scripts, Zapier, iOS Shortcuts, …) with a personal API key from **Settings → API access**.
+
+```bash
+curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
+  -H "Authorization: Bearer dk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Buy milk", "due_date": "2026-10-10", "category": "Shopping"}'
+```
+
+How it fits together: the `api` Cloud Function validates the request and writes it to `users/{uid}/inbox_tasks`. The app listens to that inbox (`InboxService`) and turns each entry into a normal local task through `createTask`, then deletes it. Keys are created by the app itself and stored only as a SHA-256 hash in `users/{uid}/api_keys`.
+
+Full reference: [docs/API.md](docs/API.md).

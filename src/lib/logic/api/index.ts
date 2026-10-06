@@ -7,6 +7,9 @@ import * as groups from "./groups";
 import * as invites from "./invites";
 import * as notifications from "./notifications";
 import * as widget from "./widget";
+import * as api_keys from "./api-keys";
+import * as clipboard from "./clipboard";
+import { InboxService } from "$logic/inbox/InboxService";
 
 export default class Api {
   static readonly settings = {
@@ -68,6 +71,20 @@ export default class Api {
 
   static readonly widget = {
     watchPendingCompletions: widget.watchPendingCompletions,
+  };
+
+  static readonly api_keys = {
+    list: api_keys.list,
+    create: api_keys.create,
+    revoke: api_keys.revoke,
+  };
+
+  static readonly clipboard = {
+    copy: clipboard.copy,
+  };
+
+  static readonly inbox = {
+    drain: (tasks: AL.InboxTask[]) => InboxService.drain(tasks),
   };
 
   static readonly groups = {

@@ -48,6 +48,19 @@ class ScopeManager {
     return firestore.subscribeNotifications(firebase_uid, callback);
   }
 
+  /** Attaches a real-time listener on the current user's API task inbox. Returns a no-op unsubscribe when signed out. */
+  async watchUserInboxTasks(callback: (tasks: AL.InboxTask[]) => void): Promise<() => void> {
+    const session_result = await DB.session.get();
+    const user_id = session_result.ok ? session_result.value.user_id : null;
+    if (!user_id) return () => {};
+
+    const user = await DB.user.findById(user_id);
+    const firebase_uid = user.ok ? user.value?.firebase_uid : null;
+    if (!firebase_uid) return () => {};
+
+    return firestore.subscribeInboxTasks(firebase_uid, callback);
+  }
+
   /**
    * Deletes the local copies of a scope's data (tasks, categories, groups, members and queued pushes) after the
    * user lost access to it. Writes straight to the collections, so nothing is queued for sync.

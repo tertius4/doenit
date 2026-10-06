@@ -71,6 +71,22 @@ service cloud.firestore {
           && request.resource.data.token.size() < 4096;
       }
 
+      // API keys, keyed by sha256 of the secret. The app creates and revokes them; the API function only reads them.
+      match /api_keys/{key_hash} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && key_hash.matches('^[0-9a-f]{64}$')
+          && request.resource.data.keys().hasOnly(['label', 'prefix', 'created_at'])
+          && request.resource.data.label is string && request.resource.data.label.size() <= 50
+          && request.resource.data.prefix is string && request.resource.data.prefix.size() <= 20
+          && request.resource.data.created_at is string;
+      }
+
+      // Tasks sent through the API wait here until the app adds them. Only the API function (Admin SDK) creates them.
+      match /inbox_tasks/{task_id} {
+        allow read, delete: if isOwner(uid);
+      }
+
       // Both parties of an invite keep a copy in their own inbox.
       match /invites/{invite_id} {
         function invite() {

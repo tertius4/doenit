@@ -3,6 +3,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import { Share } from "@capacitor/share";
   import t from "$display/translate";
+  import Api from "$logic/api";
 
   const APP_URL = "https://tertius4.github.io/doenit";
 
@@ -19,8 +20,8 @@
         return;
       }
 
-      await navigator.clipboard.writeText(APP_URL);
-      toast.success(t("link_copied"));
+      const result = await Api.clipboard.copy(APP_URL, t("link_copied"));
+      if (!result.ok) toast.error(t("sharing_not_supported"));
     } catch (error) {
       // Dismissing the share sheet rejects on some platforms; only report real failures.
       const message = error instanceof Error ? error.message : "";
