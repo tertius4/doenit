@@ -16,10 +16,11 @@ Create Doenit tasks from anywhere: scripts, Zapier, Make, iOS Shortcuts, Android
 
 ## Quick start
 
-1. In Doenit, sign in and open **Settings → API access**.
-2. Type a name for the key (for example "Zapier") and tap **Create key**.
-3. Copy the key. **It is only shown once.**
-4. Send a task:
+1. In Doenit, open **Settings** and **Sign in**.
+2. From there open the **API** section.
+3. Type a name for the key (for example "Zapier") and tap **Create key**.
+4. Copy the key. **It is only shown once.**
+5. Send a task:
 
 ```bash
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
