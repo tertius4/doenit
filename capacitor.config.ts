@@ -44,6 +44,9 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
+    // On iOS 16.4+ a WKWebView is only inspectable when this is set, so without it a TestFlight or
+    // App Store build cannot be debugged from Safari's Web Inspector at all.
+    webContentsDebuggingEnabled: true,
     contentInset: "always",
     allowsLinkPreview: false,
   },

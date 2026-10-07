@@ -85,8 +85,10 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     
-    // Google Play Billing Library
-    def billing_version = "6.2.1"
+    // Google Play Billing Library. BillingPlugin.java is written against the 8+ API
+    // (QueryProductDetailsResult), so this must stay >= 8. It used to be satisfied by a line in the
+    // generated capacitor.build.gradle, which every `cap sync` wipes - hence the pin here instead.
+    def billing_version = "9.0.0"
     implementation "com.android.billingclient:billing:$billing_version"
 
     implementation platform('com.google.firebase:firebase-bom:33.1.1')

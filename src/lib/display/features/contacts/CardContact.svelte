@@ -49,7 +49,7 @@
             {name.trim().charAt(0)}
           </span>
         {:else}
-          <Icon name="user" size={24} class="m-auto h-fit" />
+          <Icon name="user" size={24} />
         {/if}
       </div>
     </div>

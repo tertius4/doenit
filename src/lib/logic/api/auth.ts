@@ -61,16 +61,14 @@ async function signInHandler(provider: SocialProvider = "google"): AsyncResult {
     return local_result;
   }
 
-  // Publish user profile so other users can look up this firebase_uid by email
-  try {
-    await setDoc(
-      doc(firestore.getDb(), "user_profiles", firebase_uid),
-      { email_address: local_result.value.email_address, name: local_result.value.name },
-      { merge: true },
-    );
-  } catch (e) {
-    console.warn("[auth] Failed to publish user profile:", e);
-  }
+  // Publish user profile so other users can look up this firebase_uid by email. Deliberately not
+  // awaited: it is best-effort, and a Firestore write that never settles would otherwise be the one
+  // thing holding up the whole sign-in.
+  setDoc(
+    doc(firestore.getDb(), "user_profiles", firebase_uid),
+    { email_address: local_result.value.email_address, name: local_result.value.name },
+    { merge: true },
+  ).catch((e) => console.warn("[auth] Failed to publish user profile:", e));
 
   await initApp(local_result.value.id);
 
@@ -87,7 +85,11 @@ async function signInHandler(provider: SocialProvider = "google"): AsyncResult {
  */
 async function credentialError(e: unknown, email: string | undefined): Promise<string> {
   const code = (e as { code?: string })?.code;
+  console.error("[auth] Firebase credential exchange failed:", code ?? e);
+
   if (code === "auth/network-request-failed") return "sign_in_error_offline";
+  if (code === "auth/operation-not-allowed") return "sign_in_error_provider_disabled";
+  if (code === "auth/invalid-credential") return "sign_in_error_invalid_credential";
 
   if (code === "auth/account-exists-with-different-credential" && email) {
     const methods = await fetchSignInMethodsForEmail(firestore.getAuth(), email).catch((): string[] => []);

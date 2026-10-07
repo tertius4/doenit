@@ -66,11 +66,11 @@
           }}
         >
           {#if pill.pre_icon}
-            <Icon name={pill.pre_icon} class="text-current h-fit shrink-0" size={12} />
+            <Icon name={pill.pre_icon} class="text-current shrink-0" size={12} />
           {/if}
           <span class="truncate">{pill.label}</span>
           {#if pill.post_icon}
-            <Icon name={pill.post_icon} class="text-current h-fit shrink-0" size={12} />
+            <Icon name={pill.post_icon} class="text-current shrink-0" size={12} />
           {/if}
         </span>
       {/each}

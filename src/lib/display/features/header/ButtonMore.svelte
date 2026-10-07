@@ -30,19 +30,19 @@
   aria-label="More options"
   type="button"
   onclick={toggle}
-  class="relative bg-card h-10 mr-2 aspect-square rounded-full"
+  class="relative bg-card size-10 mr-2 shrink-0 rounded-full"
 >
   {#if avatar}
     <img
       src={avatar}
       loading="lazy"
       alt="User avatar"
-      class="absolute inset-0 rounded-full h-10 z-1 aspect-square object-cover"
+      class="absolute inset-0 rounded-full size-10 z-1 object-cover"
       onerror={handleError}
     />
   {/if}
-  <div class="absolute inset-0 pointer-events-none h-full z-0 aspect-square p-1 flex justify-center items-center">
-    <Icon name="vertical-ellipsis" size={28} class="m-auto h-fit" />
+  <div class="absolute inset-0 pointer-events-none z-0 p-1 flex justify-center items-center">
+    <Icon name="vertical-ellipsis" size={28} />
   </div>
   <NotificationBadge class="absolute z-1 -right-1 -top-1" />
 </button>

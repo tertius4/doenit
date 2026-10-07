@@ -3,6 +3,7 @@
   import { backHandler, navHistory } from "$logic/navigation";
   import { context } from "$logic/context.svelte";
   import { createAuthFlow } from "$display/auth.svelte";
+  import ButtonsSignIn from "$display/comps/button/ButtonsSignIn.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { wait } from "$lib";
   import { goto } from "$app/navigation";
@@ -48,21 +49,5 @@
     <p class="text-muted">{t("log_in_to_see_groups")}</p>
   </div>
 
-  <button
-    type="button"
-    aria-label={t("log_in_with_google")}
-    class={{
-      "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg mx-auto mt-4": true,
-      "opacity-50": auth.is_loading,
-    }}
-    onclick={() => auth.signIn()}
-  >
-    {#if auth.is_loading}
-      <Icon name="loading" class="mr-3 animate-spin" />
-      {t("loading")}
-    {:else}
-      <img src="google.svg" alt="Google" class="h-5 w-5 mr-3" />
-      {t("log_in_with_google")}
-    {/if}
-  </button>
+  <ButtonsSignIn {auth} class="mt-4" />
 {/if}

@@ -8,7 +8,11 @@
 
 <ButtonMainSubmit class="mb-4 mr-4" />
 
-<nav class="shadow-t-sm border-t border-default">
+<!-- min-w-0: as a grid item this defaults to min-width:auto, so the hotbar's min-content width
+     (unshrinkable text-nowrap tags) would size the layout grid's single column and stretch every
+     row - widening the whole page and pushing the header's right-hand buttons off-screen instead of
+     letting the hotbar scroll. -->
+<nav class="shadow-t-sm border-t border-default min-w-0">
   {#if page.data.is_home}
     {#await page.data.ready then ok}
       {#if ok}<Hotbar />{/if}

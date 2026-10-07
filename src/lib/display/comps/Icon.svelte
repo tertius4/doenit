@@ -15,6 +15,7 @@
 </script>
 
 <svg
+  viewBox="0 0 {size} {size}"
   width={size}
   height={size}
   class={className}

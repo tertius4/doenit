@@ -18,6 +18,7 @@ import {
 } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
 import { getAuth } from "$lib/logic/chunk/firebase-auth";
+import { Capacitor } from "@capacitor/core";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
 
@@ -31,7 +32,16 @@ class Firestore {
 
     this.initialized = true;
     const app = initializeApp(config.firebase_config, env.PUBLIC_APP_ID);
-    initializeFirestore(app, {});
+
+    // The database id matters: without it the settings land on the "(default)" database while
+    // getDb() below uses the named one, so they would never apply. Long polling is forced on
+    // native because Firestore's streaming transport often fails to establish in a WKWebView under
+    // a custom scheme, and its promises then neither resolve nor reject - the SDK just retries
+    // forever, which strands anything awaiting a read or write.
+    const settings = Capacitor.isNativePlatform()
+      ? { experimentalForceLongPolling: true }
+      : { experimentalAutoDetectLongPolling: true };
+    initializeFirestore(app, settings, env.PUBLIC_FIREBASE_DB_NAME);
   }
 
   /** Returns the Firestore instance. Requires firestore.init() to have been called. */

@@ -44,7 +44,7 @@
       onclick={handleClick}
       type="button"
     >
-      <Icon name="trash" size={28} class="pointer-events-none h-full aspect-square" />
+      <Icon name="trash" size={28} class="pointer-events-none" />
     </button>
   {/if}
 </div>
@@ -56,7 +56,7 @@
   </p>
 
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md">
-    <Icon name="trash" size={28} class="h-full" />
+    <Icon name="trash" size={28} />
     <span>{t("delete")}</span>
   </button>
 </Modal>

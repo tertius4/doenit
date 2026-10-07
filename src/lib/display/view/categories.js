@@ -19,21 +19,6 @@ export function categoryList(list) {
 }
 
 /**
- * @param {AL.CategoryListItem[]} list
- * @returns {() => void}
- */
-export function hotbarCategoryList(list) {
-  /** @type {Subscription} */
-  let subscription;
-
-  subscribeHotbarCategoryList()
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
-
-  return () => () => subscription?.unsubscribe();
-}
-
-/**
  *
  * @param {AL.CategoryListItem[]} list
  * @returns {() => void}
@@ -85,7 +70,7 @@ async function subscribeCategoryList() {
   );
 }
 
-async function subscribeHotbarCategoryList() {
+export async function subscribeHotbarCategoryList() {
   const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
   const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 

@@ -61,13 +61,13 @@
     <div class="grid grid-cols-2 gap-2 max-w-80">
       <ButtonLanguage
         selected={is_af}
-        flag_src="flags/af.webp"
+        flag_src="/flags/af.webp"
         language_name={t("afrikaans")}
         onclick={() => onchange({ language: "af" })}
       />
       <ButtonLanguage
         selected={!is_af}
-        flag_src="flags/en.webp"
+        flag_src="/flags/en.webp"
         language_name={t("english")}
         onclick={() => onchange({ language: "en" })}
       />

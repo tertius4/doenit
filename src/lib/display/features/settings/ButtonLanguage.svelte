@@ -23,7 +23,7 @@
   aria-pressed={selected}
   {onclick}
 >
-  <img src={flag_src} alt="{language_name} flag" class="w-fit h-full object-cover rounded-sm" />
+  <img src={flag_src} alt="{language_name} flag" class="h-full w-auto shrink-0 object-contain rounded-sm" />
   <span
     class={{
       "text-sm": true,

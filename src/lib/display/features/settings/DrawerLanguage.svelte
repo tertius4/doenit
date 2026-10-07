@@ -35,14 +35,14 @@
     <ButtonLanguage
       class="w-full h-20 *:text-lg! *:first:h-12"
       selected={is_af}
-      flag_src="flags/af.webp"
+      flag_src="/flags/af.webp"
       language_name={t("afrikaans")}
       onclick={() => onchange({ language: "af" })}
     />
     <ButtonLanguage
       class="w-full h-20 *:text-lg! *:first:h-12"
       selected={is_en}
-      flag_src="flags/en.webp"
+      flag_src="/flags/en.webp"
       language_name={t("english")}
       onclick={() => onchange({ language: "en" })}
     />

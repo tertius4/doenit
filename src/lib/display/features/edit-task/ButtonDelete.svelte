@@ -23,7 +23,7 @@
   <ModalHeader>{t("delete_task")}</ModalHeader>
   <p>{t("delete_task_confirmation")}</p>
   <button class="bg-error flex gap-1 items-center text-alt ml-auto px-4 py-2 rounded-md" onclick={ondelete}>
-    <Icon name="trash" class="h-full" />
+    <Icon name="trash" />
     <span>{t("delete")}</span>
   </button>
 </Modal>

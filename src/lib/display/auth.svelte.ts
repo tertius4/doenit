@@ -16,9 +16,15 @@ class AuthFlow {
   async signIn(provider: SocialProvider = "google") {
     if (this.is_loading) return;
 
+    // `finally`: the guard above makes a stuck `is_loading` a permanently dead button, so it has to
+    // clear even when the call below throws or never settles.
     this.is_loading = true;
-    const result = await Api.auth.signIn(provider);
-    this.is_loading = false;
+    let result: Result;
+    try {
+      result = await Api.auth.signIn(provider);
+    } finally {
+      this.is_loading = false;
+    }
 
     if (result.ok || result.error === "USER_CANCELED") return;
     toast.error(t("sign_in_failed"), errorMessage(result.error));
@@ -28,8 +34,12 @@ class AuthFlow {
     if (this.is_loading) return;
 
     this.is_loading = true;
-    const result = await Api.auth.signOut();
-    this.is_loading = false;
+    let result: Result;
+    try {
+      result = await Api.auth.signOut();
+    } finally {
+      this.is_loading = false;
+    }
 
     if (result.ok) return;
     toast.error(t("sign_out_failed"), errorMessage(result.error));

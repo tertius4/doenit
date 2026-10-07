@@ -8,6 +8,10 @@ import Api from "$logic/api";
 import { applyLanguage } from "$display/language.svelte";
 import syncEngine from "$domain/sync/SyncEngine";
 import firestore from "$services/firestore";
+import { wait } from "$lib";
+
+/** How long sign-in / sign-out waits for the network before letting the UI continue. */
+const REMOTE_SYNC_TIMEOUT_MS = 10_000;
 
 class ContextClass {
   private _user: DB.User | null = $state(null);
@@ -277,9 +281,11 @@ export async function initApp(user_id?: string | null) {
   subscribeForUser(resolved_user_id);
 
   // Network sync is not needed to render. On app open it runs in the background;
-  // after sign-in / sign-out callers expect fresh data, so it is awaited.
+  // after sign-in / sign-out callers expect fresh data, so it is awaited - but only briefly. A
+  // Firestore call that never settles would otherwise hold the sign-in spinner open forever; the
+  // sync keeps running in the background either way.
   const remote_sync = syncRemote(resolved_user_id, firebase_uid, is_app_open);
-  if (!is_app_open) await remote_sync;
+  if (!is_app_open) await Promise.race([remote_sync, wait(REMOTE_SYNC_TIMEOUT_MS)]);
 
   if (is_app_open) {
     const app_state_result = await DB.app_state.getDevice();

@@ -2,9 +2,9 @@
   import Modal, { ModalHeader } from "$display/comps/modal";
   import { context } from "$logic/context.svelte";
   import { createAuthFlow } from "$display/auth.svelte";
+  import ButtonsSignIn from "$display/comps/button/ButtonsSignIn.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import { Capacitor } from "@capacitor/core";
   import Api from "$logic/api";
   import toast from "$display/toast/toast.svelte";
 
@@ -12,7 +12,6 @@
   const auth = createAuthFlow();
 
   const is_logged_in = $derived(context.user?.id);
-  const show_apple = Capacitor.getPlatform() === "ios";
 
   // Apple's Hide My Email gives a relay address. It is the only address other users can
   // invite, so it has to be easy to pass on.
@@ -53,43 +52,7 @@
       <p class="text-sm text-muted">{t("please_log_in_profile")}</p>
     </div>
 
-    <button
-      type="button"
-      aria-label={t("log_in_with_google")}
-      class={{
-        "flex items-center w-60 justify-center bg-card border border-default font-medium py-2 px-4 rounded-lg": true,
-        "opacity-50": auth.is_loading,
-      }}
-      onclick={() => auth.signIn()}
-    >
-      {#if auth.is_loading}
-        <Icon name="loading" class="mr-3 animate-spin" />
-        {t("loading")}
-      {:else}
-        <img src="google.svg" alt="Google" class="h-5 w-5 mr-3" />
-        {t("log_in_with_google")}
-      {/if}
-    </button>
-
-    {#if show_apple}
-      <button
-        type="button"
-        aria-label={t("log_in_with_apple")}
-        class={{
-          "flex items-center w-60 justify-center bg-black text-white font-medium py-2 px-4 rounded-lg": true,
-          "opacity-50": auth.is_loading,
-        }}
-        onclick={() => auth.signIn("apple")}
-      >
-        {#if auth.is_loading}
-          <Icon name="loading" class="mr-3 animate-spin" />
-          {t("loading")}
-        {:else}
-          <img src="apple.svg" alt="Apple" class="h-5 w-5 mr-3" />
-          {t("log_in_with_apple")}
-        {/if}
-      </button>
-    {/if}
+    <ButtonsSignIn {auth} />
   {:else if context.user}
     <button
       aria-label={t("sign_out")}

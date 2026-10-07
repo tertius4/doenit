@@ -1,5 +1,6 @@
 import { SocialLogin } from "@capgo/capacitor-social-login";
 import { sha256Hex, toBase64Url } from "$lib";
+import { Capacitor } from "@capacitor/core";
 
 export type SocialProvider = "google" | "apple";
 
@@ -22,6 +23,13 @@ class SocialLoginService {
     apple_client_id?: string;
   }): AsyncResult {
     if (this.initialized) return { ok: true };
+
+    // The native plugin only configures Google inside `if let clientId = iOSClientId`, yet still
+    // reports success because the apple block flips its `initialized` flag - so a missing id leaves
+    // a silently unconfigured Google provider rather than an error.
+    if (Capacitor.getPlatform() === "ios" && !options.ios_client_id) {
+      return { ok: false, error: "sign_in_error_ios_client_id" };
+    }
 
     try {
       await SocialLogin.initialize({
