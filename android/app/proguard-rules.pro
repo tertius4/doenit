@@ -1,111 +1,90 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# =============================================================================
+# Doenit R8 rules
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# This file contains ONLY rules that are not already covered elsewhere. R8
+# merges, in order:
+#   1. aapt's generated keeps for everything named by string in
+#      AndroidManifest.xml or res/xml/ (MainActivity, CreateTaskActivity,
+#      TaskWidgetProvider, TaskWidgetService, FileProvider, and every library
+#      component) - build/intermediates/aapt_proguard_file/release/.../aapt_rules.txt
+#   2. getDefaultProguardFile(...) from app/build.gradle - enum values()/valueOf(),
+#      Parcelable CREATOR, @JavascriptInterface, native <methods>,
+#      -keepattributes Signature/RuntimeVisibleAnnotations/AnnotationDefault,
+#      -dontwarn androidx.**
+#   3. consumerProguardFiles from every dependency (~60 sections), including
+#      @capacitor/android (Plugin subclasses + @CapacitorPlugin dispatch),
+#      @capgo/capacitor-social-login, firebase-components (ComponentRegistrar),
+#      firebase-auth, billing, datastore, okhttp3, kotlinx-coroutines,
+#      play-services-*, and all of AndroidX.
+#
+# ALWAYS check build/outputs/mapping/release/configuration.txt before adding a
+# rule here - it is probably already present.
+#
+# NEVER add a blanket "-keep class <package>.** { *; }". It switches off
+# obfuscation for a whole dependency tree and Google Play rejects the build
+# ("DEX code optimization - Obfuscation below threshold").
+# =============================================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Cordova plugins (cordova-plugin-purchase -> cc.fovea.PurchasePlugin).
+#
+# org.apache.cordova.PluginManager instantiates plugins with
+# Class.forName(name).newInstance(), where `name` is a string in
+# res/xml/config.xml:
+#   <feature name="InAppBillingPlugin">
+#     <param name="android-package" value="cc.fovea.PurchasePlugin"/>
+#   </feature>
+# R8 cannot see that string. @capacitor/android's consumer rule
+# (-keep public class * extends org.apache.cordova.*) keeps the class name and
+# public methods but NOT the no-arg constructor, and the cordova-android
+# 10.1.1 AAR ships no consumer rules of its own.
+-keep public class * extends org.apache.cordova.CordovaPlugin {
+    public <init>();
+    public <methods>;
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
 
-# Exclude Facebook SDK classes completely
+# This app's Capacitor plugins (BillingService, TaskWidget).
+#
+# @capacitor/android's consumer rules already cover public subclasses of
+# com.getcapacitor.Plugin. This is a precise, annotation-scoped safety net that
+# touches only our two plugins and stays correct if Capacitor ever changes its
+# consumer rules.
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * {
+    <init>(...);
+    @com.getcapacitor.PluginMethod <methods>;
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+    @com.getcapacitor.annotation.Permission <methods>;
+}
+
+
+# Gson.
+#
+# gson 2.10.1 ships no consumer rules (no META-INF/proguard/ in the jar) but is
+# on the release classpath via io.ionic.libs:ioncamera-android (@capacitor/camera)
+# and com.auth0.android:jwtdecode (@capgo/capacitor-social-login).
+# io.ionic.libs.ioncameralib.model.* carries @SerializedName on its fields, so
+# the field names MAY be obfuscated (the annotation supplies the wire name) but
+# the fields must not be shrunk away. TypeToken's generic signatures must survive.
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+
+# Readable crash reports in Play Console. -renamesourcefileattribute replaces
+# the real filename with the literal "SourceFile" so nothing leaks, while line
+# numbers stay. AGP embeds mapping.txt in the AAB at
+# BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map, so Play
+# deobfuscates automatically - no manual mapping upload needed.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+
+# Warnings only - no effect on shrinking or obfuscation. Facebook login is off,
+# so the Facebook SDK is not a dependency, but @capgo/capacitor-social-login
+# probes for it with Class.forName() and its consumer rules reference it.
 -dontwarn com.facebook.**
 -dontnote com.facebook.**
--keep class !com.facebook.** { *; }
-
-# Specific Facebook classes to ignore (generated by R8)
--dontwarn com.facebook.CallbackManager$Factory
--dontwarn com.facebook.CallbackManager
--dontwarn com.facebook.FacebookCallback
--dontwarn com.facebook.login.LoginManager
--dontwarn com.facebook.login.widget.LoginButton
-
-# Firebase Authentication - Google only
--keep class com.google.firebase.auth.** { *; }
--keep class com.google.android.gms.auth.** { *; }
-
-# Remove Facebook auth handler from Firebase Authentication plugin
--assumenosideeffects class io.capawesome.capacitorjs.plugins.firebase.authentication.handlers.FacebookAuthProviderHandler {
-    *;
-}
-
-# Capacitor core and plugins
--keep class com.getcapacitor.** { *; }
--keepclassmembers class * {
-    @com.getcapacitor.annotation.CapacitorPlugin *;
-}
--keep @com.getcapacitor.annotation.CapacitorPlugin class * {
-    @com.getcapacitor.annotation.PermissionCallback <methods>;
-    @com.getcapacitor.PluginMethod public <methods>;
-    @com.getcapacitor.annotation.ActivityCallback <methods>;
-}
-
-# Google Auth plugin
--keep class com.codetrixstudio.capacitor.** { *; }
-
-# Google Play Services & Google Sign-In
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.android.gms.**
-
-# AndroidX Browser
--keep class androidx.browser.** { *; }
--dontwarn androidx.browser.**
-
-# Keep all AndroidX classes
--keep class androidx.** { *; }
--dontwarn androidx.**
-
-# Keep attributes for debugging
--keepattributes SourceFile,LineNumberTable
--keepattributes *Annotation*
--keepattributes Signature
--keepattributes Exceptions
-
-# Capacitor Filesystem plugin
--keep class com.capacitorjs.plugins.filesystem.** { *; }
--keepclassmembers class com.capacitorjs.plugins.filesystem.** { *; }
-
-# Keep HttpURLConnection related classes
--keep class com.getcapacitor.plugin.util.** { *; }
--dontwarn com.getcapacitor.plugin.util.**
-
-# Keep JSObject and related classes
--keep class com.getcapacitor.JSObject { *; }
--keep class com.getcapacitor.PluginCall { *; }
--keep class com.getcapacitor.Bridge { *; }
-
-# Keep all Capacitor bridge classes
--keep class com.getcapacitor.** { *; }
--keepclassmembers class com.getcapacitor.** { *; }
-
-# Firebase Kotlin extensions
--keep class com.google.firebase.ktx.** { *; }
--dontwarn com.google.firebase.ktx.**
--keep class com.google.firebase.analytics.ktx.** { *; }
--dontwarn com.google.firebase.analytics.ktx.**
--keep class com.google.firebase.messaging.ktx.** { *; }
--dontwarn com.google.firebase.messaging.ktx.**
--keep class com.google.firebase.auth.ktx.** { *; }
--dontwarn com.google.firebase.auth.ktx.**
-
-# Keep all Firebase classes
--keep class com.google.firebase.** { *; }
--dontwarn com.google.firebase.**
-
-# Kotlin metadata
--keepattributes RuntimeVisibleAnnotations
--keep class kotlin.Metadata { *; }
--keep class kotlin.** { *; }
--dontwarn kotlin.**

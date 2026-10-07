@@ -1,5 +1,6 @@
 import t from "$display/translate";
 import DB from "$lib/domain/db";
+import { context } from "$logic/context.svelte";
 import { map, Subscription, Observable, combineLatest } from "rxjs";
 
 /**
@@ -86,7 +87,7 @@ async function subscribeCategoryList() {
 
 async function subscribeHotbarCategoryList() {
   const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
-  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 
   return combineLatest([categories$, tasks$]).pipe(
     map(([cats, tasks]) => {
@@ -94,6 +95,10 @@ async function subscribeHotbarCategoryList() {
 
       for (const task of tasks) {
         if (task.archived) continue;
+        const task_firebase_uid = task.assigned_firebase_uid;
+        if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) {
+          continue;
+        }
 
         const category_id = task.category_id || "default";
 
@@ -114,7 +119,9 @@ async function subscribeHotbarCategoryList() {
         task_count: hash.get("default") || 0,
       };
 
-      const sorted = cats.map(formatCategory).sort((a, b) => b.task_count - a.task_count || a.name.localeCompare(b.name));
+      const sorted = cats
+        .map(formatCategory)
+        .sort((a, b) => b.task_count - a.task_count || a.name.localeCompare(b.name));
 
       return [default_category, ...sorted];
     }),
