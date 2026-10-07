@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 
 // Load environment-specific configuration
 const env = process.env.APP_VARIANT === "development" ? ".env.development" : ".env.production";
-dotenv.config({ path: env });
+// quiet: dotenv logs to stderr, which Appflow folds into the JSON it parses from `cap config --json`.
+dotenv.config({ path: env, quiet: true });
 
 const config: CapacitorConfig = {
   appId: process.env.PUBLIC_APP_ID || "doenit.app",
