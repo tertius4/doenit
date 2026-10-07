@@ -30,7 +30,7 @@ export async function applyPendingCompletions(): Promise<void> {
 
 /** Applies now and every time the app returns to the foreground. Returns an unsubscribe function. */
 export function watchPendingCompletions(): () => void {
-  if (!Capacitor.isNativePlatform()) return () => {};
+  if (Capacitor.getPlatform() !== "android") return () => {};
 
   applyPendingCompletions();
   const listener = App.addListener("appStateChange", ({ isActive }) => {

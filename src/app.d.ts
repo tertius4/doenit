@@ -300,13 +300,20 @@ declare global {
       webview_path?: string;
     }
 
-    interface GoogleUserProfile {
+    /**
+     * A profile from any social provider. `name` and `email` are optional because Apple
+     * returns the name only on first sign-in and withholds the real email when the user
+     * chooses Hide My Email.
+     */
+    interface SocialUserProfile {
       id: string;
-      name: string;
-      email: string;
+      name?: string;
+      email?: string;
       avatar?: string;
       id_token?: string;
       access_token?: string;
+      /** Apple only: the unhashed nonce, which Firebase needs to verify the identity token. */
+      raw_nonce?: string;
     }
 
     interface ContactListItem {

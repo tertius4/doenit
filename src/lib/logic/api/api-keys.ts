@@ -1,4 +1,4 @@
-import { apiLogger } from "$lib";
+import { apiLogger, sha256Hex, toBase64Url } from "$lib";
 import firestore from "$services/firestore";
 import { context } from "$logic/context.svelte";
 import * as env from "$env/static/public";
@@ -48,16 +48,4 @@ async function revokeHandler(key_id: string): AsyncResult {
 
   await firestore.deleteApiKey(uid, key_id);
   return { ok: true };
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

@@ -17,11 +17,14 @@ export interface TaskWidgetPlugin {
 
 const TaskWidget = Capacitor.registerPlugin<TaskWidgetPlugin>("TaskWidget");
 
+/** The home screen widget is Android-only; on iOS and web every call below is a no-op. */
+const IS_ANDROID = Capacitor.getPlatform() === "android";
+
 export class Widget {
   private static _subscription: Subscription | null = null;
 
   static init() {
-    if (this._subscription) return;
+    if (!IS_ANDROID || this._subscription) return;
 
     const tasks$ = db.task.subscribe$({ selector: { archived: { $eq: false }, soft_deleted: { $ne: true } } });
     const categories$ = db.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
@@ -55,20 +58,20 @@ export class Widget {
 
   /** Ids of tasks checked off in the widget while the app was closed. */
   static async getPendingCompletions(): Promise<string[]> {
-    if (!Capacitor.isNativePlatform()) return [];
+    if (!IS_ANDROID) return [];
 
     const { ids } = await TaskWidget.getPendingCompletions();
     return ids;
   }
 
   static async clearPendingCompletions(ids: string[]): Promise<void> {
-    if (!Capacitor.isNativePlatform() || !ids.length) return;
+    if (!IS_ANDROID || !ids.length) return;
 
     await TaskWidget.clearPendingCompletions({ ids });
   }
 
   static async updateLanguage(language: Domain.Settings["language"]): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!IS_ANDROID) return;
     try {
       const result = await TaskWidget.updateLanguage({ language });
       logger.debug("Language updated", result);
@@ -80,7 +83,7 @@ export class Widget {
   }
 
   static async updateTheme(theme: Domain.Settings["theme"]): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!IS_ANDROID) return;
 
     try {
       const result = await TaskWidget.updateTheme({ theme });
@@ -96,7 +99,7 @@ export class Widget {
    * Update the widget display
    */
   static async updateTasks(tasks: DB.Task[], categories: DB.Category[]): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!IS_ANDROID) return;
 
     try {
       const result = await TaskWidget.updateTasks({ tasks, categories });

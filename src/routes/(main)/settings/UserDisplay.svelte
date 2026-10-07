@@ -4,11 +4,27 @@
   import { createAuthFlow } from "$display/auth.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
+  import { Capacitor } from "@capacitor/core";
+  import Api from "$logic/api";
+  import toast from "$display/toast/toast.svelte";
 
   let is_open = $state(false);
   const auth = createAuthFlow();
 
   const is_logged_in = $derived(context.user?.id);
+  const show_apple = Capacitor.getPlatform() === "ios";
+
+  // Apple's Hide My Email gives a relay address. It is the only address other users can
+  // invite, so it has to be easy to pass on.
+  const is_relay_email = $derived(!!context.user?.email_address?.endsWith("@privaterelay.appleid.com"));
+
+  async function copyEmail() {
+    const email = context.user?.email_address;
+    if (!email) return;
+
+    const result = await Api.clipboard.copy(email);
+    if (!result.ok) toast.error(t("copy_failed"));
+  }
 
   async function handleSignOut() {
     is_open = false;
@@ -54,6 +70,26 @@
         {t("log_in_with_google")}
       {/if}
     </button>
+
+    {#if show_apple}
+      <button
+        type="button"
+        aria-label={t("log_in_with_apple")}
+        class={{
+          "flex items-center w-60 justify-center bg-black text-white font-medium py-2 px-4 rounded-lg": true,
+          "opacity-50": auth.is_loading,
+        }}
+        onclick={() => auth.signIn("apple")}
+      >
+        {#if auth.is_loading}
+          <Icon name="loading" class="mr-3 animate-spin" />
+          {t("loading")}
+        {:else}
+          <img src="apple.svg" alt="Apple" class="h-5 w-5 mr-3" />
+          {t("log_in_with_apple")}
+        {/if}
+      </button>
+    {/if}
   {:else if context.user}
     <button
       aria-label={t("sign_out")}
@@ -85,6 +121,15 @@
         </p>
       </div>
     </button>
+
+    {#if is_relay_email}
+      <div class="w-full space-y-1 border-t border-default pt-3">
+        <p class="text-xs text-muted">{t("private_relay_email_hint")}</p>
+        <button type="button" onclick={copyEmail} class="text-xs underline active:opacity-70">
+          {t("copy_email_address")}
+        </button>
+      </div>
+    {/if}
   {/if}
 </div>
 

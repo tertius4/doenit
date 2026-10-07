@@ -36,6 +36,26 @@
 		<string>remote-notification</string>
 	</array>
 
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>af</string>
+		<string>en</string>
+	</array>
+
+	<!-- Reversed iOS OAuth client id. Copy REVERSED_CLIENT_ID verbatim from
+	     GoogleService-Info.plist. Google sign-in cannot complete until this is real. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.546887238633-l2mlu6a3sk8t75lcaha6nvo1lue0r5u7</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -44,7 +64,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

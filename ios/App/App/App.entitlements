@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Without this the binary has no APNs entitlement and registerForRemoteNotifications()
+	     never yields a token, so FCM can never reach the device. -->
+	<key>aps-environment</key>
+	<string>production</string>
+
+	<!-- Sign in with Apple. Must also be enabled on the App ID in the Apple Developer
+	     portal, and the provisioning profile regenerated afterwards. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

@@ -1,6 +1,7 @@
 import toast from "$display/toast/toast.svelte";
 import t, { type TranslationKey } from "$display/translate";
 import Api from "$logic/api";
+import type { SocialProvider } from "$services/social-login";
 
 /** Translates known error keys (e.g. "sign_in_error_no_idtoken"); anything else is shown as-is. */
 function errorMessage(error: string | undefined) {
@@ -12,11 +13,11 @@ function errorMessage(error: string | undefined) {
 class AuthFlow {
   is_loading = $state(false);
 
-  async signIn() {
+  async signIn(provider: SocialProvider = "google") {
     if (this.is_loading) return;
 
     this.is_loading = true;
-    const result = await Api.auth.signIn();
+    const result = await Api.auth.signIn(provider);
     this.is_loading = false;
 
     if (result.ok || result.error === "USER_CANCELED") return;

@@ -1,4 +1,4 @@
-import { PUBLIC_GOOGLE_PLAY_STORE_URL } from "$env/static/public";
+import { PUBLIC_APP_STORE_URL, PUBLIC_GOOGLE_PLAY_STORE_URL } from "$env/static/public";
 import { context } from "$logic/context.svelte";
 import { Device } from "@capacitor/device";
 import { Browser } from "@capacitor/browser";
@@ -64,10 +64,13 @@ async function setHomeModeHandler(mode: HomeMode): AsyncResult {
 
 async function openStorePageHandler(): AsyncResult {
   try {
+    // An iOS build must never send the user to Google Play.
+    const url = Capacitor.getPlatform() === "ios" ? PUBLIC_APP_STORE_URL : PUBLIC_GOOGLE_PLAY_STORE_URL;
+
     if (Capacitor.isNativePlatform()) {
-      Browser.open({ url: PUBLIC_GOOGLE_PLAY_STORE_URL });
+      Browser.open({ url });
     } else {
-      window.open(PUBLIC_GOOGLE_PLAY_STORE_URL, "_blank");
+      window.open(url, "_blank");
     }
 
     return { ok: true };
