@@ -48,6 +48,47 @@ npm run app 3      # dev: installeer net die app
 npm run app 4      # kyk app-logs
 ```
 
+### iOS
+
+Appflow bou iOS vanaf `master`, so 'n vrystelling is "commit en push". Die Apple-omgewingsveranderlikes leef in **Appflow -> Environments**, nie in `.env` nie — `tools/apply-ios-firebase.sh` lys hulle nadat jy `GoogleService-Info.plist` uit die Firebase-konsole afgelaai het.
+
+Plaaslik bou benodig macOS en Xcode:
+
+```bash
+npm run build            # web-bou -> build/
+npx cap sync ios         # kopieer na ios/App/App/public
+                         # maak ios/App/App.xcodeproj oop, dan Product -> Archive
+```
+
+Let op: Appflow se fastlane-opsomming druk "finished successfully" en die job word groen **selfs wanneer die oplaai na App Store Connect misluk**. Kyk na die `upload_ipa_to_app_store`-stap, nie na die job-status nie.
+
+### Weergawes
+
+Daar is twee soorte nommers:
+
+| Nommer | Nou | Wat dit is |
+| --- | --- | --- |
+| `versionName` / `MARKETING_VERSION` | `2.0.2` | Wat gebruikers sien |
+| `versionCode` / `CURRENT_PROJECT_VERSION` | `208` | Bou-teller, gedeel deur Android en iOS |
+
+Elkeen kom op meer as een plek voor (`android/app/build.gradle`, twee keer in `ios/App/App.xcodeproj/project.pbxproj`, en `package.json`), daarom is daar 'n skrip wat hulle saam verhoog:
+
+```bash
+npm run bump             # bou-nommer +1 (208 -> 209), weergawe bly dieselfde
+npm run bump -- 2.1.0    # bou-nommer +1 en weergawe word 2.1.0
+npm run app 5            # dieselfde as `npm run bump`
+```
+
+**Elke winkel-oplaai benodig 'n hoër bou-nommer as die vorige een, ook as die kode presies dieselfde is.** Google Play weier 'n herhaalde `versionCode`; App Store Connect weier 'n herhaalde `CFBundleVersion`.
+
+`ios/App/App/Info.plist` hoef nooit verander te word nie: dit lees `CFBundleVersion` en `CFBundleShortVersionString` uit die twee Xcode-instellings.
+
+Die skrip commit niks. Commit en push na `master` daarna, anders bou Appflow die ou nommer:
+
+```bash
+git commit -am "Version 2.0.2 (build 208)" && git push
+```
+
 ### Firebase
 
 ```bash

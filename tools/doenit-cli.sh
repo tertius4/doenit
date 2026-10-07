@@ -123,6 +123,13 @@ view_logs() {
     adb logcat -v time | grep --line-buffered -E "Capacitor|/LN|Doenit"
 }
 
+# 5) Verhoog die bou-nommer oral waar dit verklaar word (Android, iOS).
+# Elke winkel-oplaai benodig 'n hoër bou-nommer as die vorige een, selfs vir dieselfde kode.
+# Om ook die weergawe te verander: npm run bump -- 2.1.0
+bump_version() {
+    run ./tools/bump-version.sh
+}
+
 # Voer 'n opsie uit; Ctrl+C stop net die aksie, nie die CLI nie.
 dispatch() {
     local start=$SECONDS rc=0
@@ -131,6 +138,7 @@ dispatch() {
         2) build_and_install_dev ;;
         3) install_dev ;;
         4) ( trap 'exit 0' INT; view_logs ) ;;
+        5) bump_version ;;
         *) fail "Ongeldige opsie: $1" ;;
     esac || rc=$?
     (( rc == 0 )) && echo "Klaar in $(( SECONDS - start ))s" || warn "Gestop met fout (kode $rc)"
@@ -145,6 +153,7 @@ DOENIT CLI
   2) Bou en installeer dev (met web bou)
   3) Installeer dev (net app, geen web bou)
   4) Kyk app logs
+  5) Verhoog weergawe (bou-nommer +1)
   q) Stop
 EOF
 }

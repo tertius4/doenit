@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "app": "./tools/doenit-cli.sh",
+    "bump": "./tools/bump-version.sh",
     "dev": "vite dev",
     "build": "vite build --mode production",
     "build:dev": "NODE_ENV=development vite build --mode development",
