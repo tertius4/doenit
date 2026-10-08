@@ -73,7 +73,7 @@
 
 <div
   class="bg-surface"
-  style="padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom);"
+  style="padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);"
 >
   <div class="relative flex items-center border-default border-b h-14">
     <div class="shrink-0 z-1 ml-2">
