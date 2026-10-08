@@ -17,17 +17,15 @@ class SocialLoginService {
   private initialized = false;
 
   /** Initialises the plugin once; later calls are no-ops. */
-  async initialize(options: {
-    web_client_id: string;
-    ios_client_id?: string;
-    apple_client_id?: string;
-  }): AsyncResult {
+  async initialize(options: { web_client_id: string; ios_client_id?: string; apple_client_id?: string }): AsyncResult {
     if (this.initialized) return { ok: true };
+
+    const is_ios = Capacitor.getPlatform() === "ios";
 
     // The native plugin only configures Google inside `if let clientId = iOSClientId`, yet still
     // reports success because the apple block flips its `initialized` flag - so a missing id leaves
     // a silently unconfigured Google provider rather than an error.
-    if (Capacitor.getPlatform() === "ios" && !options.ios_client_id) {
+    if (is_ios && !options.ios_client_id) {
       return { ok: false, error: "sign_in_error_ios_client_id" };
     }
 
@@ -37,7 +35,7 @@ class SocialLoginService {
           webClientId: options.web_client_id,
           ...(options.ios_client_id ? { iOSClientId: options.ios_client_id } : {}),
         },
-        ...(options.apple_client_id ? { apple: { clientId: options.apple_client_id } } : {}),
+        ...(is_ios && options.apple_client_id ? { apple: { clientId: options.apple_client_id } } : {}),
       });
       this.initialized = true;
       return { ok: true };

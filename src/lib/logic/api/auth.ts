@@ -1,5 +1,5 @@
 import auth, { type SocialProvider } from "$services/social-login";
-import { apiLogger } from "$lib";
+import { apiLogger, err, wait } from "$lib";
 import DB from "$domain/db";
 import { config } from "$lib/config";
 import { initApp } from "$logic/context.svelte";
@@ -17,6 +17,22 @@ import { PushService } from "$logic/notifications/PushService";
 export const signIn = apiLogger(signInHandler);
 export const signOut = apiLogger(signOutHandler);
 
+const TIMED_OUT = Symbol("timed_out");
+
+/**
+ * Bounds one step of the sign-in. The UI's `finally` only covers throw and resolve, so a native or
+ * Firebase promise that never settles would leave the spinner up for good - which is exactly what
+ * iOS does. The breadcrumbs name the stalling step in Safari's Web Inspector, and the error the
+ * caller returns names it on the device itself.
+ */
+async function bounded<T>(name: string, ms: number, promise: Promise<T>): Promise<T | typeof TIMED_OUT> {
+  console.info(`[auth] ${name}: start`);
+  const timeout: Promise<typeof TIMED_OUT> = wait(ms).then(() => TIMED_OUT);
+  const value = await Promise.race([promise, timeout]);
+  console.info(`[auth] ${name}: ${value === TIMED_OUT ? "TIMED OUT" : "done"}`);
+  return value;
+}
+
 /** Every provider needs the same plugin init, so it is done in one place. */
 function initialize(): AsyncResult {
   return auth.initialize({
@@ -30,10 +46,17 @@ async function signInHandler(provider: SocialProvider = "google"): AsyncResult {
   // Google reports a missing connection as a confusing "[16] Account reauth failed", so check first.
   if (!navigator.onLine) return { ok: false, error: "sign_in_error_offline" };
 
-  const init_result = await initialize();
+  const init_result = await bounded("initialize", 15_000, initialize());
+  if (init_result === TIMED_OUT) return err("sign_in_timeout:initialize");
   if (!init_result.ok) return init_result;
 
-  const result = provider === "apple" ? await auth.signInWithApple() : await auth.signInWithGoogle();
+  // Generous: the user is reading and tapping through the provider's own sheet for this one.
+  const result = await bounded(
+    `${provider}_login`,
+    120_000,
+    provider === "apple" ? auth.signInWithApple() : auth.signInWithGoogle(),
+  );
+  if (result === TIMED_OUT) return err(`sign_in_timeout:${provider}_login`);
   if (!result.ok) return result;
 
   if (!result.value.id_token) return { ok: false, error: "sign_in_error_no_idtoken" };
@@ -48,13 +71,19 @@ async function signInHandler(provider: SocialProvider = "google"): AsyncResult {
           })
         : GoogleAuthProvider.credential(result.value.id_token);
 
-    const firebase_result = await signInWithCredential(firestore.getAuth(), credential);
+    const firebase_result = await bounded(
+      "firebase_credential",
+      30_000,
+      signInWithCredential(firestore.getAuth(), credential),
+    );
+    if (firebase_result === TIMED_OUT) return err("sign_in_timeout:firebase_credential");
     firebase_uid = firebase_result.user.uid;
   } catch (e) {
     return { ok: false, error: await credentialError(e, result.value.email) };
   }
 
-  const local_result = await saveSignedInUser(result.value, firebase_uid);
+  const local_result = await bounded("save_user", 15_000, saveSignedInUser(result.value, firebase_uid));
+  if (local_result === TIMED_OUT) return err("sign_in_timeout:save_user");
   if (!local_result.ok) {
     // Don't leave Firebase signed in while the local session is not.
     await signOutFirebase(firestore.getAuth()).catch((e) => console.warn("[auth] Firebase rollback failed:", e));
@@ -70,7 +99,11 @@ async function signInHandler(provider: SocialProvider = "google"): AsyncResult {
     { merge: true },
   ).catch((e) => console.warn("[auth] Failed to publish user profile:", e));
 
-  await initApp(local_result.value.id);
+  // Not fatal: by here Firebase and the local session are both signed in, so failing the whole
+  // sign-in over a slow app-state load would be worse than starting with partial state.
+  if ((await bounded("init_app", 30_000, initApp(local_result.value.id))) === TIMED_OUT) {
+    console.warn("[auth] initApp timed out; signed in with partial app state");
+  }
 
   // Ask for the OS permission right after sign-in; push is best-effort and never blocks it.
   PushService.register({ prompt: true });

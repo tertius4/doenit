@@ -17,7 +17,8 @@ class AuthFlow {
     if (this.is_loading) return;
 
     // `finally`: the guard above makes a stuck `is_loading` a permanently dead button, so it has to
-    // clear even when the call below throws or never settles.
+    // clear even when the call below throws. It cannot cover a promise that never settles - every
+    // step inside Api.auth.signIn is time-bounded for that.
     this.is_loading = true;
     let result: Result;
     try {

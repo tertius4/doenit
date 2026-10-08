@@ -14,12 +14,17 @@
   }
 </script>
 
-<button type="button" aria-label="Search tasks" class="p-2 aspect-square h-full" onclick={handleClick}>
-  <div class="relative flex justify-center items-center rounded-full h-full w-full my-auto">
+<button
+  type="button"
+  aria-label="Search tasks"
+  class="shrink-0 size-10 flex items-center justify-center outline-none"
+  onclick={handleClick}
+>
+  <div class="relative size-7 flex items-center justify-center">
     <div
-      class="absolute mr-1 w-full h-px border-t-4 rounded-full -rotate-45 duration-200"
+      class="absolute left-0 right-0 h-px border-t-4 rounded-full -rotate-45 duration-200"
       class:opacity-0={!show}
-      style="transform: translate({show ? 0 : -100}%, 0%);"
+      style="transform: translate({show ? 0 : 100}%, 0%);"
     ></div>
 
     <Icon name="search" size={28} />

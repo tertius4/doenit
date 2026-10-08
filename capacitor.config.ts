@@ -47,7 +47,10 @@ const config: CapacitorConfig = {
     // On iOS 16.4+ a WKWebView is only inspectable when this is set, so without it a TestFlight or
     // App Store build cannot be debugged from Safari's Web Inspector at all.
     webContentsDebuggingEnabled: true,
-    contentInset: "always",
+    // Capacitor's own default. "always" makes WKWebView's scroll view offset the content by the
+    // safe area as well, on top of the `env(safe-area-inset-*)` padding the layout already
+    // applies - a doubled gap under the status bar that Android, having no such option, never had.
+    contentInset: "never",
     allowsLinkPreview: false,
   },
 };

@@ -1,6 +1,9 @@
 export {
   type Unsubscribe,
   getAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
   signInWithCredential,
   linkWithCredential,
   fetchSignInMethodsForEmail,

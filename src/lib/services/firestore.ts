@@ -17,7 +17,12 @@ import {
   arrayRemove,
 } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
-import { getAuth } from "$lib/logic/chunk/firebase-auth";
+import {
+  getAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+} from "$lib/logic/chunk/firebase-auth";
 import { Capacitor } from "@capacitor/core";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
@@ -32,6 +37,26 @@ class Firestore {
 
     this.initialized = true;
     const app = initializeApp(config.firebase_config, env.PUBLIC_APP_ID);
+
+    // Auth is created here rather than left to getAuth(), which defaults to IndexedDB persistence.
+    // Auth runs its initialisation on a serial queue and signInWithCredential is queued behind it,
+    // so an IndexedDB probe that settles neither way blocks that queue for good and the sign-in
+    // spinner never ends. localStorage has no such problem. This is the same WKWebView-under-a-
+    // custom-scheme hazard as the long polling below, which is why only iOS is singled out;
+    // Android keeps IndexedDB, and with it the sessions already stored there.
+    try {
+      initializeAuth(app, {
+        persistence:
+          Capacitor.getPlatform() === "ios"
+            ? browserLocalPersistence
+            : [indexedDBLocalPersistence, browserLocalPersistence],
+      });
+    } catch (e) {
+      // Throws auth/already-initialized if anything reached getAuth() first - a dev HMR reload,
+      // normally. Logged rather than swallowed: in a real build it would mean Auth came up on the
+      // default persistence after all, which is the whole thing this call exists to avoid.
+      console.warn("[firestore] Auth was already initialised:", e);
+    }
 
     // The database id matters: without it the settings land on the "(default)" database while
     // getDb() below uses the named one, so they would never apply. Long polling is forced on
