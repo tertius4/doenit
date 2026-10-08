@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { pathOf } from "$lib";
 
 /**
  * In-app navigation history. Mirrors the browser history so "back" can go to the
@@ -14,7 +15,7 @@ class NavHistoryService {
    */
   record({ type, to, delta }) {
     if (!to) return;
-    const path = to.url.pathname + to.url.search;
+    const path = pathOf(to.url) + to.url.search;
 
     if (type === "popstate" && delta) {
       // Back pops entries, forward re-adds one.

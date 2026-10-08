@@ -3,6 +3,7 @@ import { App } from "@capacitor/app";
 import { Toast } from "@capacitor/toast";
 import { backHandler } from "./BackHandler.svelte";
 import { navHistory } from "./NavHistory";
+import { pathOf } from "$lib";
 
 const EXIT_WINDOW_MS = 2000;
 
@@ -21,7 +22,7 @@ export function installHardwareBack(getExitMessage) {
   const listener = App.addListener("backButton", async () => {
     if (await backHandler.handle()) return;
 
-    if (window.location.pathname !== "/") {
+    if (pathOf(window.location) !== "/") {
       navHistory.back("/");
       return;
     }

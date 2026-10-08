@@ -216,6 +216,18 @@ function getNextDateValue(
   return DateUtil.format(new_day, has_time ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD");
 }
 
+/**
+ * The current path, with the root normalised to "/".
+ *
+ * At app open on iOS the webview is loaded from `capacitor://localhost`, and because `capacitor:`
+ * is not a special scheme the URL parser leaves the path empty where `https://localhost` (Android)
+ * normalises it to "/". SvelteKit's router papers over this - `get_url_path` falls back to "/" - so
+ * the route matches and the page renders while every comparison against "/" quietly fails.
+ */
+export function pathOf(url: { pathname: string }): string {
+  return url.pathname || "/";
+}
+
 export function capitalize(str: string): string {
   if (typeof str !== "string" || !str.length) {
     return str;

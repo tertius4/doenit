@@ -30,7 +30,7 @@
         class="flex flex-col font-medium justify-center items-center h-full w-fit mx-auto group px-2"
       >
         <div
-          class:bg-card={page.url.pathname === "/"}
+          class:bg-card={page.data.is_home}
           class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors"
         >
           <Icon name="tasks" class="w-6 h-6 mb-1" />

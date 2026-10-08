@@ -3,6 +3,7 @@
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
+  import { pathOf } from "$lib";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
 
@@ -44,7 +45,7 @@
     <ul class="mt-4 space-y-0.5">
       {#each NAVIGATION_TIMES as { icon, label, href, show } (href)}
         {#if show === undefined || show}
-          {@const is_active = page.url.pathname === href}
+          {@const is_active = pathOf(page.url) === href}
           <li>
             <a
               {href}
