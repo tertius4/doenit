@@ -283,8 +283,9 @@ async function getByIdHandler(id: string): AsyncResult<DB.Group> {
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Group not found" };
 
-    // Make sure the user may access the group
+    // Make sure the user may access the group. The owner always may, even before they have a member row.
     const group = result.value;
+    if (group.owner_id === context.user?.id) return { ok: true, value: group };
     if (group.scope_id) {
       if (!context.user_state.active_scopes.includes(group.scope_id)) {
         return { ok: false, error: "Group not found" };
@@ -319,7 +320,7 @@ async function ensureGroupScope(group: DB.Group): AsyncResult<DB.Group> {
   return DB.group.update(group.id, { scope_id: group.id });
 }
 
-async function ensureOwnerMember(group_id: string): AsyncResult<DB.Member | null> {
+export async function ensureOwnerMember(group_id: string): AsyncResult<DB.Member | null> {
   const firebase_uid = context.user?.firebase_uid;
   if (!firebase_uid) return { ok: true, value: null };
 

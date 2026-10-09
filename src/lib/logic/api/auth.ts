@@ -219,6 +219,8 @@ async function deleteAccountHandler(): AsyncResult {
     await scopeManager.purgeLocalScope(scope_id);
   }
 
+  // Groups that never got a scope (no members or tasks yet) are not covered by the purge above.
+  await DB.group.collection.find({ selector: { owner_id: user.id } }).remove();
   await DB.user_state.remove(user.id);
   await DB.user.remove(user.id);
 

@@ -5,6 +5,8 @@ import t from "$lib/display/translate";
 import logger from "$display/logger";
 import DB from "$lib/domain/db";
 import { TaskNotifier } from "$logic/notifications/TaskNotifier";
+import { ensureOwnerMember } from "./groups";
+import { context } from "$logic/context.svelte";
 
 export const updateTask = apiLogger(updateTaskHandler);
 export const isTaskUpdated = apiLogger(isTaskUpdatedHandler);
@@ -172,10 +174,17 @@ async function ensureGroupScope(group_id) {
   const group = await DB.group.findById(group_id);
   if (!group.ok) return group;
   if (!group.value || group.value.soft_deleted) return { ok: false, error: t("group_not_found") };
-  if (group.value.scope_id) return { ok: true };
 
-  const updated = await DB.group.update(group.value.id, { scope_id: group.value.id });
-  if (!updated.ok) return updated;
+  if (!group.value.scope_id) {
+    const updated = await DB.group.update(group.value.id, { scope_id: group.value.id });
+    if (!updated.ok) return updated;
+  }
+
+  // A group that never had members added has no owner member row yet; without it the scope has no members.
+  if (group.value.owner_id === context.user?.id) {
+    const owner = await ensureOwnerMember(group.value.id);
+    if (!owner.ok) return owner;
+  }
 
   return { ok: true };
 }
