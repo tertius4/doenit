@@ -77,7 +77,7 @@ const en: Record<keyof typeof af, string> = {
   contact_email_required: "Email address is required",
   contact_list: "Contact List",
   contact_name: "Contact name",
-  contact_support: "Need help or have feedback?",
+  contact_support_or_report_a_user: "Need help or have feedback? Or report a user?",
   contacts: "Contacts",
   copied: "Copied",
   copy_failed: "Could not copy",

@@ -41,7 +41,7 @@
   </div>
 
   <div class="pt-2 border-t border-default">
-    <p class="mb-2">{t("contact_support")}</p>
+    <p class="mb-2">{t("contact_support_or_report_a_user")}</p>
     <div class="w-full flex justify-end">
       <button
         type="button"

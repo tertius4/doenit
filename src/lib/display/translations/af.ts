@@ -75,7 +75,7 @@ const af = {
   contact_email_required: "E-posadres is verpligtend",
   contact_list: "Kontaklys",
   contact_name: "Kontak naam",
-  contact_support: "Het jy hulp nodig of terugvoer?",
+  contact_support_or_report_a_user: "Klagtes of gedagtes? of wil jy 'n gebruiker aankla",
   contacts: "Kontakte",
   copied: "Gekopieer",
   copy_failed: "Kon nie kopieer nie",
