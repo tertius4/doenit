@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
+import { handleDeleteAccount } from "./account/delete-account";
 import { handleApi } from "./api/create-task";
 import { handleSendPush } from "./notifications/send-push";
 import { handleCancelSubscription } from "./subscriptions/cancel-subscription";
@@ -11,6 +12,12 @@ export const api = onRequest(
   // invoker "public": callers authenticate with their API key, not Google IAM.
   { region: "africa-south1", memory: "256MiB", maxInstances: 2, timeoutSeconds: 10, cors: true, invoker: "public" },
   handleApi,
+);
+
+/** Deletes the caller's account and cloud data. The caller is authenticated by their Firebase ID token. */
+export const deleteAccount = onRequest(
+  { region: "africa-south1", memory: "256MiB", maxInstances: 1, timeoutSeconds: 30, cors: true, invoker: "public" },
+  handleDeleteAccount,
 );
 
 /** Delivers a push for every new inbox notification (users/{uid}/notifications/{id}). */

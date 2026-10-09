@@ -2,7 +2,7 @@ import auth, { type SocialProvider } from "$services/social-login";
 import { apiLogger, err, wait } from "$lib";
 import DB from "$domain/db";
 import { config } from "$lib/config";
-import { initApp } from "$logic/context.svelte";
+import { context, initApp } from "$logic/context.svelte";
 import {
   signInWithCredential,
   signOutFirebase,
@@ -12,10 +12,16 @@ import {
 } from "$lib/logic/chunk/firebase-auth";
 import { doc, setDoc } from "$lib/logic/chunk/firebase-firestore";
 import firestore from "$services/firestore";
+import t from "$display/translate";
 import { PushService } from "$logic/notifications/PushService";
+import scopeManager from "$domain/sync/ScopeManager";
+import * as env from "$env/static/public";
 
 export const signIn = apiLogger(signInHandler);
 export const signOut = apiLogger(signOutHandler);
+export const deleteAccount = apiLogger(deleteAccountHandler);
+
+const DELETE_ACCOUNT_URL = `https://africa-south1-${env.PUBLIC_FIREBASE_PROJECT_ID}.cloudfunctions.net/deleteAccount`;
 
 const TIMED_OUT = Symbol("timed_out");
 
@@ -186,14 +192,45 @@ async function saveSignedInUser(
 }
 
 async function signOutHandler(): AsyncResult {
+  // While still signed in: the token must be removed so the next user of this device never gets these pushes.
+  // Bounded: an offline device must not keep the user waiting on sign-out.
+  await Promise.race([PushService.unregister(), new Promise((resolve) => setTimeout(resolve, 3000))]);
+
+  return clearSession();
+}
+
+/**
+ * Deletes the account and its cloud data through the deleteAccount function, then signs out. Group data is purged
+ * from the device; personal tasks and categories stay.
+ */
+async function deleteAccountHandler(): AsyncResult {
+  if (!navigator.onLine) return { ok: false, error: "sign_in_error_offline" };
+
+  const user = context.user;
+  const token = await firestore.getAuth().currentUser?.getIdToken();
+  if (!user || !token) return { ok: false, error: t("you_are_not_logged_in") };
+
+  const response = await fetch(DELETE_ACCOUNT_URL, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+  const result: Result = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
+  if (!result.ok) return result;
+
+  // Before the user_state row goes: purging reads the scope list and cursors from it.
+  for (const scope_id of await scopeManager.getUserScopes()) {
+    await scopeManager.purgeLocalScope(scope_id);
+  }
+
+  await DB.user_state.remove(user.id);
+  await DB.user.remove(user.id);
+
+  // The server already deleted the push tokens, so there is nothing to unregister.
+  return clearSession();
+}
+
+async function clearSession(): AsyncResult {
   // Google/plugin failures must not block clearing the Firebase and local session.
   const init_result = await initialize();
   const result = init_result.ok ? await auth.signOut() : init_result;
   if (!result.ok) console.warn("[auth] Google sign-out failed:", result.error);
-
-  // While still signed in: the token must be removed so the next user of this device never gets these pushes.
-  // Bounded: an offline device must not keep the user waiting on sign-out.
-  await Promise.race([PushService.unregister(), new Promise((resolve) => setTimeout(resolve, 3000))]);
 
   try {
     await signOutFirebase(firestore.getAuth());

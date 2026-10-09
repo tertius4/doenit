@@ -87,4 +87,14 @@ export class UserStateTable {
       .findOne(id)
       .$.pipe(map((doc) => (doc ? (doc.toJSON() as DB.UserState) : null)));
   }
+
+  async remove(id: string): AsyncResult {
+    try {
+      await this.collection.findOne(id).remove();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      return { ok: false, error: message };
+    }
+  }
 }

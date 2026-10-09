@@ -45,6 +45,21 @@ class AuthFlow {
     if (result.ok) return;
     toast.error(t("sign_out_failed"), errorMessage(result.error));
   }
+
+  async deleteAccount() {
+    if (this.is_loading) return;
+
+    this.is_loading = true;
+    let result: Result;
+    try {
+      result = await Api.auth.deleteAccount();
+    } finally {
+      this.is_loading = false;
+    }
+
+    if (result.ok) return;
+    toast.error(t("delete_account_failed"), errorMessage(result.error));
+  }
 }
 
 export function createAuthFlow() {

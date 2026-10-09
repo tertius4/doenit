@@ -7,6 +7,8 @@
   import t from "$display/translate";
   import Api from "$logic/api";
   import toast from "$display/toast/toast.svelte";
+  import { mount, unmount } from "svelte";
+  import ModalDeleteAccount from "./comps/ModalDeleteAccount.svelte";
 
   let is_open = $state(false);
   const auth = createAuthFlow();
@@ -28,6 +30,14 @@
   async function handleSignOut() {
     is_open = false;
     await auth.signOut();
+  }
+
+  function openDeleteAccount() {
+    is_open = false;
+    const component = mount(ModalDeleteAccount, {
+      target: document.body,
+      props: { onconfirm: () => auth.deleteAccount(), onclose: () => unmount(component) },
+    });
   }
 </script>
 
@@ -116,4 +126,7 @@
       <span class="font-medium leading-none">{t("sign_out")}</span>
     </button>
   </div>
+  <button type="button" class="mx-auto block text-sm text-error underline active:opacity-70" onclick={openDeleteAccount}>
+    {t("delete_account")}
+  </button>
 </Modal>

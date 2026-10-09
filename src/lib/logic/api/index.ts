@@ -41,6 +41,7 @@ export default class Api {
   static readonly auth = {
     signIn: auth.signIn,
     signOut: auth.signOut,
+    deleteAccount: auth.deleteAccount,
   };
 
   static readonly contacts = {
