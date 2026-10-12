@@ -82,6 +82,22 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/task_widget_info" />
         </receiver>
 
+        <!-- Quick add widget -->
+        <receiver android:name="doenit.app.QuickAddWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_add_widget_info" />
+        </receiver>
+
+        <activity
+            android:name="doenit.app.QuickAddActivity"
+            android:theme="@style/Theme.QuickAdd"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateAlwaysVisible|adjustResize"
+            android:exported="false" />
+
         <!-- Widget service -->
         <service
             android:name="doenit.app.TaskWidgetService"

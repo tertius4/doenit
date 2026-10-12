@@ -6,4 +6,6 @@
     <string name="custom_url_scheme">doenit</string>
     <string name="widget_name">Doenit Widget</string>
     <string name="widget_description">Maklike oorsig oor jou take</string>
+    <string name="quick_add_widget_name">Doenit Nuwe Taak</string>
+    <string name="quick_add_widget_description">Voeg vinnig \'n nuwe taak by</string>
 </resources>

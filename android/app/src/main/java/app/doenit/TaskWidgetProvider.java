@@ -217,6 +217,8 @@ public class TaskWidgetProvider extends AppWidgetProvider {
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
             context.sendBroadcast(intent);
+
+            QuickAddWidgetProvider.refreshAll(context);
         } catch (Exception e) {
             Log.e(Const.LOG_TAG_DOENIT, "Error updating widget language", e);
         }
@@ -247,6 +249,8 @@ public class TaskWidgetProvider extends AppWidgetProvider {
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
             context.sendBroadcast(intent);
+
+            QuickAddWidgetProvider.refreshAll(context);
         } catch (Exception e) {
             Log.e(Const.LOG_TAG_DOENIT, "Error updating widget theme", e);
         }

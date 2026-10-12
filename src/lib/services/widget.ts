@@ -13,7 +13,12 @@ export interface TaskWidgetPlugin {
   /** Ids of tasks checked off in the widget while the app was closed. */
   getPendingCompletions(): Promise<{ ids: string[] }>;
   clearPendingCompletions({ ids }: { ids: string[] }): Promise<void>;
+  /** Tasks typed into the quick add widget while the app was closed. */
+  getPendingTasks(): Promise<{ tasks: PendingWidgetTask[] }>;
+  clearPendingTasks({ ids }: { ids: string[] }): Promise<void>;
 }
+
+export type PendingWidgetTask = { id: string; name: string };
 
 const TaskWidget = Capacitor.registerPlugin<TaskWidgetPlugin>("TaskWidget");
 
@@ -68,6 +73,19 @@ export class Widget {
     if (!IS_ANDROID || !ids.length) return;
 
     await TaskWidget.clearPendingCompletions({ ids });
+  }
+
+  static async getPendingTasks(): Promise<PendingWidgetTask[]> {
+    if (!IS_ANDROID) return [];
+
+    const { tasks } = await TaskWidget.getPendingTasks();
+    return tasks;
+  }
+
+  static async clearPendingTasks(ids: string[]): Promise<void> {
+    if (!IS_ANDROID || !ids.length) return;
+
+    await TaskWidget.clearPendingTasks({ ids });
   }
 
   static async updateLanguage(language: Domain.Settings["language"]): Promise<void> {

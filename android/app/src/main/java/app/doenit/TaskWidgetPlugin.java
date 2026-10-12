@@ -79,6 +79,23 @@ public class TaskWidgetPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getPendingTasks(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("tasks", PendingTasks.get());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void clearPendingTasks(PluginCall call) {
+        try {
+            PendingTasks.remove(call.getArray("ids", new JSArray()));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Failed to clear pending tasks: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void updateLanguage(PluginCall call) {
         try {
             String language = call.getString("language");

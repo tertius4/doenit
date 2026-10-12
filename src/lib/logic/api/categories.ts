@@ -1,6 +1,7 @@
 import t from "$lib/display/translate";
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
+import { context } from "$logic/context.svelte";
 
 export const mapTasksCountToCategories = apiLogger(mapTasksCountToCategoriesHandler);
 export const save = apiLogger(saveCategoryHandler);
@@ -17,7 +18,12 @@ async function mapTasksCountToCategoriesHandler(): Promise<Map<DB.Category["id"]
   const map = new Map<DB.Category["id"], number>();
 
   for (const task of tasks) {
-    if (!task.archived) continue;
+    if (task.archived) continue;
+    if (task.soft_deleted) continue;
+    const task_firebase_uid = task.assigned_firebase_uid;
+    if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) {
+      continue;
+    }
 
     const category_id = task.category_id || "default";
     const count = map.get(category_id) || 0;
@@ -64,7 +70,9 @@ async function deleteCategoryHandler(id: string): AsyncResult {
 
     const tasks = await DB.task.findMany({ selector: { category_id: id } });
     if (tasks.ok && tasks.value.length) {
-      const cleared = await DB.task.updateMany(tasks.value.map((task) => ({ id: task.id, changes: { category_id: "" } })));
+      const cleared = await DB.task.updateMany(
+        tasks.value.map((task) => ({ id: task.id, changes: { category_id: "" } })),
+      );
       if (!cleared.ok) return cleared;
     }
 

@@ -4,7 +4,7 @@
   import { useDelayedEmpty } from "$display/features/task-list/delayed-empty.svelte";
   import GroupInfo from "$display/features/groups/GroupInfo.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { selected_categories, selected_tasks } from "$display/selected.svelte";
+  import { selected_tasks } from "$display/selected.svelte";
   import { Haptics } from "@capacitor/haptics";
   import { goto, invalidate } from "$app/navigation";
   import { context } from "$logic/context.svelte";
@@ -24,7 +24,7 @@
 
   /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
-  const tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
+  const tasks = $derived(filterTasks(all_tasks, search_text.value, new Set()));
 
   const show_empty = useDelayedEmpty(() => tasks.length);
 
@@ -91,7 +91,7 @@
 
   {#if !tasks.length && show_empty.value}
     <div class="flex flex-col items-center gap-4 py-12" in:fade={{ delay: 150 }}>
-      <span class="text-lg">{t("empty_list")}</span>
+      <span class="text-lg">{t("empty_list_group")}</span>
       <button
         type="button"
         class="rounded-lg bg-card px-12 py-6 flex justify-center items-center gap-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"

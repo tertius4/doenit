@@ -34,7 +34,9 @@
 
 <div class="bg-surface rounded-lg">
   <div
-    class="grid {disabled ? 'grid-cols-[minmax(0,1fr)] px-4' : 'grid-cols-[48px_minmax(0,1fr)_48px]'} items-center justify-between"
+    class="grid {disabled
+      ? 'grid-cols-[minmax(0,1fr)] px-4'
+      : 'grid-cols-[48px_minmax(0,1fr)_48px]'} items-center justify-between"
   >
     <button type="button" class="h-full w-full flex justify-center items-center" onclick={handleEdit} hidden={disabled}>
       <div class="rounded-full p-2 w-fit flex justify-center items-center bg-card">
@@ -44,7 +46,13 @@
 
     <div class="py-3 w-full min-w-0 text-lg font-semibold flex gap-2">
       <span class="truncate">{name}</span>
-      <div class="h-fit shrink-0 bg-page rounded-full px-2 aspect-square flex items-center justify-center">
+      <div
+        class={{
+          "shrink-0 bg-page rounded-full px-2 flex items-center justify-center": true,
+          "aspect-square": task_count < 10,
+          "inline": task_count >= 10,
+        }}
+      >
         <span class="text-muted font-light font-mono text-sm">{task_count}</span>
       </div>
     </div>

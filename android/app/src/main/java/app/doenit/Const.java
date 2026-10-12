@@ -3,6 +3,7 @@ package doenit.app;
 public class Const {
     public static final String DB_NAME = "DoenitWidgetPrefs";
     public static final String WIDGET_PENDING_COMPLETIONS = "widget_pending_completions";
+    public static final String WIDGET_PENDING_TASKS = "widget_pending_tasks";
 
     public static final String TASKS = "updatedTasksJson";
     public static final String CATEGORIES = "updatedCategoriesJson";

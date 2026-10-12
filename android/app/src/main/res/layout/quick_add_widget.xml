@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/quick_add_container"
+        android:layout_width="match_parent"
+        android:layout_height="66dp"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="10dp">
+
+        <LinearLayout
+            android:id="@+id/quick_add_root"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <ImageView
+                android:id="@+id/quick_add_logo"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@mipmap/ic_launcher"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/quick_add_hint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:singleLine="true"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/quick_add_icon"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="8dp"
+            android:padding="14dp"
+            android:scaleType="centerInside"
+            android:contentDescription="Voeg taak by" />
+    </LinearLayout>
+</FrameLayout>

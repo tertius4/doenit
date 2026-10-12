@@ -4,6 +4,7 @@ import DB from "$domain/db";
 import logger from "$display/logger";
 import { Widget } from "$services/widget";
 import * as task from "./task";
+import * as settings from "./settings";
 import { schedule } from "./notifications";
 
 /**
@@ -28,13 +29,41 @@ export async function applyPendingCompletions(): Promise<void> {
   }
 }
 
+/** Creates tasks typed into the quick add widget while the app was closed. */
+export async function applyPendingTasks(): Promise<void> {
+  try {
+    const pending = await Widget.getPendingTasks();
+    if (!pending.length) return;
+
+    const created: string[] = [];
+    for (const { id, name } of pending) {
+      const result = await task.createTask(task.getNewTask({ name }));
+      if (result.ok) created.push(id);
+    }
+
+    await Widget.clearPendingTasks(created);
+    if (created.length) {
+      // Tasks without dates are not "Do Now" tasks, so show all tasks to keep the new ones visible.
+      await settings.setHomeMode("all");
+      schedule();
+    }
+  } catch (error) {
+    logger.error("Applying widget tasks failed", error);
+  }
+}
+
 /** Applies now and every time the app returns to the foreground. Returns an unsubscribe function. */
 export function watchPendingCompletions(): () => void {
   if (Capacitor.getPlatform() !== "android") return () => {};
 
-  applyPendingCompletions();
+  const applyAll = async () => {
+    await applyPendingCompletions();
+    await applyPendingTasks();
+  };
+
+  applyAll();
   const listener = App.addListener("appStateChange", ({ isActive }) => {
-    if (isActive) applyPendingCompletions();
+    if (isActive) applyAll();
   });
 
   return () => {

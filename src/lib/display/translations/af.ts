@@ -124,6 +124,7 @@ const af = {
   edit_task: "Wysig taak",
   email_address: "E-pos adres",
   empty_list: "Jou lys is skoon",
+  empty_list_group: "Julle lys is skoon",
   english: "Engels",
   enter_category_name: "Benoem jou kategorie",
   enter_group_description: "Beskrywing (opsioneel)",

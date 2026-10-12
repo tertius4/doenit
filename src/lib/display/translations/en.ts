@@ -126,6 +126,7 @@ const en: Record<keyof typeof af, string> = {
   edit_task: "Edit Task",
   email_address: "Email address",
   empty_list: "Your list is empty",
+  empty_list_group: "Your group list is empty",
   english: "English",
   enter_category_name: "Enter category name",
   enter_group_description: "Description (optional)",

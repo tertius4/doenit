@@ -39,13 +39,16 @@ export function listAssignTask(list) {
  */
 async function subscribeCategoryList() {
   const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
-  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 
   return combineLatest([categories$, tasks$]).pipe(
     map(([cats, tasks]) => {
       const hash = new Map();
 
       for (const task of tasks) {
+        const task_firebase_uid = task.assigned_firebase_uid;
+        if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) continue;
+
         const category_id = task.category_id || "default";
 
         const current_count = hash.get(category_id) || 0;

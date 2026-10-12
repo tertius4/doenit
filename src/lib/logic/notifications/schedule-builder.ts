@@ -84,11 +84,12 @@ export function buildSchedule({ tasks, present_time, past_time, now, t }: Schedu
       const at = atTime(addDays(today, day), past_time);
       if (at <= now) continue;
 
-      // Overdue as of the moment this reminder fires. Tasks without a due date use their start date.
+      // Overdue means due yesterday or earlier. Tasks without a due date use their start date.
+      const day_start = startOfDay(at);
       const overdue = parsed
         .filter(({ start, due }) => {
           const deadline = due ?? start;
-          return !!deadline && deadline.date < at;
+          return !!deadline && deadline.date < day_start;
         })
         .map(({ task }) => task);
       if (!overdue.length) continue;

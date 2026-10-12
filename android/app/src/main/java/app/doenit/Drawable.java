@@ -71,6 +71,20 @@ public class Drawable {
         return is_light ? drawable.pill_past_light : drawable.pill_past_dark;
     }
 
+    public static int quickAddContainer() {
+        String theme = DB.getString("theme", "dark");
+        Boolean is_light = theme.equals("light");
+
+        return is_light ? drawable.container_quick_add_light : drawable.container_quick_add_dark;
+    }
+
+    public static int input() {
+        String theme = DB.getString("theme", "dark");
+        Boolean is_light = theme.equals("light");
+
+        return is_light ? drawable.input_light : drawable.input_dark;
+    }
+
     public static int addButton() {
         String theme = DB.getString("theme", "dark");
         Boolean is_light = theme.equals("light");
