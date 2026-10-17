@@ -14,6 +14,11 @@ service cloud.firestore {
     }
 
     // True when the signed-in user's own membership list contains the scope.
+    // Pulls are keyed on synced_at, so it must be Firestore's own clock (serverTimestamp()), never the device's.
+    function isServerStamped() {
+      return request.resource.data.synced_at == request.time;
+    }
+
     function isScopeMember(scope_id) {
       return signedIn()
         && exists(membershipsPath(request.auth.uid))
@@ -30,7 +35,8 @@ service cloud.firestore {
 
     // Synced scope data (tasks, groups, members, ...). Only members of the scope may read or write it.
     match /scopes/{scope_id}/items/{item_id} {
-      allow read, write: if isScopeMember(scope_id);
+      allow read, delete: if isScopeMember(scope_id);
+      allow create, update: if isScopeMember(scope_id) && isServerStamped();
     }
 
     match /users/{uid} {
@@ -127,16 +133,17 @@ service cloud.firestore {
 
         allow read: if isOwner(uid);
         // Only the sender can start an invite, and it always starts pending.
-        allow create: if signedIn() && isWellFormed()
+        allow create: if signedIn() && isWellFormed() && isServerStamped()
           && invite().from_firebase_uid == request.auth.uid
           && invite().status == 'pending';
-        allow update: if signedIn() && isWellFormed() && isAllowedTransition();
+        allow update: if signedIn() && isWellFormed() && isServerStamped() && isAllowedTransition();
       }
 
       // Anyone signed in may send a notification to a user; only the user can read or change it.
       match /notifications/{notification_id} {
-        allow read, update, delete: if isOwner(uid);
-        allow create: if signedIn() && request.resource.data.user_id == uid
+        allow read, delete: if isOwner(uid);
+        allow update: if isOwner(uid) && isServerStamped();
+        allow create: if signedIn() && isServerStamped() && request.resource.data.user_id == uid
           && request.resource.data.type in ['invite_received', 'invite_accepted', 'group_added', 'group_removed',
             'group_deleted', 'user_left_group', 'task_assigned', 'task_completed', 'mentioned']
           && request.resource.data.title is string && request.resource.data.title.size() <= 200

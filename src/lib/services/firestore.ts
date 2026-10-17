@@ -15,6 +15,11 @@ import {
   writeBatch,
   arrayUnion,
   arrayRemove,
+  serverTimestamp,
+  Timestamp,
+  type CollectionReference,
+  type QueryConstraint,
+  type QueryDocumentSnapshot,
 } from "$lib/logic/chunk/firebase-firestore";
 import { initializeApp, getApp } from "$lib/logic/chunk/firebase-app";
 import {
@@ -28,6 +33,42 @@ import * as env from "$env/static/public";
 import { config } from "$lib/config";
 
 export type RemoteDoc = DB.MetaDataShared & { scope_id: string; collection: string };
+
+/** A page of documents plus the cursor to pass as `since` next time. */
+export type Pulled<T> = { docs: T[]; cursor: string };
+
+const EPOCH = new Date(0).toISOString();
+
+/**
+ * Pulls are keyed on `synced_at`, which Firestore stamps with its own clock on every write (firestore.rules enforces
+ * it). Device clocks never decide what is fetched, so writes pushed late (offline, retried) are still picked up.
+ * Without a cursor the whole collection is read, which also includes documents written before `synced_at` existed.
+ */
+function sinceQuery(ref: CollectionReference, since: string | undefined, ...full_fetch: QueryConstraint[]) {
+  if (!since) return query(ref, ...full_fetch);
+  return query(ref, where("synced_at", ">", Timestamp.fromDate(new Date(since))), orderBy("synced_at", "asc"));
+}
+
+/**
+ * Strips `synced_at` (local schemas don't know it) and returns the highest one as the next cursor. Pending local
+ * writes have no stamp yet and are skipped. Rounding down to ms can only re-fetch the newest doc, never skip one.
+ */
+function toPulled<T>(
+  docs: QueryDocumentSnapshot[],
+  since: string | undefined,
+  map: (d: QueryDocumentSnapshot, data: any) => T,
+): Pulled<T> {
+  let cursor = since ?? EPOCH;
+  const out = docs.map((d) => {
+    const { synced_at, ...data } = d.data();
+    if (synced_at instanceof Timestamp) {
+      const iso = synced_at.toDate().toISOString();
+      if (iso > cursor) cursor = iso;
+    }
+    return map(d, data);
+  });
+  return { docs: out, cursor };
+}
 
 class Firestore {
   private initialized = false;
@@ -86,19 +127,12 @@ class Firestore {
     return auth.currentUser?.uid ?? null;
   }
 
-  /**
-   * Fetches all items for a scope from Firestore.
-   * Pass `since` (ISO string) to only fetch items updated after that timestamp.
-   */
-  async fetch(scope_id: string, since?: string): Promise<RemoteDoc[]> {
+  /** Fetches a scope's items written after the `since` cursor, or all of them without one. */
+  async fetch(scope_id: string, since?: string): Promise<Pulled<RemoteDoc>> {
     const db = this.getDb();
     const ref = collection(db, "scopes", scope_id, "items");
-    const q = since
-      ? query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"))
-      : query(ref, orderBy("updated_at", "asc"));
-
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => d.data() as RemoteDoc);
+    const snapshot = await getDocs(sinceQuery(ref, since));
+    return toPulled(snapshot.docs, since, (_, data) => data as RemoteDoc);
   }
 
   /**
@@ -110,7 +144,7 @@ class Firestore {
 
     const db = this.getDb();
     const ref = doc(db, "scopes", document.scope_id, "items", document.id);
-    await setDoc(ref, { ...document, collection: col });
+    await setDoc(ref, { ...document, collection: col, synced_at: serverTimestamp() });
   }
 
   /**
@@ -126,6 +160,7 @@ class Firestore {
       scope_id: item.scope_id,
       soft_deleted: true,
       updated_at: new Date().toISOString(),
+      synced_at: serverTimestamp(),
     });
   }
 
@@ -162,15 +197,11 @@ class Firestore {
     await setDoc(ref, { scopes: arrayRemove(scope_id), updated_at: new Date().toISOString() }, { merge: true });
   }
 
-  async fetchInvites(user_id: string, since?: string): Promise<DB.ContactInvite[]> {
+  async fetchInvites(user_id: string, since?: string): Promise<Pulled<DB.ContactInvite>> {
     const db = this.getDb();
     const ref = collection(db, "users", user_id, "invites");
-    const q = since
-      ? query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"))
-      : query(ref, orderBy("updated_at", "asc"));
-
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DB.ContactInvite);
+    const snap = await getDocs(sinceQuery(ref, since, orderBy("updated_at", "asc")));
+    return toPulled(snap.docs, since, (d, data) => ({ id: d.id, ...data }) as DB.ContactInvite);
   }
 
   /** Writes the invite to every given inbox in one atomic batch. */
@@ -180,7 +211,8 @@ class Firestore {
     // contact_name is private to the sender's device.
     const { contact_name: _contact_name, ...shared } = invite;
     for (const user_id of new Set(user_ids)) {
-      batch.set(doc(db, "users", user_id, "invites", invite.id), shared, { merge: true });
+      const ref = doc(db, "users", user_id, "invites", invite.id);
+      batch.set(ref, { ...shared, synced_at: serverTimestamp() }, { merge: true });
     }
     await batch.commit();
   }
@@ -241,36 +273,42 @@ class Firestore {
     await deleteDoc(doc(db, "users", user_id, "push_tokens", device_id));
   }
 
-  async fetchNotifications(user_id: string, since?: string, count = 50): Promise<DB.Notification[]> {
+  /** The first pull only takes the newest `count`; later pulls page forward from the cursor, `count` at a time. */
+  async fetchNotifications(user_id: string, since?: string, count = 50): Promise<Pulled<DB.Notification>> {
     const db = this.getDb();
     const ref = collection(db, "users", user_id, "notifications");
     const q = since
-      ? query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"), limit(count))
-      : query(ref, orderBy("updated_at", "asc"), limit(count));
+      ? query(sinceQuery(ref, since), limit(count))
+      : sinceQuery(ref, since, orderBy("updated_at", "desc"), limit(count));
 
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as DB.Notification);
+    return toPulled(snap.docs, since, (d, data) => ({ id: d.id, ...data }) as DB.Notification);
   }
 
   async upsertNotification(user_id: string, notification: DB.Notification): Promise<void> {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "notifications", notification.id);
-    await setDoc(ref, notification, { merge: true });
+    await setDoc(ref, { ...notification, synced_at: serverTimestamp() }, { merge: true });
   }
 
   /**
-   * Attaches a real-time listener to a scope's items collection.
-   * Only fires when documents with updated_at > since are written remotely.
+   * Attaches a real-time listener to a scope's items collection. Watches only the most recently synced item (one read
+   * per change), and fires on every remote write after the initial snapshot, however old the item's updated_at is.
    * Returns an unsubscribe function — call it to stop listening.
    */
-  subscribeItems(scope_id: string, since: string, callback: () => void): () => void {
+  subscribeItems(scope_id: string, callback: () => void): () => void {
     const db = this.getDb();
     const ref = collection(db, "scopes", scope_id, "items");
-    const q = query(ref, where("updated_at", ">", since), orderBy("updated_at", "asc"));
+    const q = query(ref, orderBy("synced_at", "desc"), limit(1));
+    let is_first = true;
     return onSnapshot(
       q,
       (snap) => {
-        if (snap.docChanges().length > 0) callback();
+        if (is_first) {
+          is_first = false;
+          return;
+        }
+        if (snap.docChanges().length > 0 && !snap.metadata.hasPendingWrites) callback();
       },
       (error) => console.warn(`[Firestore] items listener for scope ${scope_id} failed:`, error),
     );

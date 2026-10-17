@@ -2,7 +2,7 @@ import firestore from "$services/firestore";
 import DB from "$domain/db";
 import mergeEngine from "./MergeEngine";
 import scopeManager from "./ScopeManager";
-import { patchSyncCursors, withClockSkew } from "./cursors";
+import { cursorKey, patchSyncCursors } from "./cursors";
 
 export class PullProcessor {
   static async run() {
@@ -21,17 +21,14 @@ export class PullProcessor {
     const results = await Promise.all(
       scopes.map(async (scope_id) => {
         try {
-          const since = withClockSkew(sync_cursors[scope_id]);
-          // Record time before fetching so the cursor doesn't skip concurrent writes
-          const pullStartTime = new Date().toISOString();
+          const key = cursorKey(scope_id);
+          const { docs, cursor } = await firestore.fetch(scope_id, sync_cursors[key]);
 
-          const remoteItems = await firestore.fetch(scope_id, since);
-
-          for (const remote of remoteItems) {
+          for (const remote of docs) {
             await mergeEngine.apply(remote);
           }
 
-          return [scope_id, pullStartTime] as const;
+          return [key, cursor] as const;
         } catch (err) {
           console.error(`[PullProcessor] Failed to pull scope ${scope_id}:`, err);
           return null;
@@ -39,9 +36,12 @@ export class PullProcessor {
       }),
     );
 
-    const cursor_updates = Object.fromEntries(results.filter((r) => r !== null));
-    if (Object.keys(cursor_updates).length > 0) {
-      await patchSyncCursors(user_id, cursor_updates);
+    const pulled = results.filter((r) => r !== null);
+    const cursor_updates = Object.fromEntries(pulled.filter(([key, cursor]) => sync_cursors[key] !== cursor));
+    // The old device-clock cursor (bare scope id) is retired once the scope has been pulled the new way.
+    const legacy_keys = scopes.filter((scope_id) => scope_id in sync_cursors);
+    if (Object.keys(cursor_updates).length > 0 || legacy_keys.length > 0) {
+      await patchSyncCursors(user_id, cursor_updates, legacy_keys);
     }
   }
 }

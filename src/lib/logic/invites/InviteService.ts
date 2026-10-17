@@ -1,7 +1,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { patchSyncCursors, withClockSkew } from "$domain/sync/cursors";
+import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -70,10 +70,10 @@ export const InviteService = {
     if (!my_uid || !my_local_id) return;
 
     const state = await DB.user_state.get(my_local_id);
-    const since = state.ok ? withClockSkew(state.value.sync_cursors?.["__invites"]) : undefined;
+    const key = cursorKey("__invites");
+    const since = state.ok ? state.value.sync_cursors?.[key] : undefined;
 
-    const remote = await firestore.fetchInvites(my_uid, since);
-    if (!remote.length) return;
+    const { docs: remote, cursor } = await firestore.fetchInvites(my_uid, since);
 
     for (const invite of remote) {
       // One bad invite must not block the rest or keep the cursor from advancing.
@@ -92,8 +92,7 @@ export const InviteService = {
       }
     }
 
-    const latest = remote[remote.length - 1].updated_at;
-    await patchSyncCursors(my_local_id, { __invites: latest });
+    if (cursor !== since) await patchSyncCursors(my_local_id, { [key]: cursor }, ["__invites"]);
   },
 
   /**

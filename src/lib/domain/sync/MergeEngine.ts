@@ -9,18 +9,23 @@ class MergeEngine {
     if (!doc_result.ok) throw new Error(`Document ${remote.id} not found in collection ${remote.collection}`);
     const local = doc_result.value;
 
-    delete remote.collection; // Only used for fetching, not stored in DB
+    // The schema rejects unknown fields, so keep only the ones this app version knows (this also drops `collection`).
+    // A field written by an older or newer app version must not make the whole document disappear.
+    const fields = collection.collection.schema.jsonSchema.properties;
+    const known = Object.fromEntries(Object.entries(remote).filter(([key]) => key in fields)) as typeof remote;
 
     if (!local) {
       // Nothing to delete locally, so don't materialise a tombstone for a doc this device never saw.
-      if (remote.soft_deleted) return;
+      if (known.soft_deleted) return;
 
-      await collection.createRaw(remote);
+      const result = await collection.createRaw(known);
+      if (!result.ok) console.warn(`[MergeEngine] Could not store ${remote.collection}:${remote.id}:`, result.error);
       return;
     }
 
-    if (shouldApplyRemote(local as Record<string, any> & DB.MetaDataShared, remote)) {
-      await collection.updateRaw(remote.id, remote);
+    if (shouldApplyRemote(local as Record<string, any> & DB.MetaDataShared, known)) {
+      const result = await collection.updateRaw(known.id, known);
+      if (!result.ok) console.warn(`[MergeEngine] Could not update ${remote.collection}:${remote.id}:`, result.error);
     }
   }
 }

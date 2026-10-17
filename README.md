@@ -92,7 +92,8 @@ git commit -am "Version 2.0.2 (build 208)" && git push
 ### Firebase
 
 ```bash
-firebase deploy --only firestore:rules   # firestore.rules
+npm run deploy:rules                     # firestore.rules → doenitdb, produksie
+npm run deploy:rules:dev                 # firestore.rules → doenitdb, dev
 cd functions
 npm run deploy                           # produksie
 npm run deploy-dev                       # dev

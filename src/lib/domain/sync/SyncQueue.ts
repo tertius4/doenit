@@ -133,16 +133,10 @@ export const SyncQueue = {
     const doc = result.value;
     if (!doc) return;
 
-    const new_attempts = doc.attempts + 1;
-
-    // Dead-letter: permanently discard items that keep failing
-    if (new_attempts >= 20) {
-      await DB.sync_queue.remove(id);
-      return;
-    }
-
+    // No dead-letter: dropping the item would lose the change for good. Items for a scope the user really lost are
+    // cleared by ScopeManager.purgeLocalScope; everything else keeps retrying at the maximum backoff.
     await DB.sync_queue.update(id, {
-      attempts: new_attempts,
+      attempts: doc.attempts + 1,
       last_attempt_at: Date.now(),
     });
   },

@@ -6,7 +6,7 @@
 
 import firestore from "$services/firestore";
 import DB from "$domain/db";
-import { patchSyncCursors, withClockSkew } from "$domain/sync/cursors";
+import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
 import { context } from "$logic/context.svelte";
 
 type CreateNotificationInput = {
@@ -176,9 +176,9 @@ export const NotificationService = {
     if (!my_uid || !my_local_id) return;
 
     const state = await DB.user_state.get(my_local_id);
-    const since = state.ok ? withClockSkew(state.value.sync_cursors?.["__notifications"]) : undefined;
-    const remote = await firestore.fetchNotifications(my_uid, since);
-    if (!remote.length) return;
+    const key = cursorKey("__notifications");
+    const since = state.ok ? state.value.sync_cursors?.[key] : undefined;
+    const { docs: remote, cursor } = await firestore.fetchNotifications(my_uid, since);
 
     for (const notification of remote) {
       // Our own markAsRead writes come back on the next pull; skip what is already up to date locally.
@@ -188,8 +188,7 @@ export const NotificationService = {
       await DB.notification.upsert(notification);
     }
 
-    const latest = remote[remote.length - 1].updated_at;
-    await patchSyncCursors(my_local_id, { __notifications: latest });
+    if (cursor !== since) await patchSyncCursors(my_local_id, { [key]: cursor }, ["__notifications"]);
   },
 
   async markAsRead(notification: DB.Notification): AsyncResult<DB.Notification> {

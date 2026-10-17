@@ -9,10 +9,7 @@ class SyncEngine {
   private scheduledTimer: ReturnType<typeof setTimeout> | null = null;
 
   startRealtimeSync(scopes: string[]): () => void {
-    const since = new Date().toISOString();
-    const unsubscribers = scopes.map((scope_id) =>
-      firestore.subscribeItems(scope_id, since, () => this.requestTick())
-    );
+    const unsubscribers = scopes.map((scope_id) => firestore.subscribeItems(scope_id, () => this.requestTick()));
     return () => unsubscribers.forEach((unsub) => unsub());
   }
 

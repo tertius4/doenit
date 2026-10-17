@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import type { Request, Response } from "firebase-functions/v2/https";
 import { app, getDb, verifyToken } from "../shared/firebase";
 import { type Result, sendResult } from "../shared/result";
@@ -39,9 +40,11 @@ async function deleteAccount(method: string, authorization: string | undefined):
           items.where("collection", "==", "task").where("assigned_firebase_uid", "==", uid).get(),
         ]);
 
-        // A new updated_at is what makes the other members' pull pick these up.
-        members.docs.forEach((d) => batch.set(d.ref, { soft_deleted: true, updated_at: now }, { merge: true }));
-        tasks.docs.forEach((d) => batch.set(d.ref, { assigned_firebase_uid: null, updated_at: now }, { merge: true }));
+        // A new synced_at is what makes the other members' pull pick these up.
+        const synced_at = FieldValue.serverTimestamp();
+        const tombstone = { soft_deleted: true, updated_at: now, synced_at };
+        members.docs.forEach((d) => batch.set(d.ref, tombstone, { merge: true }));
+        tasks.docs.forEach((d) => batch.set(d.ref, { assigned_firebase_uid: null, updated_at: now, synced_at }, { merge: true }));
       }),
     );
 

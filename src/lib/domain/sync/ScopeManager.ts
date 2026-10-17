@@ -1,6 +1,6 @@
 import DB from "$domain/db";
 import firestore from "$services/firestore";
-import { removeSyncCursor } from "./cursors";
+import { cursorKey, removeSyncCursor } from "./cursors";
 
 class ScopeManager {
   /**
@@ -80,7 +80,7 @@ class ScopeManager {
 
     const session_result = await DB.session.get();
     if (session_result.ok && session_result.value.user_id) {
-      await removeSyncCursor(session_result.value.user_id, scope_id);
+      await removeSyncCursor(session_result.value.user_id, cursorKey(scope_id), scope_id);
     }
   }
 
