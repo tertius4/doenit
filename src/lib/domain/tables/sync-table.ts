@@ -3,6 +3,7 @@ import BaseTable from "./base-table";
 import { context } from "$logic/context.svelte";
 import { err } from "$lib";
 import { SyncQueue } from "$domain/sync/SyncQueue";
+import { PERSONAL_TABLES, personalScope } from "$domain/sync/personal";
 
 export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   constructor(collection: RxCollection<T & DB.MetaDataShared>) {
@@ -150,11 +151,12 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
 
   private async afterWriteMany(docs: (T & DB.MetaDataShared)[]) {
     const items = docs
-      .filter((doc) => doc.scope_id)
-      .map((doc) => ({
+      .map((doc) => ({ doc, scope_id: this.syncScope(doc) }))
+      .filter(({ scope_id }) => scope_id)
+      .map(({ doc, scope_id }) => ({
         table_name: this.collection.name,
         entity_id: doc.id,
-        scope_id: doc.scope_id!,
+        scope_id: scope_id!,
         op: (doc.soft_deleted ? "delete" : "upsert") as "delete" | "upsert",
       }));
 
@@ -164,13 +166,25 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   }
 
   private async afterWrite(doc: T & DB.MetaDataShared) {
-    if (!doc.scope_id) return;
+    const scope_id = this.syncScope(doc);
+    if (!scope_id) return;
 
     await SyncQueue.enqueue({
       table_name: this.collection.name,
       entity_id: doc.id,
-      scope_id: doc.scope_id,
+      scope_id,
       op: doc.soft_deleted ? "delete" : "upsert",
     });
+  }
+
+  /** The scope a write is pushed to: its own, or the personal scope while device sync is on. Null means local only. */
+  private syncScope(doc: T & DB.MetaDataShared): string | null {
+    if (doc.scope_id) return doc.scope_id;
+
+    const uid = context.user?.firebase_uid;
+    if (!uid || !PERSONAL_TABLES.includes(this.collection.name)) return null;
+
+    const scope_id = personalScope(uid);
+    return context.active_scopes.includes(scope_id) ? scope_id : null;
   }
 }

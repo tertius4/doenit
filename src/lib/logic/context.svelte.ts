@@ -3,6 +3,7 @@ import { Device } from "@capacitor/device";
 import DB from "$lib/domain/db";
 import scopeManager from "$lib/domain/sync/ScopeManager";
 import { MembershipService } from "$lib/domain/sync/MembershipService";
+import { ContactNames } from "$lib/domain/sync/ContactNames";
 import { Subscription, distinctUntilChanged, map } from "rxjs";
 import Api from "$logic/api";
 import { applyLanguage } from "$display/language.svelte";
@@ -40,6 +41,11 @@ class ContextClass {
   get home_mode(): HomeMode {
     const state = this._user ? this._user_state : this._app_state;
     return state?.home_mode ?? "now";
+  }
+
+  /** The signed-in user's synced scopes; empty while signed out or before the user state has loaded. */
+  get active_scopes(): string[] {
+    return this._user_state?.active_scopes ?? [];
   }
 
   get app_state(): DB.AppState {
@@ -84,6 +90,7 @@ function subscribeForUser(user_id: string | null) {
   _notification_unsubscribe = null;
   _inbox_unsubscribe?.();
   _inbox_unsubscribe = null;
+  ContactNames.watch(null, false);
 
   if (user_id) {
     const generation = _scope_generation;
@@ -91,6 +98,12 @@ function subscribeForUser(user_id: string | null) {
       .watchUserScopes(async (scopes) => {
         const previous = await scopeManager.getUserScopes();
         await DB.user_state.upsert({ id: user_id, user_id, active_scopes: scopes });
+        const firebase_uid = context.user?.firebase_uid;
+        if (firebase_uid) {
+          await MembershipService.applyPersonalSync(firebase_uid, previous, scopes).catch((err) =>
+            console.warn("[context] applying personal sync failed:", err),
+          );
+        }
 
         // Scopes the user was removed from (left, removed or disbanded): drop their local data.
         for (const scope_id of previous.filter((id) => !scopes.includes(id))) {

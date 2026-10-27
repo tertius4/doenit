@@ -6,6 +6,7 @@
   import toast from "$display/toast/toast.svelte";
   import t from "$display/translate";
   import Api from "$logic/api";
+  import { context } from "$logic/context.svelte";
   import { API_URL, DOCS_URL, MAX_KEYS } from "$logic/api/api-keys";
   import { Browser } from "@capacitor/browser";
   import { Toast } from "@capacitor/toast";
@@ -79,7 +80,12 @@
   }
 </script>
 
-<Accordion label={t("api_access")} bind:show>
+<Accordion
+  label={t("api_access")}
+  bind:show
+  disabled={!context.user}
+  disabled_message={t("sign_in_to_use")}
+>
   <div class="space-y-4 text-sm">
     <div class="bg-card rounded-md p-3 space-y-2">
       <p class="font-semibold flex items-center gap-2">

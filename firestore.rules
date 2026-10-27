@@ -45,10 +45,18 @@ service cloud.firestore {
       allow delete: if isOwner(sender_uid) || isEmailOwner();
     }
 
+    // personal_{uid} holds a user's synced personal tasks. Only that user may use it: anyone can put any id in their own
+    // memberships, so membership must never grant it.
+    function canAccessScope(scope_id) {
+      return scope_id.matches('personal_.*')
+        ? signedIn() && scope_id == 'personal_' + request.auth.uid
+        : isScopeMember(scope_id);
+    }
+
     // Synced scope data (tasks, groups, members, ...). Only members of the scope may read or write it.
     match /scopes/{scope_id}/items/{item_id} {
-      allow read, delete: if isScopeMember(scope_id);
-      allow create, update: if isScopeMember(scope_id) && isServerStamped();
+      allow read, delete: if canAccessScope(scope_id);
+      allow create, update: if canAccessScope(scope_id) && isServerStamped();
     }
 
     match /users/{uid} {

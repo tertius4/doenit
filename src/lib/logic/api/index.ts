@@ -8,6 +8,7 @@ import * as invites from "./invites";
 import * as notifications from "./notifications";
 import * as widget from "./widget";
 import * as api_keys from "./api-keys";
+import * as personal_sync from "./personal-sync";
 import * as clipboard from "./clipboard";
 import * as share from "./share";
 import { InboxService } from "$logic/inbox/InboxService";
@@ -82,6 +83,12 @@ export default class Api {
     list: api_keys.list,
     create: api_keys.create,
     revoke: api_keys.revoke,
+  };
+
+  static readonly personal_sync = {
+    enable: personal_sync.enable,
+    disable: personal_sync.disable,
+    isEnabled: personal_sync.isEnabled,
   };
 
   static readonly share = {

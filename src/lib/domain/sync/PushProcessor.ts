@@ -39,7 +39,7 @@ export class PushProcessor {
           await firestore.delete(item);
         } else if (doc) {
           // A soft-deleted doc is pushed in full so remote tombstones keep version/device_id for merging.
-          await firestore.upsert(item.table_name, doc as DB.MetaDataShared & Record<string, any>);
+          await firestore.upsert(item.scope_id, item.table_name, doc as DB.MetaDataShared & Record<string, any>);
         }
 
         await SyncQueue.remove(item.id);

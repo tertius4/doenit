@@ -31,6 +31,7 @@ import {
 import { Capacitor } from "@capacitor/core";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
+import { personalScope } from "$domain/sync/personal";
 
 export type RemoteDoc = DB.MetaDataShared & { scope_id: string; collection: string };
 
@@ -68,6 +69,12 @@ function toPulled<T>(
     return map(d, data);
   });
   return { docs: out, cursor };
+}
+
+/** The scopes in a memberships document, plus the personal scope while device sync is on. */
+function membershipScopes(user_id: string, data: Record<string, any>): string[] {
+  const scopes = (data.scopes as string[]) ?? [];
+  return data.personal_sync_enabled_at ? [...scopes, personalScope(user_id)] : scopes;
 }
 
 class Firestore {
@@ -136,14 +143,12 @@ class Firestore {
   }
 
   /**
-   * Writes a full document to Firestore under its scope.
+   * Writes a full document to Firestore under the given scope (a personal document keeps scope_id null).
    * Used for both creates and updates.
    */
-  async upsert(col: string, document: DB.MetaDataShared & Record<string, any>): Promise<void> {
-    if (!document.scope_id) throw new Error("[Firestore] Cannot upsert document without scope_id");
-
+  async upsert(scope_id: string, col: string, document: DB.MetaDataShared & Record<string, any>): Promise<void> {
     const db = this.getDb();
-    const ref = doc(db, "scopes", document.scope_id, "items", document.id);
+    const ref = doc(db, "scopes", scope_id, "items", document.id);
     await setDoc(ref, { ...document, collection: col, synced_at: serverTimestamp() });
   }
 
@@ -164,12 +169,21 @@ class Firestore {
     });
   }
 
+  /** The user's scopes, including the personal scope while device sync is on. */
   async fetchMemberships(user_id: string): Promise<string[]> {
     const db = this.getDb();
     const ref = doc(db, "users", user_id, "meta", "memberships");
     const snap = await getDoc(ref);
     if (!snap.exists()) return [];
-    return (snap.data().scopes as string[]) ?? [];
+    return membershipScopes(user_id, snap.data());
+  }
+
+  /** Turns device sync of personal tasks on or off for the whole account. Turning it off keeps the cloud copy. */
+  async setPersonalSync(user_id: string, enabled: boolean): Promise<void> {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "meta", "memberships");
+    const now = new Date().toISOString();
+    await setDoc(ref, { personal_sync_enabled_at: enabled ? now : null, updated_at: now }, { merge: true });
   }
 
   /**
@@ -261,6 +275,30 @@ class Firestore {
     );
   }
 
+  /**
+   * Follows the names the user gave their contacts (synced while personal sync is on), keyed by relationship id.
+   * Fires with the current names, then on every change. Returns an unsubscribe function.
+   */
+  subscribeContactNames(user_id: string, callback: (names: Record<string, string | null>) => void): () => void {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "meta", "contact_names");
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (!snap.exists() && snap.metadata.fromCache) return;
+        callback((snap.data()?.names as Record<string, string | null>) ?? {});
+      },
+      (error) => console.warn("[Firestore] contact names listener failed:", error),
+    );
+  }
+
+  /** Merges contact names (keyed by relationship id) into the user's synced names. */
+  async saveContactNames(user_id: string, names: Record<string, string | null>): Promise<void> {
+    const db = this.getDb();
+    const ref = doc(db, "users", user_id, "meta", "contact_names");
+    await setDoc(ref, { names, updated_at: new Date().toISOString() }, { merge: true });
+  }
+
   /** Stores this device's push token. The Cloud Function reads these to deliver pushes. */
   async savePushToken(user_id: string, device_id: string, token: string, language_code: string): Promise<void> {
     const db = this.getDb();
@@ -330,7 +368,7 @@ class Firestore {
           if (snap.metadata.fromCache) return;
           return callback([]);
         }
-        callback((snap.data().scopes as string[]) ?? []);
+        callback(membershipScopes(firebase_uid, snap.data()));
       },
       (error) => console.warn("[Firestore] memberships listener failed:", error),
     );

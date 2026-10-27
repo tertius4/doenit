@@ -1,6 +1,7 @@
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { InviteService } from "$logic/invites/InviteService";
+import { ContactNames } from "$domain/sync/ContactNames";
 
 export const remove = apiLogger(deleteContactHandler);
 export const update = apiLogger(updateContactHandler);
@@ -31,8 +32,13 @@ async function updateContactHandler(id: string, changes: { name: string | null }
     if (!result.ok) return result;
     if (!result.value) return { ok: false, error: "Contact not found" };
 
-    const update_result = await DB.contact.update(id, { name: changes.name?.trim() || null });
+    const name = changes.name?.trim() || null;
+    const update_result = await DB.contact.update(id, { name });
     if (!update_result.ok) return update_result;
+
+    await ContactNames.save(result.value.relationship_id, name).catch((err) =>
+      console.warn("[contacts] could not sync the name:", err),
+    );
 
     return { ok: true };
   } catch (err) {

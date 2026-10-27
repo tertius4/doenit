@@ -7,7 +7,7 @@ import { type Result, sendResult } from "../shared/result";
 
 /**
  * Deletes the caller's account: leaves every group (member row tombstoned, assigned tasks unassigned), then removes
- * user_profiles/{uid}, everything under users/{uid} and the Auth user. Personal tasks only live on the device.
+ * user_profiles/{uid}, everything under users/{uid}, the synced personal tasks (scopes/personal_{uid}) and the Auth user.
  */
 export async function handleDeleteAccount(req: Request, res: Response): Promise<void> {
   const result = await deleteAccount(req.method, req.headers.authorization);
@@ -51,6 +51,7 @@ async function deleteAccount(method: string, authorization: string | undefined):
     batch.delete(db.doc(`user_profiles/${uid}`));
     await batch.commit();
 
+    await db.recursiveDelete(db.doc(`scopes/personal_${uid}`));
     // Last: the memberships read above lives under users/{uid}.
     await db.recursiveDelete(user_ref);
     await admin.auth(app).deleteUser(uid);

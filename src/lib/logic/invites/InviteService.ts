@@ -3,6 +3,7 @@ import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
 import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
 import { NotificationService } from "$logic/notifications/NotificationService";
+import { ContactNames } from "$domain/sync/ContactNames";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -100,6 +101,30 @@ export const InviteService = {
     }
 
     if (cursor !== since) await patchSyncCursors(my_local_id, { [key]: cursor }, ["__invites"]);
+    await this.reconcileContacts();
+  },
+
+  /**
+   * Makes the local contacts match the accepted invites. Removes contacts whose relationship ended (removed on another
+   * device or by the other person) and creates any that are missing. Local only, so it costs no Firestore reads.
+   */
+  async reconcileContacts(): Promise<void> {
+    const my_uid = myFirebaseUid();
+    const my_local_id = myLocalId();
+    if (!my_uid || !my_local_id) return;
+
+    const [invites, contacts] = await Promise.all([
+      DB.contact_invite.findMany({ selector: { status: "accepted" } }),
+      DB.contact.findMany({ selector: { user_id: my_local_id } }),
+    ]);
+    if (!invites.ok || !contacts.ok) return;
+
+    const accepted = invites.value.filter((invite) => isValidFor(invite, my_uid));
+    const relationship_ids = new Set(accepted.map((invite) => invite.relationship_id));
+    const stale = contacts.value.filter((contact) => !relationship_ids.has(contact.relationship_id));
+    if (stale.length) await DB.contact.removeMany(stale.map((contact) => contact.id));
+
+    for (const invite of accepted) await this._process(invite);
   },
 
   /**
@@ -301,7 +326,10 @@ async function createContact(invite: DB.ContactInvite): Promise<void> {
   // The remote copy never carries the sender's chosen name, so read it from the local invite.
   let local_invite = await DB.contact_invite.findById(invite.id);
   if (!local_invite.ok || !local_invite.value) local_invite = await DB.contact_invite.findByRelationshipId(invite.relationship_id);
-  const name = (invite.contact_name ?? (local_invite.ok ? local_invite.value?.contact_name : null)) || null;
+  const invite_name = (invite.contact_name ?? (local_invite.ok ? local_invite.value?.contact_name : null)) || null;
+  // A name given on another device wins; a name only this device knows is shared with the others.
+  const synced_name = ContactNames.nameFor(invite.relationship_id);
+  const name = synced_name !== undefined ? synced_name : invite_name;
   console.log("[InviteService] creating contact", { invite_id: invite.id, name, local_invite });
 
   await DB.contact.create({
@@ -312,4 +340,9 @@ async function createContact(invite: DB.ContactInvite): Promise<void> {
     avatar_url: null,
     email_address: contact_email,
   });
+  if (synced_name === undefined && name) {
+    await ContactNames.save(invite.relationship_id, name).catch((err) =>
+      console.warn("[InviteService] could not sync the contact name:", err),
+    );
+  }
 }
