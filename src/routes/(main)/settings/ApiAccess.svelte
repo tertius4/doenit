@@ -14,6 +14,10 @@
   import ModalDeleteApiKey from "./comps/ModalDeleteApiKey.svelte";
 
   let show = $state(false);
+  /** The API needs Sync, so tasks sent through it reach every device. */
+  const disabled_message = $derived(
+    !context.user ? t("sign_in_to_use") : !Api.personal_sync.isEnabled() ? t("api_requires_sync") : "",
+  );
   let loaded = $state(false);
   let busy = $state(false);
   let label = $state("");
@@ -83,8 +87,8 @@
 <Accordion
   label={t("api_access")}
   bind:show
-  disabled={!context.user}
-  disabled_message={t("sign_in_to_use")}
+  disabled={!!disabled_message}
+  {disabled_message}
 >
   <div class="space-y-4 text-sm">
     <div class="bg-card rounded-md p-3 space-y-2">
@@ -93,7 +97,6 @@
         {t("api_when_title")}
       </p>
       <p>{t("api_when_body")}</p>
-      <p class="text-muted">{t("api_when_devices")}</p>
     </div>
 
     {#if new_key}

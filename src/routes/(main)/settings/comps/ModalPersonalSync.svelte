@@ -23,6 +23,7 @@
     <li>{t("sync_modal_what")}</li>
     <li>{t("sync_modal_where")}</li>
     <li>{t("sync_modal_devices")}</li>
+    <li>{t("sync_modal_offline")}</li>
     <li>{t("sync_modal_off")}</li>
   </ul>
 
