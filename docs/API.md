@@ -1,14 +1,18 @@
 # Doenit API
 
-Create Doenit tasks from anywhere: scripts, Zapier, Make, iOS Shortcuts, Android HTTP Shortcuts, or a plain `curl` command.
+Read, create, change and delete Doenit tasks from anywhere: scripts, Zapier, Make, iOS Shortcuts, Android HTTP Shortcuts, or a plain `curl` command.
 
 - [Quick start](#quick-start)
 - [When will my task show up?](#when-will-my-task-show-up)
 - [Authentication](#authentication)
-- [Endpoint](#endpoint)
+- [Endpoints](#endpoints)
+- [The task object](#the-task-object)
 - [Request fields](#request-fields)
 - [Dates](#dates)
 - [Repeating tasks](#repeating-tasks)
+- [List tasks](#list-tasks)
+- [Change a task](#change-a-task)
+- [Delete a task](#delete-a-task)
 - [Responses](#responses)
 - [Error codes](#error-codes)
 - [Examples](#examples)
@@ -17,10 +21,11 @@ Create Doenit tasks from anywhere: scripts, Zapier, Make, iOS Shortcuts, Android
 ## Quick start
 
 1. In Doenit, open **Settings** and **Sign in**.
-2. From there open the **API** section.
-3. Type a name for the key (for example "Zapier") and tap **Create key**.
-4. Copy the key. **It is only shown once.**
-5. Send a task:
+2. Turn on **Sync**. The API works on the tasks Doenit keeps in the cloud, so it needs Sync.
+3. Open the **API access** section.
+4. Type a name for the key (for example "Zapier") and tap **Create key**.
+5. Copy the key. **It is only shown once.**
+6. Send a task:
 
 ```bash
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
@@ -31,14 +36,9 @@ curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
 
 ## When will my task show up?
 
-Tasks sent through the API wait safely in the cloud. They appear in Doenit when the app is **open and connected to the internet**.
+A task sent through the API is stored in the cloud straight away. Every device you are signed in on picks it up **within seconds** while it is online, or as soon as it comes back online. Group tasks reach everyone in the group.
 
-| Your phone | What happens |
-|---|---|
-| App open and online | The task appears within a few seconds. |
-| App closed, or phone offline | Nothing is lost. The task is added as soon as you open Doenit again. |
-
-**More than one device?** A personal task is added to the first device that opens Doenit. Group tasks reach everyone in the group.
+Changes made in the app show up in the API right away too, as soon as the phone that made them is online.
 
 ## Authentication
 
@@ -48,23 +48,57 @@ Every request needs your key in the `Authorization` header:
 Authorization: Bearer dk_<your key>
 ```
 
-- **Treat a key like a password.** Anyone with it can add tasks to your Doenit.
+- **Treat a key like a password.** Anyone with it can read, add, change and delete your tasks.
 - Doenit only stores a fingerprint (a SHA-256 hash) of the key, never the key itself. A lost key can't be recovered: revoke it and create a new one.
 - To revoke a key, open **Settings → API access** and tap **Revoke** and confirm. It stops working immediately.
 - You can have up to 10 keys, for example one per integration.
+- Keys only work while **Sync** is on. With Sync off, every request gets a `403`.
 
-## Endpoint
+## Endpoints
 
 ```
-POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks
-Content-Type: application/json
+GET    https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks        List your tasks
+POST   https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks        Create a task
+PATCH  https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks/{id}   Change a task
+DELETE https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks/{id}   Delete a task
 ```
+
+Send `Content-Type: application/json` with `POST` and `PATCH`.
+
+## The task object
+
+Every endpoint that returns a task uses this shape:
+
+```json
+{
+  "id": "8b1d6a8e-5d0c-4c1e-9f6a-2f7f0d7a1b2c",
+  "name": "Betaal huur",
+  "description": "",
+  "due_date": null,
+  "start_date": "2026-11-01",
+  "important": true,
+  "category": "Finansies",
+  "group_id": null,
+  "repeat": { "interval": "monthly", "every": 1 },
+  "completed": false,
+  "completed_at": null,
+  "created_at": "2026-10-27T09:12:03.120Z",
+  "updated_at": "2026-10-27T09:12:03.120Z"
+}
+```
+
+- `start_date` holds the task's date. `due_date` is only set when the task spans a date range (then `start_date` is the start).
+- `group_id` is `null` for a personal task.
+- `repeat` is `null` for a task that doesn't repeat. See [Repeating tasks](#repeating-tasks).
+- `completed` is `true` once the task is done. A repeating task never stays completed: completing it moves it on to its next date, as in the app. `completed_at` then shows when it was last done.
 
 ## Request fields
 
+These are the fields you can send with `POST` (create) and `PATCH` (change).
+
 | Field | Type | Required | Rules | Example |
 |---|---|---|---|---|
-| `name` | string | **yes** | 1–500 characters | `"Koop melk"` |
+| `name` | string | **yes** for `POST` | 1–500 characters | `"Koop melk"` |
 | `description` | string | no | Up to 5000 characters | `"2 liter, volroom"` |
 | `due_date` | string | no | A date, optionally with a time. See [Dates](#dates). Sent on its own, it becomes the task's date. | `"2026-10-10 17:00"` |
 | `start_date` | string | no | Same as `due_date`; must be on or before it. Send both for a date range. | `"2026-10-09"` |
@@ -125,17 +159,64 @@ Leave `repeat` out (or send `null`) for a task that doesn't repeat. An unknown `
 
 > Doenit versions released before repeat support add the task without repeating. Update the app to get repeating tasks.
 
+## List tasks
+
+```
+GET /api/v1/tasks
+```
+
+Returns all your open tasks, personal and from every group you are in, as an array of [task objects](#the-task-object).
+
+Add `?include_completed=true` to include completed tasks.
+
+```bash
+curl https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
+  -H "Authorization: Bearer dk_YOUR_KEY"
+```
+
+## Change a task
+
+```
+PATCH /api/v1/tasks/{id}
+```
+
+Send only the fields you want to change. Any [request field](#request-fields) works, plus:
+
+| Field | Type | Rules |
+|---|---|---|
+| `completed` | boolean | `true` completes the task, `false` opens it again. Completing a repeating task moves it on to its next date. |
+
+- Send `null` to clear a field, for example `"due_date": null` or `"repeat": null`.
+- The result must still be a valid task: a repeating task needs a date, and `start_date` must be on or before `due_date`.
+- `group_id` can't be changed. Sending a different one is rejected with a `400`.
+- Returns the changed [task object](#the-task-object).
+
+```bash
+curl -X PATCH https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks/8b1d6a8e-5d0c-4c1e-9f6a-2f7f0d7a1b2c \
+  -H "Authorization: Bearer dk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"completed": true}'
+```
+
+## Delete a task
+
+```
+DELETE /api/v1/tasks/{id}
+```
+
+Deletes the task on all your devices (and for everyone in the group, for a group task). Returns `{ "ok": true }`.
+
 ## Responses
 
 Every response uses the same shape.
 
-**Success**: `201 Created`
+**Success**: `200 OK`, or `201 Created` for a new task.
 
 ```json
-{ "ok": true, "value": { "id": "8b1d6a8e-5d0c-4c1e-9f6a-2f7f0d7a1b2c" } }
+{ "ok": true, "value": { "id": "8b1d6a8e-5d0c-4c1e-9f6a-2f7f0d7a1b2c", "name": "Koop melk", "...": "..." } }
 ```
 
-`id` is the id the task will have in Doenit.
+`value` is a [task object](#the-task-object), an array of them for `GET`, or left out for `DELETE`.
 
 **Failure**
 
@@ -149,9 +230,9 @@ Every response uses the same shape.
 |---|---|---|
 | `400` | The request body is invalid (missing `name`, bad date, unknown field, unknown group, bad `repeat`, …). | Read `error`, fix the request. |
 | `401` | The key is missing, mistyped or revoked. | Check the `Authorization` header or create a new key. |
-| `404` | Wrong URL. | Use `/api/v1/tasks`. |
-| `405` | Wrong HTTP method. | Use `POST`. |
-| `429` | Your inbox is full: **100 tasks** are waiting to be added. | Open Doenit so they are added, then try again. |
+| `403` | Sync is off. | Turn on **Sync** in Doenit's settings. |
+| `404` | Wrong URL, or no task with that id (it may have been deleted). | Use `/api/v1/tasks` or `/api/v1/tasks/{id}`. |
+| `405` | Wrong HTTP method. | `GET`/`POST` on `/v1/tasks`, `PATCH`/`DELETE` on `/v1/tasks/{id}`. |
 | `500` | Something went wrong on our side. | Try again later. |
 
 ## Examples
@@ -220,7 +301,6 @@ if not result["ok"]:
 
 ## Limits and privacy
 
-- **Pending tasks:** up to 100 tasks can wait in your inbox at once. Each one is removed from the cloud as soon as Doenit adds it.
+- **Sync is required.** The API works on the copy of your tasks that Sync keeps in the cloud (Google Firebase, Johannesburg). With Sync off, the API is switched off too.
 - **Keys:** at most 10 per account. Only a hash of each key is stored.
-- **What is stored in the cloud:** only the fields you send, until the app picks them up. Personal tasks then live on your device, as all personal tasks in Doenit do.
-- **Groups:** `group_id` must be a group you are a member of; others are rejected.
+- **Groups:** `group_id` must be a group you are a member of; others are rejected. The API can read and change every task in your groups, just like you can in the app.

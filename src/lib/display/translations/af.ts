@@ -32,7 +32,7 @@ const af = {
   api_no_keys: "Jy het nog geen sleutels nie.",
   api_read_docs: "Lees die API-dokumentasie",
   api_requires_sync: "Skakel eers Sinkronisering aan om die API te gebruik.",
-  api_when_body: "Take wag in die wolk en verskyn sodra Doenit oop en aanlyn is. Niks gaan verlore as jou foon vanlyn is nie.",
+  api_when_body: "Take word dadelik in die wolk gestoor en verskyn binne sekondes op jou toestelle wat aanlyn is.",
   api_when_devices: "Persoonlike take verskyn op al jou toestelle. Groeptake bereik almal in die groep.",
   api_when_title: "Wanneer verskyn my taak?",
   appearance: "Voorkoms",

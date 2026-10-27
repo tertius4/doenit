@@ -3,13 +3,13 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { handleDeleteAccount } from "./account/delete-account";
-import { handleApi } from "./api/create-task";
+import { handleApi } from "./api";
 import { handleSendEmailInvite } from "./invites/send-email-invite";
 import { handleSendPush } from "./notifications/send-push";
 import { handleCancelSubscription } from "./subscriptions/cancel-subscription";
 import { handleVerifySubscription } from "./subscriptions/verify-subscription";
 
-/** Public API: POST /v1/tasks with a personal API key. See docs/API.md. */
+/** Public API: list, create, change and delete tasks with a personal API key. See docs/API.md. */
 export const api = onRequest(
   // invoker "public": callers authenticate with their API key, not Google IAM.
   { region: "africa-south1", memory: "256MiB", maxInstances: 2, timeoutSeconds: 10, cors: true, invoker: "public" },

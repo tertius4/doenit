@@ -34,7 +34,7 @@ const en: Record<keyof typeof af, string> = {
   api_no_keys: "You don't have any keys yet.",
   api_read_docs: "Read the API docs",
   api_requires_sync: "Turn on Sync first to use the API.",
-  api_when_body: "Tasks wait in the cloud and appear once Doenit is open and online. Nothing is lost if your phone is offline.",
+  api_when_body: "Tasks are stored in the cloud right away and appear within seconds on your devices that are online.",
   api_when_devices: "Personal tasks appear on all your devices. Group tasks reach everyone in the group.",
   api_when_title: "When will my task show up?",
   appearance: "Appearance",
