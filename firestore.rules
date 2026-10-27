@@ -33,6 +33,18 @@ service cloud.firestore {
       allow write: if isOwner(uid);
     }
 
+    // Invites to people not on Doenit yet, keyed by their lower-case e-mail. Only the sendEmailInvite function creates them.
+    // The sender can check theirs; the e-mail's owner can see who invited them and dismiss it.
+    match /email_invites/{email}/senders/{sender_uid} {
+      function isEmailOwner() {
+        return signedIn() && request.auth.token.email.lower() == email;
+      }
+
+      allow get: if isOwner(sender_uid) || isEmailOwner();
+      allow list: if isEmailOwner();
+      allow delete: if isOwner(sender_uid) || isEmailOwner();
+    }
+
     // Synced scope data (tasks, groups, members, ...). Only members of the scope may read or write it.
     match /scopes/{scope_id}/items/{item_id} {
       allow read, delete: if isScopeMember(scope_id);

@@ -9,6 +9,7 @@ import * as notifications from "./notifications";
 import * as widget from "./widget";
 import * as api_keys from "./api-keys";
 import * as clipboard from "./clipboard";
+import * as share from "./share";
 import { InboxService } from "$logic/inbox/InboxService";
 
 export default class Api {
@@ -56,6 +57,9 @@ export default class Api {
     cancel: invites.cancel,
     setContactName: invites.setContactName,
     pull: invites.pull,
+    sendEmail: invites.sendEmail,
+    fetchEmailInvites: invites.fetchEmailInvites,
+    answerEmailInvites: invites.answerEmailInvites,
   };
 
   static readonly notifications = {
@@ -78,6 +82,11 @@ export default class Api {
     list: api_keys.list,
     create: api_keys.create,
     revoke: api_keys.revoke,
+  };
+
+  static readonly share = {
+    text: share.text,
+    APP_URL: share.APP_URL,
   };
 
   static readonly clipboard = {

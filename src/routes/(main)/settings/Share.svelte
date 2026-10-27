@@ -1,32 +1,12 @@
 <script>
   import toast from "$display/toast/toast.svelte";
   import Icon from "$display/comps/Icon.svelte";
-  import { Share } from "@capacitor/share";
   import t from "$display/translate";
   import Api from "$logic/api";
 
-  const APP_URL = "https://tertius4.github.io/doenit";
-
   async function handleShare() {
-    try {
-      const can_share = await Share.canShare();
-      if (can_share.value) {
-        await Share.share({
-          title: "Doenit",
-          text: t("share_app_message"),
-          url: APP_URL,
-          dialogTitle: t("share_app"),
-        });
-        return;
-      }
-
-      const result = await Api.clipboard.copy(APP_URL, t("link_copied"));
-      if (!result.ok) toast.error(t("sharing_not_supported"));
-    } catch (error) {
-      // Dismissing the share sheet rejects on some platforms; only report real failures.
-      const message = error instanceof Error ? error.message : "";
-      if (!/cancel/i.test(message)) toast.error(t("sharing_not_supported"));
-    }
+    const result = await Api.share.text(t("share_app_message"));
+    if (!result.ok) toast.error(t("sharing_not_supported"));
   }
 </script>
 

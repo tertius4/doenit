@@ -386,6 +386,21 @@ class Firestore {
     const d = snap.docs[0];
     return { uid: d.id, email_address: d.data().email_address ?? email, name: d.data().name ?? "" };
   }
+
+  /** People who invited this e-mail address before it was on Doenit (written by the sendEmailInvite function). */
+  async fetchEmailInvites(email: string): Promise<{ uid: string; from_email: string; from_name: string }[]> {
+    const snap = await getDocs(collection(this.getDb(), "email_invites", email.toLowerCase(), "senders"));
+    return snap.docs.map((d) => ({ uid: d.id, from_email: d.data().from_email, from_name: d.data().from_name }));
+  }
+
+  async hasEmailInvite(email: string, sender_uid: string): Promise<boolean> {
+    const snap = await getDoc(doc(this.getDb(), "email_invites", email.toLowerCase(), "senders", sender_uid));
+    return snap.exists();
+  }
+
+  async deleteEmailInvite(email: string, sender_uid: string): Promise<void> {
+    await deleteDoc(doc(this.getDb(), "email_invites", email.toLowerCase(), "senders", sender_uid));
+  }
 }
 
 const firestore = new Firestore();

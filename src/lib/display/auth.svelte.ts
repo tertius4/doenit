@@ -2,6 +2,8 @@ import toast from "$display/toast/toast.svelte";
 import t, { type TranslationKey } from "$display/translate";
 import Api from "$logic/api";
 import type { SocialProvider } from "$services/social-login";
+import ModalInvitedBy from "$display/comps/modal/ModalInvitedBy.svelte";
+import { mount } from "svelte";
 
 /** Translates known error keys (e.g. "sign_in_error_no_idtoken"); anything else is shown as-is. */
 function errorMessage(error: string | undefined) {
@@ -27,7 +29,8 @@ class AuthFlow {
       this.is_loading = false;
     }
 
-    if (result.ok || result.error === "USER_CANCELED") return;
+    if (result.ok) return offerEmailInvites();
+    if (result.error === "USER_CANCELED") return;
     toast.error(t("sign_in_failed"), errorMessage(result.error));
   }
 
@@ -59,6 +62,16 @@ class AuthFlow {
 
     if (result.ok) return;
     toast.error(t("delete_account_failed"), errorMessage(result.error));
+  }
+}
+
+/** Once per sign-in: if people invited this e-mail before it was on Doenit, ask whether to connect with them. */
+async function offerEmailInvites() {
+  try {
+    const senders = await Api.invites.fetchEmailInvites();
+    if (senders.length) mount(ModalInvitedBy, { target: document.body, props: { senders } });
+  } catch (error) {
+    console.warn("[auth] could not check e-mail invites:", error);
   }
 }
 

@@ -36,6 +36,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         // Register plugins
         registerPlugin(TaskWidgetPlugin.class);
         registerPlugin(BillingPlugin.class);
+        registerPlugin(ContactPickerPlugin.class);
 
         super.onCreate(savedInstanceState);
 

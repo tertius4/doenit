@@ -1,5 +1,7 @@
 <script>
+  import { ContactPicker, can_pick_contact } from "$services/contact-picker";
   import InputText from "$display/comps/input/InputText.svelte";
+  import { context } from "$logic/context.svelte";
   import ModalHeader from "./ModalHeader.svelte";
   import Modal from "./Modal.svelte";
   import Api from "$logic/api";
@@ -22,6 +24,9 @@
   /** @type {DB.ContactInvite | null} */
   let sent_invite = $state(null);
   let contact_name = $state("");
+  /** The e-mail that is not on Doenit yet, once we know. */
+  let not_on_doenit = $state("");
+  let is_email_sent = $state(false);
 
   async function handleSend() {
     error_message = "";
@@ -41,11 +46,50 @@
     const result = await Api.invites.send(email.trim().toLowerCase()).finally(() => (is_loading = false));
 
     if (!result.ok) {
-      error_message = result.error;
+      if (result.error === "invite_error_no_user") not_on_doenit = email.trim().toLowerCase();
+      else error_message = t(result.error);
       return;
     }
 
     sent_invite = result.value;
+  }
+
+  async function handlePickContact() {
+    error_message = "";
+    try {
+      const picked = await ContactPicker.pickEmail();
+      if (!picked.email) return;
+
+      email = picked.email;
+      contact_name = picked.name ?? "";
+      await handleSend();
+    } catch (error) {
+      error_message = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  async function handleInviteToDoenit() {
+    if (is_loading) return;
+
+    error_message = "";
+    is_loading = true;
+    const result = await Api.invites.sendEmail(not_on_doenit).finally(() => (is_loading = false));
+    if (!result.ok) {
+      error_message = t(result.error);
+      return;
+    }
+
+    is_email_sent = true;
+  }
+
+  /** @param {string} [to_email] */
+  async function handleShare(to_email) {
+    const name = context.user?.name || context.user?.email_address || "";
+    const message = to_email
+      ? t("invite_share_message", { name, email: to_email })
+      : t("invite_share_message_generic", { name });
+    const result = await Api.share.text(message);
+    if (!result.ok) error_message = t("sharing_not_supported");
   }
 
   async function handleSaveName() {
@@ -65,6 +109,7 @@
 
   // Modal reads its onsubmit prop once, so branch here instead of swapping handlers.
   function handleSubmit() {
+    if (not_on_doenit) return is_email_sent ? undefined : handleInviteToDoenit();
     return sent_invite ? handleSaveName() : handleSend();
   }
 
@@ -73,6 +118,8 @@
     email = "";
     contact_name = "";
     sent_invite = null;
+    not_on_doenit = "";
+    is_email_sent = false;
   }
 </script>
 
@@ -111,8 +158,52 @@
         <span class="font-medium">{t("save")}</span>
       </button>
     </div>
+  {:else if not_on_doenit}
+    <ModalHeader>{t("invite_to_doenit")}</ModalHeader>
+    <p class="text-sm text-muted">
+      {is_email_sent ? t("email_invite_sent", { email: not_on_doenit }) : t("not_on_doenit_yet", { email: not_on_doenit })}
+    </p>
+
+    {#if error_message}
+      <p class="text-sm text-error">{error_message}</p>
+    {/if}
+
+    <div class="flex gap-2 justify-between">
+      <button
+        type="button"
+        class="px-4 py-2 rounded-md bg-card flex gap-1 items-center whitespace-nowrap"
+        onclick={() => handleShare(not_on_doenit)}
+      >
+        <Icon name="share" size={20} />
+        {is_email_sent ? t("send_message_too") : t("share_invite_link")}
+      </button>
+      {#if !is_email_sent}
+        <button
+          class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md whitespace-nowrap disabled:opacity-50"
+          type="submit"
+          disabled={is_loading}
+        >
+          <Icon name="send" size={20} />
+          <span class="font-medium">{t("invite_to_doenit")}</span>
+        </button>
+      {/if}
+    </div>
   {:else}
     <ModalHeader>{t("send_invite")}</ModalHeader>
+
+    {#if can_pick_contact}
+      <button
+        type="button"
+        class="w-full h-11 bg-card border-default border rounded-md flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50"
+        disabled={is_loading}
+        onclick={handlePickContact}
+      >
+        <Icon name="contacts" size={20} />
+        {t("pick_from_contacts")}
+      </button>
+
+      {@render divider()}
+    {/if}
 
     <InputText
       value={email}
@@ -128,17 +219,36 @@
       }}
     />
 
-    {#if error_message}
-      <p class="text-sm text-error">{error_message}</p>
-    {/if}
-
     <button
-      class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto disabled:opacity-50"
+      class="w-full h-11 bg-primary text-alt rounded-md flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50"
       type="submit"
       disabled={is_loading}
     >
       <Icon name="send" size={20} />
-      <span class="font-medium">{t("send_invite")}</span>
+      <span class="font-medium">{t("send")}</span>
+    </button>
+
+    {#if error_message}
+      <p class="text-sm text-error">{error_message}</p>
+    {/if}
+
+    {@render divider()}
+
+    <button
+      type="button"
+      class="w-full h-11 bg-card border-default border rounded-md flex items-center justify-center gap-2 whitespace-nowrap"
+      onclick={() => handleShare()}
+    >
+      <Icon name="share" size={20} />
+      {t("share_invite_link")}
     </button>
   {/if}
 </Modal>
+
+{#snippet divider()}
+  <div class="flex items-center gap-3 text-sm text-muted">
+    <hr class="flex-1 border-default" />
+    {t("or")}
+    <hr class="flex-1 border-default" />
+  </div>
+{/snippet}

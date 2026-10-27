@@ -2,6 +2,7 @@ import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
 import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
+import { NotificationService } from "$logic/notifications/NotificationService";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -27,21 +28,26 @@ function myLocalId(): string | null {
 
 export const InviteService = {
   async send(to_email: string): AsyncResult<DB.ContactInvite> {
+    if (!myFirebaseUid()) return { ok: false, error: "invite_error_not_authenticated" };
+
+    const target = await firestore.fetchUserByEmail(to_email.trim());
+    if (!target) return { ok: false, error: "invite_error_no_user" };
+    return this.sendTo(target);
+  },
+
+  /** Sends a contact invite to a user whose uid is already known. */
+  async sendTo(target: { uid: string; email_address: string }): AsyncResult<DB.ContactInvite> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
     const my_email = context.user?.email_address;
-    if (!my_uid || !my_local_id || !my_email) return { ok: false, error: "Not authenticated" };
-
-    to_email = to_email.trim();
-    const target = await firestore.fetchUserByEmail(to_email);
-    if (!target) return { ok: false, error: "No user found with that email address" };
-    if (target.uid === my_uid) return { ok: false, error: "Cannot invite yourself" };
+    if (!my_uid || !my_local_id || !my_email) return { ok: false, error: "invite_error_not_authenticated" };
+    if (target.uid === my_uid) return { ok: false, error: "invite_error_self" };
 
     const relationship_id = relationshipId(my_uid, target.uid);
 
     const existing = await DB.contact_invite.findAllByRelationshipId(relationship_id);
     if (existing.ok && existing.value.some((i) => i.status === "pending" || i.status === "accepted")) {
-      return { ok: false, error: "Invite or relationship already exists" };
+      return { ok: false, error: "invite_error_exists" };
     }
 
     const now = new Date().toISOString();
@@ -86,6 +92,7 @@ export const InviteService = {
         // A stale remote copy (older than ours, e.g. "accepted" after we removed the contact) must not be acted on.
         const is_stored = await this._store(invite);
         if (is_stored) await this._process(invite);
+        if (is_stored) await this._acceptIfEmailInvited(invite, my_uid);
       } catch (error) {
         const message = error instanceof Error ? error.message : JSON.stringify(error);
         console.error("Failed to process invite", { invite, error: message });
@@ -96,12 +103,63 @@ export const InviteService = {
   },
 
   /**
+   * Someone I invited by e-mail joined and sent me an invite: accept it on their behalf, since I asked for it.
+   * Only incoming pending invites cost a read.
+   */
+  async _acceptIfEmailInvited(invite: DB.ContactInvite, my_uid: string): Promise<void> {
+    if (invite.status !== "pending" || invite.to_firebase_uid !== my_uid) return;
+    if (!(await firestore.hasEmailInvite(invite.from_email, my_uid))) return;
+
+    const result = await this.accept(invite.id);
+    if (!result.ok) return console.warn("[InviteService] auto-accept failed:", result.error);
+
+    await firestore.deleteEmailInvite(invite.from_email, my_uid);
+    const notified = await NotificationService.createInviteAccepted(result.value);
+    if (!notified.ok) console.warn("[InviteService] failed to create notification:", notified.error);
+  },
+
+  /** People who invited my e-mail address before I joined Doenit. */
+  async fetchEmailInvites(): Promise<{ uid: string; from_email: string; from_name: string }[]> {
+    const my_email = context.user?.email_address;
+    if (!my_email) return [];
+    return firestore.fetchEmailInvites(my_email);
+  },
+
+  /**
+   * Answers the e-mail invites. Accepting sends each inviter a normal invite, which their device accepts on its own
+   * (see _acceptIfEmailInvited) and then clears; declining clears them here.
+   */
+  async answerEmailInvites(senders: { uid: string; from_email: string }[], accept: boolean): AsyncResult {
+    const my_email = context.user?.email_address;
+    if (!my_email) return { ok: false, error: "invite_error_not_authenticated" };
+
+    for (const sender of senders) {
+      if (!accept) {
+        await firestore.deleteEmailInvite(my_email, sender.uid);
+        continue;
+      }
+
+      const result = await this.sendTo({ uid: sender.uid, email_address: sender.from_email });
+      if (result.ok) {
+        const notified = await NotificationService.createInviteReceived(result.value);
+        if (!notified.ok) console.warn("[InviteService] failed to create notification:", notified.error);
+      } else if (result.error === "invite_error_exists") {
+        // Already connected or invited some other way.
+        await firestore.deleteEmailInvite(my_email, sender.uid);
+      } else {
+        return result;
+      }
+    }
+    return { ok: true };
+  },
+
+  /**
    * Ends an accepted relationship (e.g. when a contact is removed) by cancelling its invite in both inboxes,
    * so the two users can invite each other again.
    */
   async endRelationship(relationship_id: string): AsyncResult {
     const my_uid = myFirebaseUid();
-    if (!my_uid) return { ok: false, error: "Not authenticated" };
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
 
     const result = await DB.contact_invite.findAllByRelationshipId(relationship_id);
     if (!result.ok) return result;
@@ -148,7 +206,7 @@ export const InviteService = {
   async accept(invite_id: string): AsyncResult<DB.ContactInvite> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
-    if (!my_uid || !my_local_id) return { ok: false, error: "Not authenticated" };
+    if (!my_uid || !my_local_id) return { ok: false, error: "invite_error_not_authenticated" };
 
     const result = await DB.contact_invite.findById(invite_id);
     if (!result.ok || !result.value) return { ok: false, error: "Invite not found" };
@@ -173,7 +231,7 @@ export const InviteService = {
 
   async reject(invite_id: string): AsyncResult {
     const my_uid = myFirebaseUid();
-    if (!my_uid) return { ok: false, error: "Not authenticated" };
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
 
     const result = await DB.contact_invite.findById(invite_id);
     if (!result.ok || !result.value) return { ok: false, error: "Invite not found" };
@@ -193,10 +251,10 @@ export const InviteService = {
 
   async cancel(invite_id: string): AsyncResult {
     const my_uid = myFirebaseUid();
-    if (!my_uid) return { ok: false, error: "Not authenticated" };
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
 
     const my_local_id = myLocalId();
-    if (!my_local_id) return { ok: false, error: "Not authenticated" };
+    if (!my_local_id) return { ok: false, error: "invite_error_not_authenticated" };
 
     const result = await DB.contact_invite.findById(invite_id);
     if (!result.ok || !result.value) return { ok: false, error: "Invite not found" };

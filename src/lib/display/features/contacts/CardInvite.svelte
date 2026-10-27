@@ -28,7 +28,7 @@
     else result = await Api.invites.cancel(id);
 
     is_loading = false;
-    if (!result.ok) toast.error(result.error);
+    if (!result.ok) toast.error(t(result.error));
   }
 
   const status_label = {

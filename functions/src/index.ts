@@ -1,8 +1,10 @@
 import * as functions from "firebase-functions";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import { handleDeleteAccount } from "./account/delete-account";
 import { handleApi } from "./api/create-task";
+import { handleSendEmailInvite } from "./invites/send-email-invite";
 import { handleSendPush } from "./notifications/send-push";
 import { handleCancelSubscription } from "./subscriptions/cancel-subscription";
 import { handleVerifySubscription } from "./subscriptions/verify-subscription";
@@ -18,6 +20,22 @@ export const api = onRequest(
 export const deleteAccount = onRequest(
   { region: "africa-south1", memory: "256MiB", maxInstances: 1, timeoutSeconds: 30, cors: true, invoker: "public" },
   handleDeleteAccount,
+);
+
+const RESEND_API_KEY = defineSecret("RESEND_API_KEY");
+
+/** E-mails an invite to someone who is not on Doenit yet. The caller is authenticated by their Firebase ID token. */
+export const sendEmailInvite = onRequest(
+  {
+    region: "africa-south1",
+    memory: "256MiB",
+    maxInstances: 1,
+    timeoutSeconds: 15,
+    cors: true,
+    invoker: "public",
+    secrets: [RESEND_API_KEY],
+  },
+  (req, res) => handleSendEmailInvite(req, res, RESEND_API_KEY.value()),
 );
 
 /** Delivers a push for every new inbox notification (users/{uid}/notifications/{id}). */
