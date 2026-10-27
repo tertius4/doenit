@@ -25,7 +25,7 @@ export class PullProcessor {
           const { docs, cursor } = await firestore.fetch(scope_id, sync_cursors[key]);
 
           for (const remote of docs) {
-            await mergeEngine.apply(remote);
+            await mergeEngine.apply(remote, scope_id);
           }
 
           return [key, cursor] as const;

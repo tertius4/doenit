@@ -23,6 +23,23 @@ export async function writeItem(scope_id: string, item: { id: string } & Record<
   await itemsOf(scope_id).doc(item.id).set({ ...item, synced_at: FieldValue.serverTimestamp() });
 }
 
+/** Not merged per field; mirrors META_FIELDS in the app (src/lib/domain/sync/field-times.ts). */
+const META_FIELDS = new Set(["id", "created_at", "updated_at", "version", "device_id", "owner_id", "field_times"]);
+
+/**
+ * Stamps a change the way the app does: every field that differs from `before` gets `now` in field_times, so the
+ * app merges it per field with changes made on a device at the same time. Also bumps the version.
+ */
+export function stampChange<T extends Record<string, any>>(before: T, after: T): T {
+  const now = new Date().toISOString();
+  const field_times: Record<string, string> = { ...(before.field_times ?? {}) };
+  for (const key of Object.keys(after)) {
+    if (META_FIELDS.has(key)) continue;
+    if (JSON.stringify(before[key] ?? null) !== JSON.stringify(after[key] ?? null)) field_times[key] = now;
+  }
+  return { ...after, field_times, version: (before.version ?? 0) + 1, updated_at: now, device_id: API_DEVICE_ID };
+}
+
 /** Category id → name for the scope's live categories. */
 export async function categoryNames(scope_id: string): Promise<Map<string, string>> {
   const snap = await itemsOf(scope_id).where("collection", "==", "category").get();

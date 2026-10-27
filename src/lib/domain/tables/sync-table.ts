@@ -4,6 +4,7 @@ import { context } from "$logic/context.svelte";
 import { err } from "$lib";
 import { SyncQueue } from "$domain/sync/SyncQueue";
 import { PERSONAL_TABLES, personalScope } from "$domain/sync/personal";
+import { stampChanges } from "$domain/sync/field-times";
 
 export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
   constructor(collection: RxCollection<T & DB.MetaDataShared>) {
@@ -96,9 +97,11 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
       if (!doc) return err(`[Table] Cannot update: document with id "${id}" not found`) as Result<T & DB.MetaDataShared>;
 
       const currentDoc = doc.toJSON() as T & DB.MetaDataShared;
+      const now = new Date().toISOString();
       const result = await super.update(id, {
         ...changes,
-        updated_at: new Date().toISOString(),
+        ...this.fieldTimes(currentDoc, changes, now),
+        updated_at: now,
         version: currentDoc.version + 1,
       } as Partial<T & DB.MetaDataShared>);
       if (!result.ok) return result;
@@ -134,6 +137,7 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
         docs.map((doc) =>
           doc.incrementalModify((data: any) => ({
             ...data,
+            ...this.fieldTimes(data, { soft_deleted: true }, date),
             soft_deleted: true,
             updated_at: date,
             version: (data.version ?? 0) + 1,
@@ -175,6 +179,12 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
       scope_id,
       op: doc.soft_deleted ? "delete" : "upsert",
     });
+  }
+
+  /** `{ field_times }` with the fields this write changes stamped, for collections that merge per field (see field-times.ts). */
+  private fieldTimes(before: Record<string, any>, changes: Record<string, any>, now: string) {
+    if (!("field_times" in this.collection.schema.jsonSchema.properties)) return {};
+    return { field_times: stampChanges(before, { ...before, ...changes }, now) };
   }
 
   /** The scope a write is pushed to: its own, or the personal scope while device sync is on. Null means local only. */

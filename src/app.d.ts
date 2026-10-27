@@ -171,6 +171,11 @@ declare global {
       soft_deleted?: boolean;
     }
 
+    /** Documents merged per field: when each field last changed (see sync/field-times.ts). */
+    interface FieldTimes {
+      field_times?: Record<string, string>;
+    }
+
     interface MetaDataPrivate {
       id: string;
 
@@ -180,9 +185,9 @@ declare global {
       owner_id: string;
     }
 
-    type Group = DB.MetaDataShared & Domain.Group;
-    type Task = DB.MetaDataShared & Domain.Task;
-    type Category = DB.MetaDataShared & Domain.Category;
+    type Group = DB.MetaDataShared & DB.FieldTimes & Domain.Group;
+    type Task = DB.MetaDataShared & DB.FieldTimes & Domain.Task;
+    type Category = DB.MetaDataShared & DB.FieldTimes & Domain.Category;
 
     // Join table between Group and Contact
     type Member = DB.MetaDataShared & Domain.Member;

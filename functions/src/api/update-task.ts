@@ -1,5 +1,6 @@
 import { type Result } from "../shared/result";
-import { type Access, API_DEVICE_ID, categoryNames, findTask, resolveCategory, writeItem } from "./store";
+import { deepClone } from "../shared/clone";
+import { type Access, categoryNames, findTask, resolveCategory, stampChange, writeItem } from "./store";
 import { type PublicTask, markDone, parseTask, toPublicTask, toTaskBody } from "./task-fields";
 
 /**
@@ -17,7 +18,8 @@ export async function updateTask(access: Access, id: string, body: unknown): Pro
 
   const found = await findTask(access, id);
   if (!found) return { ok: false, error: "Task not found", status_code: 404 };
-  const { task, scope_id } = found;
+  const { scope_id } = found;
+  const task = deepClone(found.task);
 
   const names = await categoryNames(scope_id);
   const current = toPublicTask(task, names);
@@ -38,8 +40,8 @@ export async function updateTask(access: Access, id: string, body: unknown): Pro
   if (completed === true && !task.archived) markDone(task);
   if (completed === false && task.archived) Object.assign(task, { completed: 0, archived: false, completed_at: null });
 
-  Object.assign(task, { version: (task.version ?? 0) + 1, updated_at: new Date().toISOString(), device_id: API_DEVICE_ID });
-  await writeItem(scope_id, task);
+  const stamped = stampChange(found.task, task);
+  await writeItem(scope_id, stamped);
 
-  return { ok: true, value: toPublicTask(task, names) };
+  return { ok: true, value: toPublicTask(stamped, names) };
 }

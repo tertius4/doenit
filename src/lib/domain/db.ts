@@ -180,9 +180,15 @@ async function initDB() {
       schema: schema.task,
       migrationStrategies: {
         1: (doc) => ({ ...doc, assigned_firebase_uid: doc.assigned_user_id ?? null }),
+        // Version 2 adds the optional field_times: documents are unchanged.
+        2: (doc) => doc,
       },
     },
-    category: { schema: schema.category },
+    // Version 1 adds the optional field_times: documents are unchanged.
+    category: {
+      schema: schema.category,
+      migrationStrategies: { 1: (doc) => doc },
+    },
     session: { schema: schema.session },
     app_state: {
       schema: schema.app_state,
@@ -201,7 +207,11 @@ async function initDB() {
     contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
     // Version 1 only widens the type enum: documents are unchanged.
     notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
-    group: { schema: schema.group },
+    // Version 1 adds the optional field_times: documents are unchanged.
+    group: {
+      schema: schema.group,
+      migrationStrategies: { 1: (doc) => doc },
+    },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },
   });

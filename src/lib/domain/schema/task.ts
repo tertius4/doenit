@@ -2,7 +2,7 @@ import type { RxJsonSchema } from "rxdb";
 
 export const task: RxJsonSchema<DB.Task> = {
   title: "task",
-  version: 1,
+  version: 2,
   description: "describes a task",
   type: "object",
   required: ["id", "name", "archived", "created_at", "updated_at"],
@@ -34,5 +34,7 @@ export const task: RxJsonSchema<DB.Task> = {
       description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker",
     },
     scope_id: { type: ["string", "null"] },
+    /** When each field last changed, for merging copies per field (see sync/field-times.ts). */
+    field_times: { type: "object" },
   },
 };

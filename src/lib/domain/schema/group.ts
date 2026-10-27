@@ -4,7 +4,7 @@ export const group: RxJsonSchema<DB.Group> = {
   primaryKey: "id",
   required: [],
   type: "object",
-  version: 0,
+  version: 1,
   title: "group",
   description: "All the groups in the system",
   properties: {
@@ -19,6 +19,8 @@ export const group: RxJsonSchema<DB.Group> = {
       description: " The device_id is for conflict resolution. device_id > device_id; Final tie-breaker",
     },
     scope_id: { type: ["string", "null"] },
+    /** When each field last changed, for merging copies per field (see sync/field-times.ts). */
+    field_times: { type: "object" },
 
     name: { type: "string" },
     description: { type: "string" },
