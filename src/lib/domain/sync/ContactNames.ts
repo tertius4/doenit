@@ -6,6 +6,7 @@
 
 import DB from "$domain/db";
 import firestore from "$services/firestore";
+import { context } from "$logic/context.svelte";
 
 /** The synced names as last seen, and the user they belong to. Empty and null while personal sync is off. */
 let names: Record<string, string | null> = {};
@@ -43,7 +44,7 @@ export const ContactNames = {
 
   /** Uploads the name of every named contact, e.g. when personal sync was just turned on. */
   async uploadAll(firebase_uid: string): Promise<void> {
-    const contacts = await DB.contact.findMany();
+    const contacts = await DB.contact.findMany({ selector: { user_id: context.user?.id } });
     if (!contacts.ok) return;
 
     const named = contacts.value.filter((contact) => contact.name);
@@ -58,7 +59,7 @@ export const ContactNames = {
 
 /** Gives the local contacts their synced names. */
 async function apply(): Promise<void> {
-  const contacts = await DB.contact.findMany();
+  const contacts = await DB.contact.findMany({ selector: { user_id: context.user?.id } });
   if (!contacts.ok) return;
 
   for (const contact of contacts.value) {

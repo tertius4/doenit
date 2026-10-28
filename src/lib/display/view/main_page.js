@@ -3,6 +3,7 @@ import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
 import { compareTasks, getGroup, isDoNowTask } from "$lib";
+import { visible$ } from "./visible";
 
 /**
  *
@@ -24,7 +25,7 @@ export function taskList(list) {
  * @returns {Promise<import("rxjs").Observable<AL.MainPageTask[]>>}
  */
 async function subscribeTaskList() {
-  const tasks$ = DB.task.subscribe$({
+  const tasks$ = visible$(DB.task, {
     selector: {
       archived: { $eq: false },
       soft_deleted: { $ne: true },

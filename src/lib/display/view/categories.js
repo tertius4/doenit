@@ -2,6 +2,7 @@ import t from "$display/translate";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
 import { map, Subscription, Observable, combineLatest } from "rxjs";
+import { visible$ } from "./visible";
 
 /**
  * @param {AL.CategoryListItem[]} list
@@ -38,8 +39,8 @@ export function listAssignTask(list) {
  * @returns {Promise<Observable<AL.CategoryListItem[]>>}
  */
 async function subscribeCategoryList() {
-  const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
-  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
+  const categories$ = visible$(DB.category, { sort: [{ name: "asc" }] });
+  const tasks$ = visible$(DB.task, { selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 
   return combineLatest([categories$, tasks$]).pipe(
     map(([cats, tasks]) => {
@@ -74,8 +75,8 @@ async function subscribeCategoryList() {
 }
 
 export async function subscribeHotbarCategoryList() {
-  const categories$ = DB.category.subscribe$({ sort: [{ name: "asc" }] });
-  const tasks$ = DB.task.subscribe$({ selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
+  const categories$ = visible$(DB.category, { sort: [{ name: "asc" }] });
+  const tasks$ = visible$(DB.task, { selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 
   return combineLatest([categories$, tasks$]).pipe(
     map(([cats, tasks]) => {

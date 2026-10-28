@@ -1,6 +1,8 @@
 import DB from "$domain/db";
 import { SyncQueue } from "./SyncQueue";
 import { mergeFields } from "./field-times";
+import { isPersonalScope } from "./personal";
+import { context } from "$logic/context.svelte";
 
 class MergeEngine {
   /** Applies a pulled document. `scope_id` is the scope it was pulled from (a personal document keeps scope_id null). */
@@ -20,6 +22,9 @@ class MergeEngine {
     if (!local) {
       // Nothing to delete locally, so don't materialise a tombstone for a doc this device never saw.
       if (known.soft_deleted) return;
+
+      // A personal document is this user's here, whatever local id the device that made it uses.
+      if (isPersonalScope(scope_id) && context.user) known.owner_id = context.user.id;
 
       const result = await collection.createRaw(known);
       if (!result.ok) console.warn(`[MergeEngine] Could not store ${remote.collection}:${remote.id}:`, result.error);

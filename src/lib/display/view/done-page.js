@@ -1,6 +1,7 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
+import { visible$ } from "./visible";
 
 /**
  * @param {AL.DonePageTask[]} list
@@ -21,7 +22,7 @@ export function taskList(list) {
  * @returns {Promise<import("rxjs").Observable<AL.DonePageTask[]>>}
  */
 async function subscribeTaskList() {
-  const tasks$ = DB.task.subscribe$({
+  const tasks$ = visible$(DB.task, {
     selector: { $or: [{ archived: { $eq: true } }, { completed: { $gt: 0 } }], soft_deleted: { $ne: true } },
     sort: [{ completed_at: "desc" }],
   });

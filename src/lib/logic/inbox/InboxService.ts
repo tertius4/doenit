@@ -7,6 +7,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
+import { visibleSelector } from "$logic/visibility";
 import * as task_api from "$logic/api/task";
 import * as category_api from "$logic/api/categories";
 
@@ -69,7 +70,9 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
 
 /** Finds a category by name (ignoring case) or creates it. */
 async function resolveCategory(name: string): Promise<string | undefined> {
-  const categories = await DB.category.findMany({ selector: { soft_deleted: { $ne: true } } });
+  const categories = await DB.category.findMany({
+    selector: { $and: [{ soft_deleted: { $ne: true } }, visibleSelector(context.user?.id, context.active_scopes)] },
+  });
   if (!categories.ok) throw new Error(categories.error);
 
   const wanted = name.trim().toLowerCase();

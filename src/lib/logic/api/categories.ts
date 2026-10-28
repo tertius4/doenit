@@ -2,6 +2,7 @@ import t from "$lib/display/translate";
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
+import { visibleSelector } from "$logic/visibility";
 
 export const mapTasksCountToCategories = apiLogger(mapTasksCountToCategoriesHandler);
 export const save = apiLogger(saveCategoryHandler);
@@ -11,7 +12,9 @@ export const getCategoryById = apiLogger(getCategoryByIdHandler);
 export const assignTasks = apiLogger(assignTasksHandler);
 
 async function mapTasksCountToCategoriesHandler(): Promise<Map<DB.Category["id"], number>> {
-  const tasks_result = await DB.task.findMany();
+  const tasks_result = await DB.task.findMany({
+    selector: visibleSelector(context.user?.id, context.active_scopes),
+  });
   if (!tasks_result.ok) throw new Error(tasks_result.error);
   const tasks = tasks_result.value;
 

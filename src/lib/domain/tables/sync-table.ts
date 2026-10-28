@@ -192,7 +192,7 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
     if (doc.scope_id) return doc.scope_id;
 
     const uid = context.user?.firebase_uid;
-    if (!uid || !PERSONAL_TABLES.includes(this.collection.name)) return null;
+    if (!uid || doc.owner_id !== context.user?.id || !PERSONAL_TABLES.includes(this.collection.name)) return null;
 
     const scope_id = personalScope(uid);
     return context.active_scopes.includes(scope_id) ? scope_id : null;

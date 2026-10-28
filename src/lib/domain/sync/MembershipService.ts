@@ -3,6 +3,7 @@ import DB from "$domain/db";
 import { SyncQueue } from "./SyncQueue";
 import { isPersonalScope, PERSONAL_TABLES, personalScope } from "./personal";
 import { ContactNames } from "./ContactNames";
+import { context } from "$logic/context.svelte";
 
 export const MembershipService = {
   /**
@@ -46,7 +47,7 @@ export const MembershipService = {
       if (!table) continue;
 
       const docs = await table.collection.find({ selector: { soft_deleted: { $ne: true } } } as any).exec();
-      const personal = docs.filter((doc: any) => !doc.scope_id);
+      const personal = docs.filter((doc: any) => !doc.scope_id && doc.owner_id === context.user?.id);
       if (!personal.length) continue;
 
       await SyncQueue.enqueueMany(

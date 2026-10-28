@@ -15,6 +15,8 @@ import firestore from "$services/firestore";
 import t from "$display/translate";
 import { PushService } from "$logic/notifications/PushService";
 import scopeManager from "$domain/sync/ScopeManager";
+import { isPersonalScope } from "$domain/sync/personal";
+import { releasePersonalData } from "$domain/sync/ownership";
 import * as env from "$env/static/public";
 
 export const signIn = apiLogger(signInHandler);
@@ -196,6 +198,17 @@ async function signOutHandler(): AsyncResult {
   // Bounded: an offline device must not keep the user waiting on sign-out.
   await Promise.race([PushService.unregister(), new Promise((resolve) => setTimeout(resolve, 3000))]);
 
+  // The next sign-in then sees Sync as newly on and uploads everything this user owns, including tasks made signed out.
+  const user_id = context.user?.id;
+  if (user_id) {
+    const scopes = await scopeManager.getUserScopes();
+    await DB.user_state.upsert({
+      id: user_id,
+      user_id,
+      active_scopes: scopes.filter((id) => !isPersonalScope(id)),
+    });
+  }
+
   return clearSession();
 }
 
@@ -221,6 +234,8 @@ async function deleteAccountHandler(): AsyncResult {
 
   // Groups that never got a scope (no members or tasks yet) are not covered by the purge above.
   await DB.group.collection.find({ selector: { owner_id: user.id } }).remove();
+  // Personal tasks and categories stay on the device, now as signed-out tasks.
+  await releasePersonalData(user.id);
   await DB.user_state.remove(user.id);
   await DB.user.remove(user.id);
 

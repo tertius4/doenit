@@ -4,6 +4,7 @@ import DB from "$lib/domain/db";
 import scopeManager from "$lib/domain/sync/ScopeManager";
 import { MembershipService } from "$lib/domain/sync/MembershipService";
 import { ContactNames } from "$lib/domain/sync/ContactNames";
+import { claimPersonalData } from "$lib/domain/sync/ownership";
 import { Subscription, distinctUntilChanged, map } from "rxjs";
 import Api from "$logic/api";
 import { applyLanguage } from "$display/language.svelte";
@@ -290,6 +291,11 @@ export async function initApp(user_id?: string | null) {
   const user_result = resolved_user_id ? await DB.user.findById(resolved_user_id) : null;
   const firebase_uid = user_result?.ok ? (user_result.value?.firebase_uid ?? null) : null;
   context.user = user_result?.ok ? (user_result.value as DB.User | null) : null;
+
+  // Tasks made signed out, and ones that arrived with another device's owner id, become this user's.
+  if (context.user) {
+    await claimPersonalData(context.user.id).catch((err) => console.warn("[initApp] claiming personal data failed:", err));
+  }
 
   subscribeForUser(resolved_user_id);
 
