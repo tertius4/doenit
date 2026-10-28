@@ -12,6 +12,10 @@ const config = {
     experimental: {
       remoteFunctions: true,
     },
+    // Registered by hand on the web only (src/lib/services/platform.ts): the phone apps must never serve a cached build.
+    serviceWorker: {
+      register: false,
+    },
     alias: {
       $logic: "./src/lib/logic",
       $display: "./src/lib/display",

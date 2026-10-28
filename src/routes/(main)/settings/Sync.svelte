@@ -6,7 +6,7 @@
   import Api from "$logic/api";
   import { context } from "$logic/context.svelte";
   import { mount, unmount } from "svelte";
-  import ModalPersonalSync from "./comps/ModalPersonalSync.svelte";
+  import ModalPersonalSync from "$display/comps/modal/ModalPersonalSync.svelte";
 
   const enabled = $derived(Api.personal_sync.isEnabled());
 

@@ -1,8 +1,10 @@
 import { PUBLIC_GOOGLE_AUTH } from "$env/static/public";
 import * as env from "$env/static/public";
+import { is_web } from "$services/platform";
 
 export const config = {
-  photos_enabled: true,
+  /** Photos live on the phone's file system, so they are not offered on the web. */
+  photos_enabled: !is_web,
   google_web_client_id: PUBLIC_GOOGLE_AUTH,
   /** iOS OAuth client. The Google plugin cannot sign in on iOS without it. */
   google_ios_client_id: env.PUBLIC_GOOGLE_AUTH_IOS,

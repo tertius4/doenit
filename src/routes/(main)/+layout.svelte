@@ -19,11 +19,15 @@
   import { Theme } from "$services/theme";
   import Api from "$logic/api";
   import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
+  import WebGate from "$display/features/web/WebGate.svelte";
+  import { is_web, registerServiceWorker } from "$services/platform";
 
   const { children, data } = $props();
 
   let show_migration_notice = $state(false);
   let is_ready = $state(false);
+  /** On the web the app only opens signed in with Sync on (see WebGate). */
+  const is_gated = $derived(is_web && is_ready && (!context.user || !Api.personal_sync.isEnabled()));
 
   const search_text = $state({ value: "" });
   setContext("search_text", search_text);
@@ -52,6 +56,7 @@
   });
 
   onMount(() => installHardwareBack(() => t("press_again_to_exit")));
+  onMount(registerServiceWorker);
 
   afterNavigate((navigation) => navHistory.record(navigation));
 
@@ -107,25 +112,29 @@
   });
 </script>
 
-<main
-  class="h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
->
-  <Heading />
+{#if is_gated}
+  <WebGate />
+{:else}
+  <main
+    class="h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
+  >
+    <Heading />
 
-  <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
-    {#await data.ready}
-      <div class="h-full flex items-center justify-center">
-        <Icon name="loading" class="animate-spin text-2xl" />
-      </div>
-    {:then ok}
-      {#if ok}
-        {@render children()}
-      {/if}
-    {/await}
-  </div>
+    <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
+      {#await data.ready}
+        <div class="h-full flex items-center justify-center">
+          <Icon name="loading" class="animate-spin text-2xl" />
+        </div>
+      {:then ok}
+        {#if ok}
+          {@render children()}
+        {/if}
+      {/await}
+    </div>
 
-  <Footer />
-</main>
+    <Footer />
+  </main>
+{/if}
 
 {#if show_migration_notice}
   <div transition:fade class="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center p-4 select-none">

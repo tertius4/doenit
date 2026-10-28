@@ -48,7 +48,10 @@ class SocialLoginService {
     try {
       const { result } = await SocialLogin.login({
         provider: "google",
-        options: { scopes: ["email", "profile"] },
+        options: {
+          scopes: ["email", "profile"],
+          prompt: "select_account",
+        },
       });
 
       if (result.responseType !== "online") {
