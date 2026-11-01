@@ -20,7 +20,9 @@
   import Api from "$logic/api";
   import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
   import WebGate from "$display/features/web/WebGate.svelte";
+  import UpdateBanner from "$display/features/update/UpdateBanner.svelte";
   import { is_web, registerServiceWorker } from "$services/platform";
+  import versionGate from "$services/version-gate.svelte";
 
   const { children, data } = $props();
 
@@ -121,6 +123,10 @@
     <Heading />
 
     <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
+      {#if versionGate.outdated}
+        <UpdateBanner />
+      {/if}
+
       {#await data.ready}
         <div class="h-full flex items-center justify-center">
           <Icon name="loading" class="animate-spin text-2xl" />

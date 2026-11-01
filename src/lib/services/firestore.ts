@@ -134,6 +134,13 @@ class Firestore {
     return auth.currentUser?.uid ?? null;
   }
 
+  /** The oldest app version that may still sync (config/app, changed by hand), or null when none is set. */
+  async fetchMinVersion(): Promise<string | null> {
+    const snap = await getDoc(doc(this.getDb(), "config", "app"));
+    const min_version = snap.data()?.min_version;
+    return typeof min_version === "string" ? min_version : null;
+  }
+
   /** Fetches a scope's items written after the `since` cursor, or all of them without one. */
   async fetch(scope_id: string, since?: string): Promise<Pulled<RemoteDoc>> {
     const db = this.getDb();

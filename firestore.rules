@@ -25,6 +25,11 @@ service cloud.firestore {
         && get(membershipsPath(request.auth.uid)).data.get('scopes', []).hasAny([scope_id]);
     }
 
+    // Read by the app on start, signed in or not, to stop old versions syncing. Changed by hand in the Firebase console.
+    match /config/app {
+      allow read: if true;
+    }
+
     // Public profile used to find a user by e-mail when sending a contact invite.
     // A single profile can be fetched; listing is limited to small e-mail lookups (no scraping of all users).
     match /user_profiles/{uid} {

@@ -1,4 +1,5 @@
 import firestore from "$services/firestore";
+import versionGate from "$services/version-gate.svelte";
 import { PullProcessor } from "./PullProcessor";
 import { PushProcessor } from "./PushProcessor";
 
@@ -44,6 +45,8 @@ class SyncEngine {
 
     this.running = true;
     try {
+      if (await versionGate.isOutdated()) return;
+
       do {
         this.dirty = false;
         await PushProcessor.run();
