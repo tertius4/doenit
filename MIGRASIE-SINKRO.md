@@ -8,7 +8,8 @@ klaar: `docs/sinkro-inventaris.md`. Hierdie weergawe verwerk Tertius se besluite
 - Werk net op die tak `sinko-db-migrasie`. Moenie commit of push nie: Tertius doen dit self.
 - Moet nooit `.env*` of `functions/service-account-key.json` lees, oopmaak of na hulle verwys nie.
 - Moet nooit na produksie-Firestore skryf, reëls of funksies ontplooi (`firebase deploy`) of die app vrystel nie.
-  Alles wat data raak, loop eers teen die Firestore-emulator.
+  **Alles gebeur eers op die dev-weergawe** (die emulator of die app se dev-opstelling). Produksie kom eers ná die
+  hele migrasie op dev werk, en net op Tertius se woord.
 - Hou die kode netjies en leesbaar. Nooit twee of meer ternaries in een reël nie. Vermy `$effect()` waar dit sin maak.
 - Stop en vra by elke punt hieronder wat met **Vra vir Tertius** gemerk is.
 - Antwoord in Afrikaans.
@@ -24,9 +25,10 @@ Doenit is 'n Svelte 5 + Capacitor-taaklys-app met RxDB as plaaslike databasis en
 
 ## Besluite (afdeling 10 van die inventaris)
 
-- **Verpligte opgradering, met 'n weergawe-hek wat nog gebou moet word (B9).** Doenit het nog geen `latest` nie. 'n
-  Hek werk net vir weergawes wat dit reeds het, so die hek kom eers uit in 'n eie vrystelling (stap 0), voor die
-  migrasie. Ou apps sonder die hek hou net op sinkroniseer; hulle verloor niks plaaslik nie.
+- **Verpligte opgradering (B9), maar die weergawe-hek word nog nie vrygestel nie.** Die hek-kode is gebou en bly
+  op die tak; of en wanneer dit vrygestel word, besluit Tertius eers voor die produksie-uitrol. Ou apps sonder die
+  hek hou net op sinkroniseer; hulle verloor niks plaaslik nie, en stap 6 bring hul ongestuurde veranderinge in
+  wanneer hulle wel opgradeer.
 - **Net `task`, `category`, `group` en `member` is `synced` (B4).** `contact`, `contact_invite` en `notification`
   word `local`-tabelle en hou hul eie sinkro-kode, want hulle pas nie in `scopes` nie. Gebruiksdata kom later as
   `push-only`.
@@ -79,11 +81,10 @@ ingetekende gebruikers, net die veld `t`, `t == request.time`). Sonder die klok-
 
 ## Stappe
 
-### 0. Weergawe-hek (eie vrystelling, voor alles anders)
+### 0. Weergawe-hek: gebou, uitgestel
 
-'n Klein dokument in Firestore (bv. `config/app` met `min_version`) wat die app by opstart lees. Onder die minimum
-weier die app om te sinkroniseer en vra die gebruiker om op te gradeer. Hierdie vrystelling bevat niks anders nie.
-**Vra vir Tertius** waar die dokument moet leef en hoe die boodskap moet lyk.
+Die hek (`config/app` met `min_version`, `version-gate.svelte.ts`, `UpdateBanner.svelte`) is klaar en bly op die tak.
+Dit word nie nou vrygestel nie. Werk voort met stap 2; die vrystelling van die hek kom by stap 9 aan die orde.
 
 ### 1. Inventaris: klaar
 
@@ -109,7 +110,7 @@ weier die app om te sinkroniseer en vra die gebruiker om op te gradeer. Hierdie 
 RxDB `selector` word `where`; `$regex` en dies meer gaan na `filter`. Lewende navrae met `liveQuery` uit
 `@tertius4/sinkro-db/svelte`. Verwyder RxDB en `src/lib/domain/sync/` wanneer niks meer daarna verwys nie.
 
-### 5. Omskakelskrip (net teen die emulator)
+### 5. Omskakelskrip (net teen die emulator en dev)
 
 `scripts/migreer-na-sinkro.ts` met die Admin SDK, `--dry-run` as verstek, veilig om twee keer te loop. Vir elke
 dokument onder `scopes/*/items` wat nog nie `field_hlc` het nie:
@@ -123,8 +124,9 @@ dokument onder `scopes/*/items` wat nog nie `field_hlc` het nie:
 - `hlc` = die grootste stempel, `_v: 1`, `synced_at: serverTimestamp()`. `field_times` bly staan.
 - 'n Opsomming per tabel, plus 'n lys dokumente wat die skrip nie kon omskakel nie.
 
-Toets teen 'n kopie van die data in die emulator (Tertius doen die uitvoer self), dan die nuwe app daarteen.
-**Vra vir Tertius** voor die skrip ooit teen iets anders as die emulator loop.
+Toets eers teen 'n kopie van die data in die emulator (Tertius doen die uitvoer self), dan teen dev, en die nuwe
+dev-app daarteen. **Vra vir Tertius** voor die skrip teen dev loop; produksie is buite hierdie
+fase.
 
 ### 6. Eerste begin van die nuwe app
 
@@ -137,7 +139,7 @@ die bediener reeds het, kry `{ pending: false }`; ongestuurde veranderinge nie. 
 
 Die API en `delete-account` skryf met `serverInsert`, `serverUpdate` en `serverRemove`, in 'n transaksie wat die
 huidige dokument lees en `_v + 1` en `synced_at` byvoeg (voorbeeld in `docs/api.md` van die pakket). Toets teen die
-emulator. Ontplooi saam met die reëls (stap 9).
+emulator, dan op dev saam met die reëls (net ná Tertius se ja). Produksie volg by stap 9.
 
 ### 8. Toetse
 
@@ -147,7 +149,8 @@ self op Android en iOS: aflyn, aanlyn, Sync aan en af, inteken, twee toestelle, 
 
 ### 9. Uitrol (net Tertius)
 
-Skryf net 'n kontrolelys in `docs/sinkro-uitrol.md`: hek-vrystelling (stap 0) en wag; minimum weergawe verhoog;
+Skryf net 'n kontrolelys in `docs/sinkro-uitrol.md`: alles werk op dev; besluit oor die hek-vrystelling (stap 0)
+en wag vir aanvaarding; minimum weergawe verhoog;
 produksie uitvoer as rugsteun; skrip; reëls en funksies ontplooi; app vrystel; later `field_times` verwyder.
 
 ## Wanneer klaar
