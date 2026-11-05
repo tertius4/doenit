@@ -7,6 +7,8 @@
   import t from "$display/translate";
   import Api from "$logic/api";
   import { page } from "$app/state";
+  import DateUtil from "$display/date-util";
+  import { context } from "$logic/context.svelte";
 
   const { data } = $props();
 
@@ -54,6 +56,14 @@
     navHistory.back(redirect_to);
     return { ok: true };
   }
+
+  /**
+   * @param {string} timestamp
+   */
+  function formatDate(timestamp) {
+    const locale = context.settings.language == "en" ? "en-GB" : "af-ZA";
+    return DateUtil.format(timestamp, "D MMM YYYY, HH:mm", { locale });
+  }
 </script>
 
 <ButtonDelete
@@ -70,5 +80,10 @@
     <div class="font-bold text-left my-auto w-full">{t("complete")}</div>
 
     <InputCheckbox onchange={handleSelectTask} checked={!!archived} class="my-auto" />
+  </div>
+
+  <div class="ml-auto w-fit mt-4 text-xs text-muted space-y-0.5">
+    <p class="w-fit">{t("created_at")}: {formatDate(task.created_at)}</p>
+    <p class="w-fit">{t("updated_at")}: {formatDate(task.updated_at)}</p>
   </div>
 </div>
