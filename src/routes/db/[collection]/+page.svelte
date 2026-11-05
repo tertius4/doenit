@@ -15,7 +15,7 @@
    */
   async function handleDelete(record) {
     if (confirm("Are you sure you want to delete this record?")) {
-      DB.getCollection(data.collection)?.remove(record.id);
+      DB.getCollection(data.collection).remove(record.id);
     }
   }
 </script>
