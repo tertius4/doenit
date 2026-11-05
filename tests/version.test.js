@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { isOlderVersion } from "../src/lib/logic/version.ts";
 
 test("a lower version is older, part by part", () => {
-  assert.equal(isOlderVersion("2.0.6", "2.1.0"), true);
+  assert.equal(isOlderVersion("2.0.7", "2.1.0"), true);
   assert.equal(isOlderVersion("1.9.9", "2.0.0"), true);
   assert.equal(isOlderVersion("2.0.9", "2.0.10"), true);
 });

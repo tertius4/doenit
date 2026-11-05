@@ -1,4 +1,4 @@
-/** True when `version` (e.g. "2.0.6") is older than `minimum`, part by part. An unreadable version counts as not older. */
+/** True when `version` (e.g. "2.0.7") is older than `minimum`, part by part. An unreadable version counts as not older. */
 export function isOlderVersion(version: string, minimum: string): boolean {
   const parts = version.split(".").map(Number);
   const minimum_parts = minimum.split(".").map(Number);
