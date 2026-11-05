@@ -1,242 +1,145 @@
-import { addRxPlugin, createRxDatabase } from "rxdb";
-import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
-import { RxDBUpdatePlugin } from "rxdb/plugins/update";
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
-import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv";
-
-import * as schema from "./schema";
+import { createSinkroDB } from "@tertius4/sinkro-db";
+import { dexieStorage } from "@tertius4/sinkro-db/dexie";
+import { firestoreBackend } from "@tertius4/sinkro-db/firestore";
+import { toStore } from "svelte/store";
+import { context } from "$logic/context.svelte";
+import firestore from "$services/firestore";
+import versionGate from "$services/version-gate.svelte";
+import { tables as definitions } from "./sinkro/tables";
 import * as tables from "./tables";
-import * as env from "$env/static/public";
 
-type tables =
-  | tables.task
-  | tables.category
-  | tables.user
-  | tables.settings
-  // | tables.session
-  // | tables.app_state
-  // | tables.user_state
-  | tables.contact
-  | tables.contact_invite
-  | tables.notification
-  | tables.group
-  | tables.member
-  | tables.sync_queue;
+/** Requires firestore.init() to have been called. */
+function openSinkroDB() {
+  return createSinkroDB({
+    name: "doenit-sinkro",
+    tables: definitions,
+    storage: dexieStorage(),
+    backend: firestoreBackend({
+      firestore: firestore.getDb(),
+      layout: {
+        docs: (channel) => `scopes/${channel}/items`,
+        docId: (_table, id) => id,
+        time: () => "sinkro_time",
+        fields: { table: "collection", syncedAt: "synced_at", version: "_v" },
+      },
+    }),
+    // `personal_{uid}` while Sync is on, plus the user's groups. Leaving a channel out keeps its data.
+    channels: toStore(() => context.active_scopes),
+    onPushRejected: (item, error) => console.warn(`[sinkro] ${item.table} ${item.docId} refused:`, error),
+    onChannelRemoved: (channel, unsent) => {
+      if (unsent.length) console.warn(`[sinkro] ${channel} left with ${unsent.length} unsent changes`);
+    },
+    context: () => ({ userId: context.user?.firebase_uid ?? null }),
+    warnings: import.meta.env.DEV,
+  });
+}
 
 class DBClass {
-  private is_initialized = false;
-
-  private _category: tables.category | undefined;
-  private _user: tables.user | undefined;
-  private _task: tables.task | undefined;
-  private _settings: tables.settings | undefined;
-  private _session: tables.session | undefined;
-  private _app_state: tables.app_state | undefined;
-  private _user_state: tables.user_state | undefined;
-  private _contact: tables.contact | undefined;
-  private _contact_invite: tables.contact_invite | undefined;
-  private _notification: tables.notification | undefined;
-  private _group: tables.group | undefined;
-  private _member: tables.member | undefined;
-  private _sync_queue: tables.sync_queue | undefined;
+  private db: Awaited<ReturnType<typeof openSinkroDB>> | undefined;
+  private _tables: ReturnType<typeof wrap> | undefined;
 
   async init() {
-    if (this.is_initialized) return;
+    if (this.db) return;
 
-    const db = await initDB();
+    this.db = await openSinkroDB();
+    this._tables = wrap(this.db);
 
-    this._task = new tables.task(db.collections.task);
-    this._category = new tables.category(db.collections.category);
-    this._user = new tables.user(db.collections.user);
-    this._settings = new tables.settings(db.collections.settings);
-    this._session = new tables.session(db.collections.session);
-    this._app_state = new tables.app_state(db.collections.app_state);
-    this._user_state = new tables.user_state(db.collections.user_state);
-    this._contact = new tables.contact(db.collections.contact);
-    this._contact_invite = new tables.contact_invite(db.collections.contact_invite);
-    this._notification = new tables.notification(db.collections.notification);
-    this._group = new tables.group(db.collections.group);
-    this._member = new tables.member(db.collections.member);
-    this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
-    this.is_initialized = true;
+    // Old apps must not sync: nothing leaves this device until the gate says this version may.
+    const { sync } = this.db;
+    sync.pause();
+    versionGate.isOutdated().then((outdated) => {
+      if (!outdated) sync.resume();
+    });
   }
 
-  private get _collectionMap(): Record<string, any> {
-    return {
-      task: this._task,
-      category: this._category,
-      user: this._user,
-      settings: this._settings,
-      contact: this._contact,
-      contact_invite: this._contact_invite,
-      notification: this._notification,
-      group: this._group,
-      member: this._member,
-      sync_queue: this._sync_queue,
-    };
+  private get all() {
+    if (!this._tables) throw new Error("DB not initialized");
+    return this._tables;
+  }
+
+  get sync() {
+    if (!this.db) throw new Error("DB not initialized");
+    return this.db.sync;
   }
 
   get collectionNames(): string[] {
-    return Object.keys(this._collectionMap);
+    return Object.keys(this.all);
   }
 
-  getCollection<T extends tables>(name: T["collection"]["name"]): T | undefined {
-    return this._collectionMap[name];
+  getCollection(name: string) {
+    return this.all[name as keyof ReturnType<typeof wrap>];
   }
 
   get task() {
-    if (!this._task) throw new Error("DB not initialized");
-    return this._task;
+    return this.all.task;
   }
 
   get category() {
-    if (!this._category) throw new Error("DB not initialized");
-    return this._category;
-  }
-
-  get user() {
-    if (!this._user) throw new Error("DB not initialized");
-    return this._user;
-  }
-
-  get settings() {
-    if (!this._settings) throw new Error("DB not initialized");
-    return this._settings;
-  }
-
-  get session() {
-    if (!this._session) throw new Error("DB not initialized");
-    return this._session;
-  }
-
-  get app_state() {
-    if (!this._app_state) throw new Error("DB not initialized");
-    return this._app_state;
-  }
-
-  get user_state() {
-    if (!this._user_state) throw new Error("DB not initialized");
-    return this._user_state;
-  }
-
-  get contact() {
-    if (!this._contact) throw new Error("DB not initialized");
-    return this._contact;
-  }
-
-  get contact_invite() {
-    if (!this._contact_invite) throw new Error("DB not initialized");
-    return this._contact_invite;
-  }
-
-  get notification() {
-    if (!this._notification) throw new Error("DB not initialized");
-    return this._notification;
+    return this.all.category;
   }
 
   get group() {
-    if (!this._group) throw new Error("DB not initialized");
-    return this._group;
+    return this.all.group;
   }
 
   get member() {
-    if (!this._member) throw new Error("DB not initialized");
-    return this._member;
+    return this.all.member;
   }
 
-  get sync_queue() {
-    if (!this._sync_queue) throw new Error("DB not initialized");
-    return this._sync_queue;
+  get user() {
+    return this.all.user;
   }
+
+  get settings() {
+    return this.all.settings;
+  }
+
+  get session() {
+    return this.all.session;
+  }
+
+  get app_state() {
+    return this.all.app_state;
+  }
+
+  get user_state() {
+    return this.all.user_state;
+  }
+
+  get contact() {
+    return this.all.contact;
+  }
+
+  get contact_invite() {
+    return this.all.contact_invite;
+  }
+
+  get notification() {
+    return this.all.notification;
+  }
+
+  get membership_queue() {
+    return this.all.membership_queue;
+  }
+}
+
+function wrap(db: Awaited<ReturnType<typeof openSinkroDB>>) {
+  return {
+    task: new tables.task(db.task),
+    category: new tables.category(db.category),
+    group: new tables.SyncTable<DB.Group>(db.group),
+    member: new tables.SyncTable<DB.Member>(db.member),
+    user: new tables.LocalTable<DB.User>(db.user),
+    settings: new tables.settings(db.settings),
+    session: new tables.session(db.session),
+    app_state: new tables.app_state(db.app_state),
+    user_state: new tables.user_state(db.user_state),
+    contact: new tables.contact(db.contact),
+    contact_invite: new tables.contact_invite(db.contact_invite),
+    notification: new tables.notification(db.notification),
+    membership_queue: new tables.LocalTable<DB.MembershipOrder>(db.membership_queue),
+  };
 }
 
 const DB = new DBClass();
 export default DB;
-
-async function initDB() {
-  addRxPlugin(RxDBMigrationSchemaPlugin);
-  addRxPlugin(RxDBUpdatePlugin);
-  if (env.PUBLIC_ENVIRONMENT === "development") {
-    const { RxDBDevModePlugin } = await import("rxdb/plugins/dev-mode");
-    addRxPlugin(RxDBDevModePlugin);
-  }
-
-  // TODO XXX: Migrate tasks and categories from "doenitDb".
-  const DB = await createRxDatabase({
-    name: "doenit-db",
-    multiInstance: false,
-    storage: wrappedValidateAjvStorage({
-      storage: getRxStorageDexie({
-        allowEmptyDB: true,
-      }),
-    }),
-  });
-
-  const collections = await DB.addCollections({
-    user: { schema: schema.user },
-    // Version 1 adds the optional push_notifications_enabled: documents are unchanged.
-    settings: { schema: schema.settings, migrationStrategies: { 1: (doc) => doc } },
-    task: {
-      schema: schema.task,
-      migrationStrategies: {
-        1: (doc) => ({ ...doc, assigned_firebase_uid: doc.assigned_user_id ?? null }),
-        // Version 2 adds the optional field_times: documents are unchanged.
-        2: (doc) => doc,
-      },
-    },
-    // Version 1 adds the optional field_times: documents are unchanged.
-    category: {
-      schema: schema.category,
-      migrationStrategies: { 1: (doc) => doc },
-    },
-    session: { schema: schema.session },
-    app_state: {
-      schema: schema.app_state,
-      migrationStrategies: {
-        1: (doc) => ({ ...doc, migration_1_complete: false }),
-        // Version 2 adds the optional home_mode: documents are unchanged.
-        2: (doc) => doc,
-      },
-    },
-    // Version 1 adds the optional fcm_token fields and version 2 the optional home_mode: documents are unchanged.
-    user_state: { schema: schema.user_state, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
-
-    // Version 1 only adds indexes: documents are unchanged.
-    contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
-    // Version 2 adds the optional local-only contact_name: documents are unchanged.
-    contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
-    // Version 1 only widens the type enum: documents are unchanged.
-    notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
-    // Version 1 adds the optional field_times: documents are unchanged.
-    group: {
-      schema: schema.group,
-      migrationStrategies: { 1: (doc) => doc },
-    },
-    member: { schema: schema.member },
-    sync_queue: { schema: schema.sync_queue },
-  });
-
-  for (const name of [
-    "settings",
-    "category",
-    "task",
-    "user",
-    "contact",
-    "contact_invite",
-    "notification",
-    "group",
-    "member",
-    "user_state",
-    "app_state",
-  ] as const) {
-    const col = collections[name] as any;
-    const needed = await col.migrationNeeded();
-    if (needed) {
-      console.log(`${name} migration needed - starting migration`);
-      await col.migratePromise(1000);
-      console.log(`${name} migration completed`);
-    }
-  }
-
-  return DB;
-}

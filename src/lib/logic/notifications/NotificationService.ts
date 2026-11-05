@@ -6,7 +6,7 @@
 
 import firestore from "$services/firestore";
 import DB from "$domain/db";
-import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
+import { cursorKey, patchSyncCursors } from "$logic/sync/cursors";
 import { context } from "$logic/context.svelte";
 
 type CreateNotificationInput = {

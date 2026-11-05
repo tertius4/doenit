@@ -7,7 +7,7 @@
   import t from "$display/translate";
   import { waitAtLeast } from "$lib";
   import View from "$display/view";
-  import { onMount } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import Api from "$logic/api";
 
   /**
@@ -22,10 +22,9 @@
   let is_adding = $state(false);
   /** @type {string | undefined} */
   let category_id = $state(undefined);
-  /** @type {AL.CategoryListItem[]} */
-  let categories = $state([]);
+  const categories_query = $derived(liveQuery(() => View.categories.categoryList(), []));
+  const categories = $derived(categories_query.current ?? []);
 
-  onMount(View.categories.categoryList(categories));
 
   /**
    * Select a category

@@ -7,7 +7,7 @@
   import { Capacitor } from "@capacitor/core";
   import { setContext, onMount, mount, untrack } from "svelte";
   import "../../app.css";
-  import syncEngine from "$domain/sync/SyncEngine";
+  import { MembershipQueue } from "$logic/sync/MembershipQueue";
   import DB from "$domain/db";
   import t from "$display/translate";
   import Icon from "$display/comps/Icon.svelte";
@@ -62,9 +62,9 @@
 
   afterNavigate((navigation) => navHistory.record(navigation));
 
-  // The initial sync is flushed by initApp; only react to later changes here.
+  // Data syncs on its own; membership orders wait for a connection.
   onMount(() => {
-    const onOnline = () => syncEngine.requestTick();
+    const onOnline = () => MembershipQueue.flush();
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   });
@@ -79,7 +79,7 @@
         show_migration_notice = true;
         await runMigration();
 
-        const update_result = await DB.app_state.update({ migration_1_complete: true });
+        const update_result = await DB.app_state.patch({ migration_1_complete: true });
         if (!update_result.ok) throw new Error(update_result.error);
 
         show_migration_notice = false;
@@ -89,18 +89,6 @@
         show_migration_notice = false;
       }
     });
-  });
-
-  // (Re)attach realtime listeners whenever the active scopes change (membership sync, join/leave, sign-in).
-  let realtime_started = false;
-  $effect(() => {
-    if (!is_ready) return;
-
-    const scopes = [...(context.user_state.active_scopes ?? [])];
-    const stop = syncEngine.startRealtimeSync(scopes);
-    if (realtime_started) syncEngine.requestTick();
-    realtime_started = true;
-    return stop;
   });
 
   $effect(() => {

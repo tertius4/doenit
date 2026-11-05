@@ -1,73 +1,56 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
-import { map, combineLatest } from "rxjs";
+import { combineLive } from "./live";
 import { context } from "$logic/context.svelte";
 import t from "$lib/display/translate";
 import { getGroup } from "$lib";
 
 /**
- * Fills `list` with a group's open tasks. Returns the unsubscribe function, so it can be returned from `onMount`.
  * @param {string} group_id
- * @param {AL.MainPageTask[]} list
- * @returns {() => void}
+ * @returns {import("@tertius4/sinkro-db").Live<AL.MainPageTask[]>}
  */
-export function taskList(group_id, list) {
-  const subscription = subscribeGroupTaskList(group_id).subscribe((data) => list.splice(0, list.length, ...data));
-  return () => subscription.unsubscribe();
-}
+export function taskList(group_id) {
+  const tasks = DB.task.live({ where: { scope_id: group_id, archived: { $ne: true } }, sort: ["due_date"] });
+  const members = DB.member.live({ where: { scope_id: group_id } });
+  const contacts = DB.contact.live({ where: { user_id: context.user?.id ?? null } });
 
-/**
- * @param {string} group_id
- * @returns {import("rxjs").Observable<AL.MainPageTask[]>}
- */
-function subscribeGroupTaskList(group_id) {
-  const tasks$ = DB.task.subscribe$({
-    selector: { scope_id: group_id, archived: { $ne: true }, soft_deleted: { $ne: true } },
-    sort: [{ due_date: "asc" }],
+  return combineLive([tasks, DB.category.live(), members, contacts], (tasks, categories, members, contacts) => {
+    /** @type {Map<string, DB.Category>} */
+    const category_map = new Map(categories.map((c) => [c.id, c]));
+    /** @type {Map<string, string>} */
+    const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
+    const today = new Date();
+
+    tasks.sort((a, b) => {
+      const group_diff = getGroup(a) - getGroup(b);
+      if (group_diff !== 0) return group_diff;
+
+      const my_uid = context.user?.firebase_uid;
+      // Mine first, then others, then unassigned
+      const is_mine_a = a.assigned_firebase_uid === my_uid;
+      const is_other_a = a.assigned_firebase_uid && a.assigned_firebase_uid !== my_uid;
+      const a_rank = is_mine_a ? 0 : is_other_a ? 1 : 2;
+
+      const is_mine_b = b.assigned_firebase_uid === my_uid;
+      const is_other_b = b.assigned_firebase_uid && b.assigned_firebase_uid !== my_uid;
+      const b_rank = is_mine_b ? 0 : is_other_b ? 1 : 2;
+
+      if (a_rank !== b_rank) return a_rank - b_rank;
+
+      // Belangrike take eerste binne groep
+      if (a.important !== b.important) {
+        return a.important ? -1 : 1;
+      }
+
+      // Daarna op datum
+      const a_date = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
+      const b_date = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
+
+      return a_date.getTime() - b_date.getTime();
+    });
+
+    return tasks.map((task) => formatTask(task, category_map, contact_map, today));
   });
-  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
-  const members$ = DB.member.subscribe$({ selector: { scope_id: group_id, soft_deleted: { $ne: true } } });
-  const contacts$ = DB.contact.subscribe$({ selector: { user_id: context.user?.id } });
-
-  return combineLatest([tasks$, categories$, members$, contacts$]).pipe(
-    map(([tasks, categories, members, contacts]) => {
-      /** @type {Map<string, DB.Category>} */
-      const category_map = new Map(categories.map((c) => [c.id, c]));
-      /** @type {Map<string, string>} */
-      const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
-      const today = new Date();
-
-      tasks.sort((a, b) => {
-        const group_diff = getGroup(a) - getGroup(b);
-        if (group_diff !== 0) return group_diff;
-
-        const my_uid = context.user?.firebase_uid;
-        // Mine first, then others, then unassigned
-        const is_mine_a = a.assigned_firebase_uid === my_uid;
-        const is_other_a = a.assigned_firebase_uid && a.assigned_firebase_uid !== my_uid;
-        const a_rank = is_mine_a ? 0 : is_other_a ? 1 : 2;
-
-        const is_mine_b = b.assigned_firebase_uid === my_uid;
-        const is_other_b = b.assigned_firebase_uid && b.assigned_firebase_uid !== my_uid;
-        const b_rank = is_mine_b ? 0 : is_other_b ? 1 : 2;
-
-        if (a_rank !== b_rank) return a_rank - b_rank;
-
-        // Belangrike take eerste binne groep
-        if (a.important !== b.important) {
-          return a.important ? -1 : 1;
-        }
-
-        // Daarna op datum
-        const a_date = DateUtil.endOfDay(a.due_date) ?? DateUtil.startOfDay(a.start_date) ?? new Date(0);
-        const b_date = DateUtil.endOfDay(b.due_date) ?? DateUtil.startOfDay(b.start_date) ?? new Date(0);
-
-        return a_date.getTime() - b_date.getTime();
-      });
-
-      return tasks.map((task) => formatTask(task, category_map, contact_map, today));
-    }),
-  );
 }
 
 /**

@@ -1,6 +1,6 @@
 import DB from "$domain/db";
 import firestore from "$services/firestore";
-import { cursorKey, removeSyncCursor } from "./cursors";
+import { isPersonalScope } from "$domain/sinkro/tables";
 
 class ScopeManager {
   /**
@@ -63,25 +63,13 @@ class ScopeManager {
   }
 
   /**
-   * Deletes the local copies of a scope's data (tasks, categories, groups, members and queued pushes) after the
-   * user lost access to it. Writes straight to the collections, so nothing is queued for sync. Also drops the scope's
-   * pull cursor, so re-joining later pulls everything again instead of only what changed since leaving.
+   * Deletes the local copies of a group's data after the user lost access to it. Personal data stays on the device:
+   * leaving the personal scope only means Sync went off.
    */
   async purgeLocalScope(scope_id: string): Promise<void> {
-    const names = ["task", "category", "group", "member", "sync_queue"] as const;
-    await Promise.all(
-      names.map(async (name) => {
-        const table = DB.getCollection(name);
-        if (!table) return;
+    if (isPersonalScope(scope_id)) return;
 
-        await table.collection.find({ selector: { scope_id } } as any).remove();
-      }),
-    );
-
-    const session_result = await DB.session.get();
-    if (session_result.ok && session_result.value.user_id) {
-      await removeSyncCursor(session_result.value.user_id, cursorKey(scope_id), scope_id);
-    }
+    await DB.sync.forgetChannel(scope_id);
   }
 
   async getUserScopes(): Promise<string[]> {

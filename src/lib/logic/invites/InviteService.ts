@@ -1,9 +1,9 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
+import { cursorKey, patchSyncCursors } from "$logic/sync/cursors";
 import { NotificationService } from "$logic/notifications/NotificationService";
-import { ContactNames } from "$domain/sync/ContactNames";
+import { ContactNames } from "$logic/sync/ContactNames";
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -114,8 +114,8 @@ export const InviteService = {
     if (!my_uid || !my_local_id) return;
 
     const [invites, contacts] = await Promise.all([
-      DB.contact_invite.findMany({ selector: { status: "accepted" } }),
-      DB.contact.findMany({ selector: { user_id: my_local_id } }),
+      DB.contact_invite.findMany({ where: { status: "accepted" } }),
+      DB.contact.findMany({ where: { user_id: my_local_id } }),
     ]);
     if (!invites.ok || !contacts.ok) return;
 
@@ -222,7 +222,9 @@ export const InviteService = {
     const result = await DB.contact_invite.findById(invite_id);
     if (!result.ok || !result.value) return { ok: false, error: "Invite not found" };
 
-    const saved = await DB.contact_invite.upsert({ ...result.value, contact_name: name.trim() || null });
+    // A copy only replaces an older one, so this one must be newer. Remote copies of this time are then ignored too.
+    const updated_at = new Date(Date.parse(result.value.updated_at) + 1).toISOString();
+    const saved = await DB.contact_invite.upsert({ ...result.value, contact_name: name.trim() || null, updated_at });
     console.log("[InviteService] saved contact name", { invite_id, name, saved });
     if (!saved.ok) return saved;
     return { ok: true };

@@ -57,7 +57,7 @@ async function setHomeModeHandler(mode: HomeMode): AsyncResult {
 
   const result = context.user
     ? await DB.user_state.update(context.user.id, { home_mode: mode })
-    : await DB.app_state.update({ home_mode: mode });
+    : await DB.app_state.patch({ home_mode: mode });
 
   return result.ok ? { ok: true } : result;
 }

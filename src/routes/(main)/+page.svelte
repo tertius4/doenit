@@ -9,6 +9,7 @@
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import View from "$display/view";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import { filterTasks } from "$lib";
   import Api from "$logic/api";
   import { fade } from "svelte/transition";
@@ -21,8 +22,8 @@
 
   const search_text = getContext("search_text");
 
-  /** @type {AL.MainPageTask[]} */
-  let all_tasks = $state([]);
+  const tasks_query = $derived(liveQuery(() => View.main_page.taskList(), []));
+  const all_tasks = $derived(tasks_query.current ?? []);
 
   const filtered_tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
   const do_now_count = $derived(filtered_tasks.filter((task) => task.is_do_now).length);
@@ -32,7 +33,6 @@
 
   const show_empty = useDelayedEmpty(() => tasks.length);
 
-  onMount(View.main_page.taskList(all_tasks));
 
   /**
    * Handles long press on a task to toggle its selection state.

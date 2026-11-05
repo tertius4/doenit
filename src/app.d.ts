@@ -62,6 +62,7 @@ declare global {
     interface Group {
       name: string;
       description?: string;
+      owner_id?: string; // firebase_uid of the owner
     }
 
     interface Member {
@@ -70,15 +71,12 @@ declare global {
       role: "admin" | "member";
     }
 
-    interface SyncQueueItem {
-      table_name: string;
+    /** An order to add a user (entity_id, a firebase_uid) to a scope, or to remove them. */
+    interface MembershipOrder {
       entity_id: string;
       scope_id: string;
 
       op: "upsert" | "delete";
-
-      attempts: number;
-      last_attempt_at?: number;
     }
 
     interface Contact {
@@ -129,7 +127,8 @@ declare global {
     // Device info and app usage stats - not user specific.
     interface AppState {
       id: "current";
-      device_id: string;
+      source_device: string;
+      last_firebase_uid?: string;
       last_opened_at: string;
       open_count: number;
       migration_1_complete?: boolean;
@@ -162,18 +161,10 @@ declare global {
       created_at: string;
       updated_at: string;
 
-      version: number;
-      device_id: string;
+      channel: string;
+      deleted: boolean;
 
-      owner_id: string;
       scope_id: string | null; // Will be same as group_id.
-
-      soft_deleted?: boolean;
-    }
-
-    /** Documents merged per field: when each field last changed (see sync/field-times.ts). */
-    interface FieldTimes {
-      field_times?: Record<string, string>;
     }
 
     interface MetaDataPrivate {
@@ -182,12 +173,12 @@ declare global {
       created_at: string;
       updated_at: string;
 
-      owner_id: string;
+      owner_id?: string;
     }
 
-    type Group = DB.MetaDataShared & DB.FieldTimes & Domain.Group;
-    type Task = DB.MetaDataShared & DB.FieldTimes & Domain.Task;
-    type Category = DB.MetaDataShared & DB.FieldTimes & Domain.Category;
+    type Group = DB.MetaDataShared & Domain.Group;
+    type Task = DB.MetaDataShared & Domain.Task;
+    type Category = DB.MetaDataShared & Domain.Category;
 
     // Join table between Group and Contact
     type Member = DB.MetaDataShared & Domain.Member;
@@ -216,10 +207,10 @@ declare global {
       updated_at: string;
     }
     // Basic User info - could be the device (before any logins).
-    type User = DB.MetaDataShared & Domain.User;
+    type User = DB.MetaDataPrivate & Domain.User;
     // User preferences - could be the device (before any logins).
     type Settings = DB.MetaDataPrivate & Domain.Settings;
-    type SyncQueueItem = DB.MetaDataPrivate & Domain.SyncQueueItem;
+    type MembershipOrder = DB.MetaDataPrivate & Domain.MembershipOrder;
   }
 
   type HomeMode = 'all' | 'now';

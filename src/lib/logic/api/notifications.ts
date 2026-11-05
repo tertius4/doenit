@@ -1,5 +1,5 @@
 import { apiLogger } from "$lib";
-import { visibleSelector } from "$logic/visibility";
+import { visibleWhere } from "$logic/visibility";
 import { NotificationService } from "$logic/notifications/NotificationService";
 import { PushService } from "$logic/notifications/PushService";
 import { NotificationRouter } from "$logic/notifications/NotificationRouter";
@@ -105,16 +105,11 @@ async function rebuildSchedule() {
   let notifications: AL.Notification[] = [];
   if (present_time || past_time) {
     const tasks = await DB.task.findMany({
-      selector: {
-        $and: [
-          {
-            assigned_firebase_uid: { $in: [context.user?.firebase_uid ?? null, null] },
-            soft_deleted: { $ne: true },
-            archived: { $ne: true },
-            $or: [{ completed: { $eq: 0 } }, { repeat_interval: { $exists: true } }],
-          },
-          visibleSelector(context.user?.id, context.active_scopes),
-        ],
+      where: {
+        ...visibleWhere(context.user?.firebase_uid, context.active_scopes),
+        assigned_firebase_uid: { $in: [context.user?.firebase_uid ?? null, null] },
+        archived: { $ne: true },
+        $or: [{ completed: { $eq: 0 } }, { repeat_interval: { $exists: true } }],
       },
     });
 

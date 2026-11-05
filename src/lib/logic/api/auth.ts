@@ -14,9 +14,9 @@ import { doc, setDoc } from "$lib/logic/chunk/firebase-firestore";
 import firestore from "$services/firestore";
 import t from "$display/translate";
 import { PushService } from "$logic/notifications/PushService";
-import scopeManager from "$domain/sync/ScopeManager";
-import { isPersonalScope } from "$domain/sync/personal";
-import { releasePersonalData } from "$domain/sync/ownership";
+import scopeManager from "$logic/sync/ScopeManager";
+import { MembershipQueue } from "$logic/sync/MembershipQueue";
+import { releasePersonalData } from "$logic/sync/ownership";
 import * as env from "$env/static/public";
 
 export const signIn = apiLogger(signInHandler);
@@ -153,7 +153,7 @@ async function saveSignedInUser(
   profile: AL.SocialUserProfile,
   firebase_uid: string,
 ): AsyncResult<{ id: string; name: string; email_address: string }> {
-  const user_result = await DB.user.findOne({ selector: { firebase_uid } });
+  const user_result = await DB.user.findOne({ where: { firebase_uid } });
   if (!user_result.ok) return user_result;
 
   let user = user_result.value;
@@ -161,7 +161,7 @@ async function saveSignedInUser(
   // A row created before firebase_uid was stored is still keyed on google_id; without this
   // fallback the lookup above misses it and a duplicate local user is created.
   if (!user && profile.id) {
-    const legacy_result = await DB.user.findOne({ selector: { google_id: profile.id } });
+    const legacy_result = await DB.user.findOne({ where: { google_id: profile.id } });
     if (!legacy_result.ok) return legacy_result;
     user = legacy_result.value;
   }
@@ -174,7 +174,7 @@ async function saveSignedInUser(
 
   if (!user) {
     // `google_id` is the pre-existing column for the provider subject; Apple reuses it
-    // rather than forcing an RxDB schema version bump for a second id field.
+    // rather than adding a second id field.
     const create_result = await DB.user.create({ google_id: profile.id, ...details });
     if (!create_result.ok) return create_result;
     user = create_result.value;
@@ -187,7 +187,7 @@ async function saveSignedInUser(
     if (!update_result.ok) return update_result;
   }
 
-  const session_result = await DB.session.update({ user_id: user.id });
+  const session_result = await DB.session.setUser(user.id);
   if (!session_result.ok) return session_result;
 
   return { ok: true, value: { id: user.id, name: details.name, email_address: details.email_address } };
@@ -195,19 +195,12 @@ async function saveSignedInUser(
 
 async function signOutHandler(): AsyncResult {
   // While still signed in: the token must be removed so the next user of this device never gets these pushes.
+  // Unsent changes go now too: if another account signs in next, they can't go later.
   // Bounded: an offline device must not keep the user waiting on sign-out.
-  await Promise.race([PushService.unregister(), new Promise((resolve) => setTimeout(resolve, 3000))]);
-
-  // The next sign-in then sees Sync as newly on and uploads everything this user owns, including tasks made signed out.
-  const user_id = context.user?.id;
-  if (user_id) {
-    const scopes = await scopeManager.getUserScopes();
-    await DB.user_state.upsert({
-      id: user_id,
-      user_id,
-      active_scopes: scopes.filter((id) => !isPersonalScope(id)),
-    });
-  }
+  await Promise.race([
+    Promise.all([PushService.unregister(), MembershipQueue.flush().then(() => DB.sync.flush())]),
+    wait(3000),
+  ]);
 
   return clearSession();
 }
@@ -227,15 +220,16 @@ async function deleteAccountHandler(): AsyncResult {
   const result: Result = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
   if (!result.ok) return result;
 
-  // Before the user_state row goes: purging reads the scope list and cursors from it.
+  // Before the user_state row goes: it holds the scope list.
   for (const scope_id of await scopeManager.getUserScopes()) {
     await scopeManager.purgeLocalScope(scope_id);
   }
 
   // Groups that never got a scope (no members or tasks yet) are not covered by the purge above.
-  await DB.group.collection.find({ selector: { owner_id: user.id } }).remove();
+  const groups = await DB.group.findMany({ where: { owner_id: user.firebase_uid ?? null }, includeDeleted: true });
+  for (const group of groups.ok ? groups.value : []) await DB.group.purge(group.id);
   // Personal tasks and categories stay on the device, now as signed-out tasks.
-  await releasePersonalData(user.id);
+  if (user.firebase_uid) await releasePersonalData(user.firebase_uid);
   await DB.user_state.remove(user.id);
   await DB.user.remove(user.id);
 
@@ -255,7 +249,7 @@ async function clearSession(): AsyncResult {
     console.warn("[auth] Firebase sign-out failed:", e);
   }
 
-  const session_result = await DB.session.update({ user_id: null });
+  const session_result = await DB.session.setUser(null);
   if (!session_result.ok) return session_result;
 
   await initApp(null);

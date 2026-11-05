@@ -1,14 +1,14 @@
 import { App } from "@capacitor/app";
 import { Device } from "@capacitor/device";
 import DB from "$lib/domain/db";
-import scopeManager from "$lib/domain/sync/ScopeManager";
-import { MembershipService } from "$lib/domain/sync/MembershipService";
-import { ContactNames } from "$lib/domain/sync/ContactNames";
-import { claimPersonalData } from "$lib/domain/sync/ownership";
-import { Subscription, distinctUntilChanged, map } from "rxjs";
+import scopeManager from "$logic/sync/ScopeManager";
+import { MembershipService } from "$logic/sync/MembershipService";
+import { MembershipQueue } from "$logic/sync/MembershipQueue";
+import { ContactNames } from "$logic/sync/ContactNames";
+import { claimLocalData, forgetPreviousUser } from "$logic/sync/ownership";
+import { combineLive } from "$display/view/live";
 import Api from "$logic/api";
 import { applyLanguage } from "$display/language.svelte";
-import syncEngine from "$domain/sync/SyncEngine";
 import firestore from "$services/firestore";
 import { wait } from "$lib";
 
@@ -20,6 +20,8 @@ class ContextClass {
   _settings: DB.Settings | null = $state(null);
   private _app_state: DB.AppState | null = $state(null);
   private _user_state: DB.UserState | null = $state(null);
+  /** A string, so whatever reads the scopes only reruns when the list changes, not on every user_state write. */
+  private _active_scopes = $derived((this._user_state?.active_scopes ?? []).join(","));
 
   get user() {
     return this._user;
@@ -46,7 +48,7 @@ class ContextClass {
 
   /** The signed-in user's synced scopes; empty while signed out or before the user state has loaded. */
   get active_scopes(): string[] {
-    return this._user_state?.active_scopes ?? [];
+    return this._active_scopes ? this._active_scopes.split(",") : [];
   }
 
   get app_state(): DB.AppState {
@@ -70,17 +72,17 @@ class ContextClass {
 
 export const context = $state(new ContextClass());
 
-let _user_subscriptions: Subscription | null = null;
+let _user_subscriptions: (() => void)[] = [];
 let _scope_unsubscribe: (() => void) | null = null;
 let _invite_unsubscribe: (() => void) | null = null;
 let _notification_unsubscribe: (() => void) | null = null;
 let _inbox_unsubscribe: (() => void) | null = null;
 let _scope_generation = 0;
-let _app_subscriptions = new Subscription();
+let _app_subscriptions: (() => void)[] = [];
 
 function subscribeForUser(user_id: string | null) {
-  _user_subscriptions?.unsubscribe();
-  _user_subscriptions = new Subscription();
+  _user_subscriptions.forEach((stop) => stop());
+  _user_subscriptions = [];
 
   _scope_generation++;
   _scope_unsubscribe?.();
@@ -153,44 +155,39 @@ function subscribeForUser(user_id: string | null) {
       })
       .catch((err) => console.warn("[context] watchUserInboxTasks failed:", err));
 
-    _user_subscriptions.add(
-      DB.user.subscribeOne$(user_id).subscribe((user) => {
-        context.user = user;
+    _user_subscriptions.push(
+      DB.user.liveOne(user_id).subscribe((user) => {
+        context.user = user ?? null;
       }),
     );
   } else {
     context.user = null;
   }
 
-  _user_subscriptions.add(
-    DB.settings.subscribeOne$(user_id || "device").subscribe((settings) => {
-      context.settings = settings;
-      applyLanguage(settings?.language);
+  const settings = DB.settings.liveOne(user_id || "device");
+  _user_subscriptions.push(
+    settings.subscribe((value) => {
+      context.settings = value ?? null;
+      applyLanguage(value?.language);
     }),
   );
 
   // Reminders depend on the settings and on who is signed in (emits on subscribe, so also on sign-in / sign-out).
-  _user_subscriptions.add(
-    DB.settings
-      .subscribeOne$(user_id || "device")
-      .pipe(
-        map((settings) => JSON.stringify(notificationSettings(settings))),
-        distinctUntilChanged(),
-      )
-      .subscribe(() => {
-        Api.notifications.schedule();
-        Api.notifications.syncPush();
-      }),
+  _user_subscriptions.push(
+    combineLive([settings], notificationSettings).subscribe(() => {
+      Api.notifications.schedule();
+      Api.notifications.syncPush();
+    }),
   );
 
-  _user_subscriptions.add(
-    DB.user_state.subscribeOne$(user_id || "device").subscribe((user_state) => {
-      context.user_state = user_state;
+  _user_subscriptions.push(
+    DB.user_state.liveOne(user_id || "device").subscribe((user_state) => {
+      context.user_state = user_state ?? null;
     }),
   );
 }
 
-function notificationSettings(settings: DB.Settings | null) {
+function notificationSettings(settings: DB.Settings | undefined) {
   return [
     settings?.notifications_enabled,
     settings?.present_task_reminder_enabled,
@@ -222,7 +219,8 @@ async function syncRemote(user_id: string | null, firebase_uid: string | null, r
   }
 
   try {
-    await syncEngine.flush();
+    await MembershipQueue.flush();
+    await DB.sync.flush();
   } catch (err) {
     console.warn("[initApp] sync flush failed:", err);
   }
@@ -267,7 +265,7 @@ export async function initApp(user_id?: string | null) {
   const is_local_and_firebase_match = await firebaseSessionMatches(resolved_user_id);
   if (is_app_open && resolved_user_id && !is_local_and_firebase_match) {
     console.warn("[initApp] Firebase session missing or changed, signing out locally");
-    await DB.session.update({ user_id: null });
+    await DB.session.setUser(null);
     resolved_user_id = null;
   }
 
@@ -292,9 +290,10 @@ export async function initApp(user_id?: string | null) {
   const firebase_uid = user_result?.ok ? (user_result.value?.firebase_uid ?? null) : null;
   context.user = user_result?.ok ? (user_result.value as DB.User | null) : null;
 
-  // Tasks made signed out, and ones that arrived with another device's owner id, become this user's.
-  if (context.user) {
-    await claimPersonalData(context.user.id).catch((err) => console.warn("[initApp] claiming personal data failed:", err));
+  if (firebase_uid) {
+    await forgetPreviousUser(firebase_uid).catch((err) => console.warn("[initApp] forgetting previous user failed:", err));
+    // Tasks made signed out become this user's.
+    await claimLocalData(firebase_uid).catch((err) => console.warn("[initApp] claiming local data failed:", err));
   }
 
   subscribeForUser(resolved_user_id);
@@ -313,7 +312,7 @@ export async function initApp(user_id?: string | null) {
     } else {
       const now = new Date().toISOString();
       let app_version = app_state_result.value.app_version;
-      let device_id = app_state_result.value.device_id;
+      let source_device = app_state_result.value.source_device;
 
       try {
         const [app_info, device_info] = await Promise.all([
@@ -321,13 +320,13 @@ export async function initApp(user_id?: string | null) {
           Device.getId(),
         ]);
         app_version = app_info.version;
-        device_id = device_info.identifier;
+        source_device = device_info.identifier;
       } catch {
         // Running in browser / web — skip native APIs
       }
 
-      const update_result = await DB.app_state.update({
-        device_id,
+      const update_result = await DB.app_state.patch({
+        source_device,
         app_version,
         last_opened_at: now,
         open_count: app_state_result.value.open_count + 1,
@@ -337,16 +336,14 @@ export async function initApp(user_id?: string | null) {
       context.app_state = update_result.ok ? update_result.value : app_state_result.value;
     }
 
-    _app_subscriptions.unsubscribe();
-    _app_subscriptions = new Subscription();
-    _app_subscriptions.add(
-      DB.app_state.subscribeOne$("current").subscribe((app_state: DB.AppState | null) => {
-        context.app_state = app_state;
+    _app_subscriptions.forEach((stop) => stop());
+    _app_subscriptions = [
+      DB.app_state.liveOne("current").subscribe((app_state) => {
+        context.app_state = app_state ?? null;
       }),
-    );
-
-    // Tasks change locally and through sync pulls (which bypass the tables), so watch the collection itself.
-    _app_subscriptions.add(DB.task.collection.$.subscribe(() => Api.notifications.schedule()));
+      // Tasks change locally and through sync pulls.
+      DB.task.live().subscribe(() => Api.notifications.schedule()),
+    ];
     Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
     Api.notifications.listenForPush().catch((err) => console.warn("[initApp] push listener failed:", err));
   }

@@ -13,6 +13,7 @@
   import { filterTasks } from "$lib";
   import { backHandler, navHistory } from "$logic/navigation";
   import View from "$display/view";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import Api from "$logic/api";
   import t from "$display/translate";
   import toast from "$display/toast/toast.svelte";
@@ -22,8 +23,8 @@
   selected_tasks.clear();
   const search_text = getContext("search_text");
 
-  /** @type {AL.MainPageTask[]} */
-  let all_tasks = $state([]);
+  const tasks_query = $derived(liveQuery(() => View.group_tasks.taskList(data.group.id), []));
+  const all_tasks = $derived(tasks_query.current ?? []);
   const tasks = $derived(filterTasks(all_tasks, search_text.value, new Set()));
 
   const show_empty = useDelayedEmpty(() => tasks.length);
@@ -33,7 +34,6 @@
     return () => backHandler.unregister(token);
   });
 
-  onMount(() => View.group_tasks.taskList(data.group.id, all_tasks));
 
   // Re-run the access check in +page.js when memberships change, it redirects to /groups if access was lost
   const scopes_key = $derived(context.user_state.active_scopes.join(","));

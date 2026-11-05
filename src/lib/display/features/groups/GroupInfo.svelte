@@ -3,7 +3,7 @@
   import EditGroup from "./EditGroup.svelte";
   import View from "$display/view";
   import t from "$display/translate";
-  import { onMount } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
 
   /**
    * @typedef {Object} Props
@@ -15,13 +15,11 @@
 
   let is_editing = $state(false);
 
-  /** @type {AL.GroupListItem[]} */
-  const groups = $state([]);
-  const members = $derived(groups[0]?.members ?? []);
+  const groups = $derived(liveQuery(() => View.groups.getOne(group.id), []));
+  const members = $derived(groups.current?.[0]?.members ?? []);
   const member_names = $derived(!members.length ? t("just_you") : members.map(({ name }) => name).join(", "));
 
   // svelte-ignore state_referenced_locally
-  onMount(View.groups.getOne(group.id, groups));
 </script>
 
 <button

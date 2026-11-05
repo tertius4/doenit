@@ -14,8 +14,8 @@ const codeSplitting = () => {
               codeSplitting: {
                 groups: [
                   {
-                    name: "rxdb",
-                    test: /node_modules[\\/](rxdb|dexie|rxjs)[\\/]/,
+                    name: "sinkro",
+                    test: /node_modules[\\/](@tertius4|dexie)[\\/]/,
                     priority: 30,
                   },
                   {

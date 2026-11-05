@@ -3,7 +3,7 @@
   import Icon from "$display/comps/Icon.svelte";
   import Modal from "$display/comps/modal/Modal.svelte";
   import ButtonClear from "$display/comps/button/ButtonClear.svelte";
-  import { onMount } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import View from "$display/view";
   import Api from "$logic/api";
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
@@ -13,10 +13,9 @@
 
   let { category_id = $bindable() } = $props();
 
-  /** @type {AL.CategoryListItem[]} */
-  let categories = $state([]);
+  const categories_query = $derived(liveQuery(() => View.categories.categoryList(), []));
+  const categories = $derived(categories_query.current ?? []);
 
-  onMount(() => View.categories.listAssignTask(categories)());
 
   let is_open = $state(false);
   let is_adding = $state(false);

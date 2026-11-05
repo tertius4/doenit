@@ -1,14 +1,17 @@
-import { isPersonalScope } from "$domain/sync/personal";
+import { isPersonalScope, LOCAL_CHANNEL, personalChannel } from "$domain/sinkro/tables";
 
 /**
- * Mango selector for the tasks and categories the current user may see. Personal documents belong to their owner
- * (signed out, that is "device"); group documents belong to the group's members.
- * @param user_id  The signed-in user's local id, or null when signed out.
- * @param scopes  The user's active scopes.
+ * The channels of the tasks and categories the current user may see: their own personal channel and active groups, or
+ * what was made signed out. Data of other accounts on this device stays in its own channels.
  */
-export function visibleSelector(user_id: string | null | undefined, scopes: string[]): Record<string, any> {
-  if (!user_id) return { owner_id: "device" };
+export function visibleChannels(firebase_uid: string | null | undefined, scopes: string[]): string[] {
+  if (!firebase_uid) return [LOCAL_CHANNEL];
 
   const group_scopes = scopes.filter((scope_id) => !isPersonalScope(scope_id));
-  return { $or: [{ owner_id: user_id }, { scope_id: { $in: group_scopes } }] };
+  return [personalChannel(firebase_uid), ...group_scopes];
+}
+
+/** The same as a query. */
+export function visibleWhere(firebase_uid: string | null | undefined, scopes: string[]): Record<string, any> {
+  return { channel: { $in: visibleChannels(firebase_uid, scopes) } };
 }

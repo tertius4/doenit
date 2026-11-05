@@ -6,7 +6,7 @@
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
   import OptionCategory from "./OptionCategory.svelte";
   import View from "$display/view";
-  import { onMount } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import { wait } from "$lib";
 
   /**
@@ -21,9 +21,8 @@
   // svelte-ignore state_referenced_locally
   const is_locked = !!value;
 
-  /** @type {AL.GroupListItem[]} */
-  const groups = $state([]);
-  onMount(View.groups.getList(groups));
+  const groups_query = $derived(liveQuery(() => View.groups.getList(), []));
+  const groups = $derived(groups_query.current ?? []);
 
   let is_open = $state(false);
 

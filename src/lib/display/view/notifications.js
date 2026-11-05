@@ -1,29 +1,18 @@
 import DB from "$domain/db";
-import { map } from "rxjs";
+import { combineLive } from "./live";
 
 /**
  * @param {string} firebase_uid
- * @param {(count: number) => void} callback
- * @returns {() => void} Unsubscribe.
+ * @returns {import("@tertius4/sinkro-db").Live<number>}
  */
-export function subscribeUnreadCount(firebase_uid, callback) {
-  const subscription = DB.notification
-    .subscribe$(DB.notification.unreadQuery(firebase_uid))
-    .pipe(map((items) => items.length))
-    .subscribe(callback);
-
-  return () => subscription.unsubscribe();
+export function unreadCount(firebase_uid) {
+  return combineLive([DB.notification.live(DB.notification.unreadQuery(firebase_uid))], (items) => items.length);
 }
 
 /**
  * @param {string} firebase_uid
- * @param {(notifications: DB.Notification[]) => void} callback
- * @returns {() => void} Unsubscribe.
+ * @returns {import("@tertius4/sinkro-db").Live<DB.Notification[]>}
  */
-export function subscribeList(firebase_uid, callback) {
-  const subscription = DB.notification
-    .subscribe$({ selector: { user_id: firebase_uid }, sort: [{ created_at: "desc" }] })
-    .subscribe(callback);
-
-  return () => subscription.unsubscribe();
+export function list(firebase_uid) {
+  return DB.notification.live({ where: { user_id: firebase_uid }, sort: ["-created_at"] });
 }

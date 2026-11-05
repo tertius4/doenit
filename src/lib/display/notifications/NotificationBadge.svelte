@@ -1,7 +1,7 @@
 <script>
-  import { subscribeUnreadCount } from "$display/view/notifications";
+  import { unreadCount } from "$display/view/notifications";
   import { context } from "$logic/context.svelte";
-  import { onDestroy } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
 
   /**
    * @typedef {Object} Props
@@ -10,24 +10,8 @@
   /** @type {Props & import("svelte/elements").HTMLAttributes<HTMLSpanElement>} */
   const { ...rest } = $props();
 
-  let count = $state(0);
-  let unsubscribe = () => {};
-  let subscribed_user_id = "";
-
-  $effect(() => {
-    const user_id = context.user?.firebase_uid ?? "";
-    if (user_id === subscribed_user_id) return;
-
-    unsubscribe();
-    subscribed_user_id = user_id;
-    count = 0;
-
-    if (!user_id) return;
-
-    unsubscribe = subscribeUnreadCount(user_id, (unread) => (count = unread));
-  });
-
-  onDestroy(() => unsubscribe());
+  const unread = $derived(liveQuery(() => unreadCount(context.user?.firebase_uid ?? ""), 0));
+  const count = $derived(unread.current);
 </script>
 
 {#if count}

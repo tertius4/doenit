@@ -9,26 +9,20 @@ export function cursorKey(key: string): string {
   return `s:${key}`;
 }
 
+let writes: Promise<void> = Promise.resolve();
+
 /**
- * Atomically merges cursors into the user's `sync_cursors` and drops the keys in `remove`. Concurrent pulls (invites,
- * notifications, scopes) each update only their own keys instead of overwriting each other with a stale copy.
+ * Merges cursors into the user's `sync_cursors` and drops the keys in `remove`. Writes run one after another, so
+ * concurrent pulls (invites, notifications) never overwrite each other with a stale copy.
  */
-export async function patchSyncCursors(
-  user_id: string,
-  cursors: Record<string, string>,
-  remove: string[] = [],
-): Promise<void> {
-  const doc = await DB.user_state.collection.findOne(user_id).exec();
-  if (!doc) return;
+export function patchSyncCursors(user_id: string, cursors: Record<string, string>, remove: string[] = []): Promise<void> {
+  writes = writes.then(async () => {
+    const state = await DB.user_state.findById(user_id);
+    if (!state.ok || !state.value) return;
 
-  await doc.incrementalModify((data) => {
-    const sync_cursors = { ...(data.sync_cursors ?? {}), ...cursors };
+    const sync_cursors = { ...(state.value.sync_cursors ?? {}), ...cursors };
     for (const key of remove) delete sync_cursors[key];
-    return { ...data, sync_cursors, updated_at: new Date().toISOString() };
+    await DB.user_state.update(user_id, { sync_cursors });
   });
-}
-
-/** Removes cursors from the user's `sync_cursors`, so the next pull of those keys starts from scratch. */
-export async function removeSyncCursor(user_id: string, ...keys: string[]): Promise<void> {
-  await patchSyncCursors(user_id, {}, keys);
+  return writes;
 }

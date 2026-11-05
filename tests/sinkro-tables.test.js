@@ -12,6 +12,9 @@ import { tables } from "../src/lib/domain/sinkro/tables.ts";
 registerHooks({
   resolve(specifier, context, next) {
     if (specifier.startsWith(".") && !/\.\w+$/.test(specifier)) return next(`${specifier}.ts`, context);
+    if (specifier.startsWith("$domain/")) {
+      return next(new URL(`../src/lib/domain/${specifier.slice(8)}.ts`, import.meta.url).href, context);
+    }
     return next(specifier, context);
   },
 });
@@ -19,6 +22,7 @@ registerHooks({
 const { default: SyncTable } = await import("../src/lib/domain/tables/sync-table.ts");
 const { default: LocalTable } = await import("../src/lib/domain/tables/local-table.ts");
 const { combineLive } = await import("../src/lib/display/view/live.ts");
+const { visibleWhere } = await import("../src/lib/logic/visibility.ts");
 
 let db_count = 0;
 
@@ -187,4 +191,44 @@ test("combineLive waits for every source and skips equal results", async () => {
   send.b(2);
   send.a(2);
   assert.deepEqual(seen, [3, 4]);
+});
+
+test("another account's personal tasks and old groups stay out of sight", async () => {
+  let userId = "uid1";
+  const db = await createSinkroDB({
+    name: `test-${(db_count += 1)}`,
+    tables,
+    storage: dexieStorage(),
+    context: () => ({ userId }),
+  });
+  await db.task.insert({ name: "personal", archived: false });
+  await db.task.insert({ name: "group", archived: false, scope_id: "g1" });
+
+  userId = "uid2";
+  await db.task.insert({ name: "mine", archived: false });
+
+  const names = async (where) => (await db.task.find({ where })).map((task) => task.name);
+  assert.deepEqual(await names(visibleWhere("uid2", ["g2", "personal_uid2"])), ["mine"]);
+  assert.deepEqual(await names(visibleWhere(null, [])), []);
+});
+
+test("forgetting a channel keeps data of a channel that was never listed", async () => {
+  const db = await createSinkroDB({
+    name: `test-${(db_count += 1)}`,
+    tables,
+    storage: dexieStorage(),
+    backend: new MemoryBackend(),
+    channels: ["g1"],
+    autoSync: false,
+    context: () => ({ userId: "uid1" }),
+  });
+  await db.task.insert({ name: "never synced", archived: false });
+  await db.task.insert({ name: "group", archived: false, scope_id: "g1" });
+
+  await db.sync.forgetChannel("g1");
+  const tasks = await db.task.find({});
+  assert.deepEqual(
+    tasks.map((task) => task.name),
+    ["never synced"],
+  );
 });

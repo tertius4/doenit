@@ -34,7 +34,7 @@ export const TaskNotifier = {
       const my_uid = context.user?.firebase_uid;
       const [group, members] = await Promise.all([
         DB.group.findById(task.scope_id),
-        DB.member.findMany({ selector: { scope_id: task.scope_id, soft_deleted: { $ne: true } } }),
+        DB.member.findMany({ where: { scope_id: task.scope_id } }),
       ]);
       if (!group.ok || !group.value || !members.ok) return;
 

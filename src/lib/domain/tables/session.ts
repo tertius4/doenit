@@ -1,54 +1,28 @@
-import type { RxCollection } from "$lib/logic/chunk/rxdb";
 import db from "$lib/domain/db";
+import BaseTable from "./base-table";
 
-export class SessionTable {
-  collection: RxCollection<DB.Session>;
+const ID = "current";
 
-  constructor(collection: RxCollection<DB.Session>) {
-    this.collection = collection;
-  }
-
+export class SessionTable extends BaseTable<DB.Session> {
   async get(): AsyncResult<DB.Session> {
-    try {
-      const existing = await this.collection.findOne().exec();
-      if (existing) {
-        return { ok: true, value: existing.toJSON() as DB.Session };
-      }
+    const existing = await this.findById(ID);
+    if (!existing.ok) return existing;
+    if (existing.value) return { ok: true, value: existing.value };
 
-      let user_result = await db.user.findOne({ sort: [{ updated_at: "desc" }] });
-      const user_id = (user_result.ok && user_result.value?.id) || null;
+    const user_result = await db.user.findOne({ sort: ["-updated_at"] });
+    const user_id = (user_result.ok && user_result.value?.id) || null;
 
-      const created = await this.collection.insert({ id: "current", user_id });
-
-      return { ok: true, value: created.toJSON() as DB.Session };
-    } catch (error) {
-      console.error("Error in SessionTable.get:", error);
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message };
-    }
+    return this.create({ id: ID, user_id });
   }
 
   /**
    * If user_id is null, it means the user has logged out.
    * If user_id is a string, it means the user has logged in.
    */
-  async update({ user_id }: { user_id: string | null }): AsyncResult<DB.Session> {
-    try {
-      const created = await this.get();
-      if (!created.ok) throw new Error(created.error || "Failed to create session");
+  async setUser(user_id: string | null): AsyncResult<DB.Session> {
+    const created = await this.get();
+    if (!created.ok) return created;
 
-      const doc = await this.collection.findOne("current").exec();
-      if (!doc) throw new Error("Session document not found");
-
-      const updated = await doc.incrementalPatch({
-        id: "current",
-        user_id,
-      });
-
-      return { ok: true, value: updated.toJSON() as DB.Session };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message };
-    }
+    return created.value.user_id === user_id ? created : super.update(ID, { user_id });
   }
 }

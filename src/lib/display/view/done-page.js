@@ -1,40 +1,20 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
-import { map, combineLatest } from "rxjs";
-import { visible$ } from "./visible";
+import { combineLive } from "./live";
+import { visibleLive } from "./visible";
 
-/**
- * @param {AL.DonePageTask[]} list
- * @returns {() => void}
- */
-export function taskList(list) {
-  /** @type {import("rxjs").Subscription} */
-  let subscription;
-
-  subscribeTaskList()
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
-
-  return () => () => subscription?.unsubscribe();
-}
-
-/**
- * @returns {Promise<import("rxjs").Observable<AL.DonePageTask[]>>}
- */
-async function subscribeTaskList() {
-  const tasks$ = visible$(DB.task, {
-    selector: { $or: [{ archived: { $eq: true } }, { completed: { $gt: 0 } }], soft_deleted: { $ne: true } },
-    sort: [{ completed_at: "desc" }],
+/** @returns {import("@tertius4/sinkro-db").Live<AL.DonePageTask[]>} */
+export function taskList() {
+  const tasks = visibleLive(DB.task, {
+    where: { $or: [{ archived: { $eq: true } }, { completed: { $gt: 0 } }] },
+    sort: ["-completed_at"],
   });
-  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  return combineLatest([tasks$, categories$]).pipe(
-    map(([tasks, categories]) => {
-      /** @type {Map<string, DB.Category>} */
-      const categoryMap = new Map(categories.map((c) => [c.id, c]));
-      return tasks.map((task) => formatTask(task, categoryMap));
-    }),
-  );
+  return combineLive([tasks, DB.category.live()], (tasks, categories) => {
+    /** @type {Map<string, DB.Category>} */
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    return tasks.map((task) => formatTask(task, categoryMap));
+  });
 }
 
 /**

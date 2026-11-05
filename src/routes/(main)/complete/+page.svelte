@@ -8,6 +8,7 @@
   import { goto } from "$app/navigation";
   import t from "$display/translate";
   import View from "$display/view";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import Api from "$logic/api";
   import Modal, { ModalHeader } from "$display/comps/modal";
   import toast from "$display/toast/toast.svelte";
@@ -18,12 +19,11 @@
   const search_text = getContext("search_text");
   const normalized_search = $derived(normalize(search_text.value?.trim() ?? ""));
 
-  /** @type {AL.DonePageTask[]} */
-  let completed_tasks = $state([]);
+  const completed_query = $derived(liveQuery(() => View.done_page.taskList(), []));
+  const completed_tasks = $derived(completed_query.current ?? []);
   
   const tasks = $derived(filterTasks(completed_tasks, search_text.value));
 
-  onMount(View.done_page.taskList(completed_tasks));
   onMount(() => {
     const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);

@@ -1,55 +1,31 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
-import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
 import { compareTasks, getGroup, isDoNowTask } from "$lib";
-import { visible$ } from "./visible";
+import { combineLive } from "./live";
+import { visibleLive } from "./visible";
 
-/**
- *
- * @param {AL.MainPageTask[]} list
- * @returns {() => void}
- */
-export function taskList(list) {
-  /** @type {import("rxjs").Subscription} */
-  let subscription;
-
-  subscribeTaskList()
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
-
-  return () => () => subscription?.unsubscribe();
-}
-
-/**
- * @returns {Promise<import("rxjs").Observable<AL.MainPageTask[]>>}
- */
-async function subscribeTaskList() {
-  const tasks$ = visible$(DB.task, {
-    selector: {
+/** @returns {import("@tertius4/sinkro-db").Live<AL.MainPageTask[]>} */
+export function taskList() {
+  const tasks = visibleLive(DB.task, {
+    where: {
       archived: { $eq: false },
-      soft_deleted: { $ne: true },
       assigned_firebase_uid: { $in: [null, context.user?.firebase_uid ?? null] },
     },
-    sort: [{ due_date: "asc" }],
+    sort: ["due_date"],
   });
-  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  const groups$ = DB.group.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  return combineLive([tasks, DB.category.live(), DB.group.live()], (tasks, categories, groups) => {
+    /** @type {Map<string, DB.Category>} */
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    /** @type {Map<string, string>} */
+    const groupMap = new Map(groups.map((g) => [g.id, g.name]));
+    const today = new Date();
 
-  return combineLatest([tasks$, categories$, groups$]).pipe(
-    map(([tasks, categories, groups]) => {
-      /** @type {Map<string, DB.Category>} */
-      const categoryMap = new Map(categories.map((c) => [c.id, c]));
-      /** @type {Map<string, string>} */
-      const groupMap = new Map(groups.map((g) => [g.id, g.name]));
-      const today = new Date();
+    tasks.sort(compareTasks);
 
-      tasks.sort(compareTasks);
-
-      return tasks.map((task) => formatTask(task, categoryMap, groupMap, today));
-    }),
-  );
+    return tasks.map((task) => formatTask(task, categoryMap, groupMap, today));
+  });
 }
 
 /**

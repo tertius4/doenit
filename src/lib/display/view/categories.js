@@ -1,118 +1,57 @@
 import t from "$display/translate";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
-import { map, Subscription, Observable, combineLatest } from "rxjs";
-import { visible$ } from "./visible";
+import { combineLive } from "./live";
+import { visibleLive } from "./visible";
 
-/**
- * @param {AL.CategoryListItem[]} list
- * @returns {() => void}
- */
-export function categoryList(list) {
-  /** @type {Subscription} */
-  let subscription;
-
-  subscribeCategoryList()
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
-
-  return () => () => subscription?.unsubscribe();
+/** @returns {import("@tertius4/sinkro-db").Live<[DB.Category[], DB.Task[]]>} */
+function categoriesAndTasks() {
+  const categories = visibleLive(DB.category, { sort: ["name"] });
+  const tasks = visibleLive(DB.task, { where: { archived: { $ne: true } } });
+  return combineLive([categories, tasks], (categories, tasks) => [categories, tasks]);
 }
 
 /**
- *
- * @param {AL.CategoryListItem[]} list
- * @returns {() => void}
+ * @param {DB.Category[]} cats
+ * @param {DB.Task[]} tasks
+ * @returns {{ default_category: AL.CategoryListItem, list: AL.CategoryListItem[] }}
  */
-export function listAssignTask(list) {
-  /** @type {Subscription} */
-  let subscription;
+function countTasks(cats, tasks) {
+  const hash = new Map();
 
-  subscribeCategoryList()
-    .then((pipe) => pipe.subscribe((data) => list.splice(0, list.length, ...data)))
-    .then((sub) => (subscription = sub));
+  for (const task of tasks) {
+    const task_firebase_uid = task.assigned_firebase_uid;
+    if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) continue;
 
-  return () => () => () => subscription?.unsubscribe();
+    const category_id = task.category_id || "default";
+
+    const current_count = hash.get(category_id) || 0;
+    hash.set(category_id, current_count + 1);
+  }
+
+  return {
+    default_category: { id: "default", name: t("DEFAULT_NAME"), task_count: hash.get("default") || 0 },
+    list: cats.map((category) => ({
+      id: category.id,
+      task_count: hash.get(category.id) || 0,
+      name: category.name,
+    })),
+  };
 }
 
-/**
- * @returns {Promise<Observable<AL.CategoryListItem[]>>}
- */
-async function subscribeCategoryList() {
-  const categories$ = visible$(DB.category, { sort: [{ name: "asc" }] });
-  const tasks$ = visible$(DB.task, { selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
-
-  return combineLatest([categories$, tasks$]).pipe(
-    map(([cats, tasks]) => {
-      const hash = new Map();
-
-      for (const task of tasks) {
-        const task_firebase_uid = task.assigned_firebase_uid;
-        if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) continue;
-
-        const category_id = task.category_id || "default";
-
-        const current_count = hash.get(category_id) || 0;
-        hash.set(category_id, current_count + 1);
-      }
-
-      /** @type {(category: DB.Category) => AL.CategoryListItem} */
-      const formatCategory = (category) => ({
-        id: category.id,
-        task_count: hash.get(category.id) || 0,
-        name: category.name,
-      });
-
-      const default_category = {
-        id: "default",
-        name: t("DEFAULT_NAME"),
-        task_count: hash.get("default") || 0,
-      };
-
-      return [default_category, ...cats.map(formatCategory)];
-    }),
-  );
+/** @returns {import("@tertius4/sinkro-db").Live<AL.CategoryListItem[]>} */
+export function categoryList() {
+  return combineLive([categoriesAndTasks()], ([cats, tasks]) => {
+    const { default_category, list } = countTasks(cats, tasks);
+    return [default_category, ...list];
+  });
 }
 
-export async function subscribeHotbarCategoryList() {
-  const categories$ = visible$(DB.category, { sort: [{ name: "asc" }] });
-  const tasks$ = visible$(DB.task, { selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
-
-  return combineLatest([categories$, tasks$]).pipe(
-    map(([cats, tasks]) => {
-      const hash = new Map();
-
-      for (const task of tasks) {
-        if (task.archived) continue;
-        const task_firebase_uid = task.assigned_firebase_uid;
-        if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) {
-          continue;
-        }
-
-        const category_id = task.category_id || "default";
-
-        const current_count = hash.get(category_id) || 0;
-        hash.set(category_id, current_count + 1);
-      }
-
-      /** @type {(category: DB.Category) => AL.CategoryListItem} */
-      const formatCategory = (category) => ({
-        id: category.id,
-        task_count: hash.get(category.id) || 0,
-        name: category.name,
-      });
-
-      const default_category = {
-        id: "default",
-        name: t("DEFAULT_NAME"),
-        task_count: hash.get("default") || 0,
-      };
-
-      const sorted = cats
-        .map(formatCategory)
-        .sort((a, b) => b.task_count - a.task_count || a.name.localeCompare(b.name));
-
-      return [default_category, ...sorted];
-    }),
-  );
+/** @returns {import("@tertius4/sinkro-db").Live<AL.CategoryListItem[]>} */
+export function hotbarCategoryList() {
+  return combineLive([categoriesAndTasks()], ([cats, tasks]) => {
+    const { default_category, list } = countTasks(cats, tasks);
+    const sorted = list.sort((a, b) => b.task_count - a.task_count || a.name.localeCompare(b.name));
+    return [default_category, ...sorted];
+  });
 }

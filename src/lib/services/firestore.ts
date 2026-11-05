@@ -31,9 +31,7 @@ import {
 import { Capacitor } from "@capacitor/core";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
-import { personalScope } from "$domain/sync/personal";
-
-export type RemoteDoc = DB.MetaDataShared & { scope_id: string; collection: string };
+import { personalChannel } from "$domain/sinkro/tables";
 
 /** A page of documents plus the cursor to pass as `since` next time. */
 export type Pulled<T> = { docs: T[]; cursor: string };
@@ -74,7 +72,7 @@ function toPulled<T>(
 /** The scopes in a memberships document, plus the personal scope while device sync is on. */
 function membershipScopes(user_id: string, data: Record<string, any>): string[] {
   const scopes = (data.scopes as string[]) ?? [];
-  return data.personal_sync_enabled_at ? [...scopes, personalScope(user_id)] : scopes;
+  return data.personal_sync_enabled_at ? [...scopes, personalChannel(user_id)] : scopes;
 }
 
 class Firestore {
@@ -141,40 +139,6 @@ class Firestore {
     return typeof min_version === "string" ? min_version : null;
   }
 
-  /** Fetches a scope's items written after the `since` cursor, or all of them without one. */
-  async fetch(scope_id: string, since?: string): Promise<Pulled<RemoteDoc>> {
-    const db = this.getDb();
-    const ref = collection(db, "scopes", scope_id, "items");
-    const snapshot = await getDocs(sinceQuery(ref, since));
-    return toPulled(snapshot.docs, since, (_, data) => data as RemoteDoc);
-  }
-
-  /**
-   * Writes a full document to Firestore under the given scope (a personal document keeps scope_id null).
-   * Used for both creates and updates.
-   */
-  async upsert(scope_id: string, col: string, document: DB.MetaDataShared & Record<string, any>): Promise<void> {
-    const db = this.getDb();
-    const ref = doc(db, "scopes", scope_id, "items", document.id);
-    await setDoc(ref, { ...document, collection: col, synced_at: serverTimestamp() });
-  }
-
-  /**
-   * Writes a tombstone for a deleted document so other devices can react.
-   * Does NOT hard-delete — the record stays in Firestore as soft_deleted: true.
-   */
-  async delete(item: { scope_id: string; table_name: string; entity_id: string }): Promise<void> {
-    const db = this.getDb();
-    const ref = doc(db, "scopes", item.scope_id, "items", item.entity_id);
-    await setDoc(ref, {
-      id: item.entity_id,
-      collection: item.table_name,
-      scope_id: item.scope_id,
-      soft_deleted: true,
-      updated_at: new Date().toISOString(),
-      synced_at: serverTimestamp(),
-    });
-  }
 
   /** The user's scopes, including the personal scope while device sync is on. */
   async fetchMemberships(user_id: string): Promise<string[]> {
@@ -201,7 +165,7 @@ class Firestore {
     const db = this.getDb();
     const ref = doc(db, "scopes", scope_id, "items", scope_id);
     const snap = await getDoc(ref);
-    return snap.exists() && !!snap.data()?.soft_deleted;
+    return snap.exists() && !!snap.data()?.deleted;
   }
 
   /** Atomically adds a scope to a user's membership list (safe against concurrent edits). */
@@ -336,28 +300,6 @@ class Firestore {
     await setDoc(ref, { ...notification, synced_at: serverTimestamp() }, { merge: true });
   }
 
-  /**
-   * Attaches a real-time listener to a scope's items collection. Watches only the most recently synced item (one read
-   * per change), and fires on every remote write after the initial snapshot, however old the item's updated_at is.
-   * Returns an unsubscribe function — call it to stop listening.
-   */
-  subscribeItems(scope_id: string, callback: () => void): () => void {
-    const db = this.getDb();
-    const ref = collection(db, "scopes", scope_id, "items");
-    const q = query(ref, orderBy("synced_at", "desc"), limit(1));
-    let is_first = true;
-    return onSnapshot(
-      q,
-      (snap) => {
-        if (is_first) {
-          is_first = false;
-          return;
-        }
-        if (snap.docChanges().length > 0 && !snap.metadata.hasPendingWrites) callback();
-      },
-      (error) => console.warn(`[Firestore] items listener for scope ${scope_id} failed:`, error),
-    );
-  }
 
   /**
    * Attaches a real-time listener to the user's Firestore memberships document.

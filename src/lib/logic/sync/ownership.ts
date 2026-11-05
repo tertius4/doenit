@@ -1,36 +1,57 @@
 /**
- * Who owns personal tasks and categories on this device. `owner_id` is the local user id ("device" while signed out),
- * which differs per device, so it is set here locally and never synced as a change (it is not merged per field).
+ * Personal tasks and categories change hands by moving between the `local` channel and the user's personal channel.
+ * Another account on this device never reaches them: queries stay inside the signed-in user's channels.
  */
 
 import DB from "$domain/db";
-import { PERSONAL_TABLES } from "./personal";
+import { LOCAL_CHANNEL, personalChannel } from "$domain/sinkro/tables";
 
-/** Gives every personal document whose owner passes `isTarget` to `owner_id`. Direct writes, nothing is queued. */
-async function setOwner(isTarget: (owner_id: string) => boolean, owner_id: string): Promise<void> {
-  for (const table_name of PERSONAL_TABLES) {
-    const table = DB.getCollection(table_name);
-    if (!table) continue;
+async function moveAll(from: string, to: string): Promise<void> {
+  for (const table of [DB.task, DB.category]) {
+    const docs = await table.findMany({ where: { channel: from } });
+    if (!docs.ok) throw new Error(docs.error);
 
-    const docs = await table.collection.find().exec();
-    const targets = docs.filter((doc: any) => !doc.scope_id && doc.owner_id !== owner_id && isTarget(doc.owner_id));
-    await Promise.all(targets.map((doc: any) => doc.incrementalModify((data: any) => ({ ...data, owner_id }))));
+    for (const doc of docs.value) {
+      const moved = await table.moveChannel(doc.id, to);
+      if (!moved.ok) throw new Error(moved.error);
+    }
   }
 }
 
-/**
- * Makes the signed-in user the owner of personal documents no local user owns: tasks made while signed out
- * ("device"), and documents that arrived through Sync or the API with another device's owner id.
- */
-export async function claimPersonalData(user_id: string): Promise<void> {
-  const users = await DB.user.findMany();
-  if (!users.ok) return;
-
-  const known = new Set(users.value.map((user) => user.id));
-  await setOwner((owner_id) => !known.has(owner_id), user_id);
+/** Makes the signed-in user the owner of what was made signed out. */
+export function claimLocalData(firebase_uid: string): Promise<void> {
+  return moveAll(LOCAL_CHANNEL, personalChannel(firebase_uid));
 }
 
 /** Hands a removed user's personal documents to the device, so they stay usable signed out. */
-export async function releasePersonalData(user_id: string): Promise<void> {
-  await setOwner((owner_id) => owner_id === user_id, "device");
+export function releasePersonalData(firebase_uid: string): Promise<void> {
+  return moveAll(personalChannel(firebase_uid), LOCAL_CHANNEL);
+}
+
+/**
+ * Another account signed in on this device: clears what the previous one synced, which comes back when they do. Personal
+ * data that never left this device (Sync off) is not in their scopes, so it stays, out of sight, until they sign in.
+ */
+export async function forgetPreviousUser(firebase_uid: string): Promise<void> {
+  const device = await DB.app_state.getDevice();
+  if (!device.ok) throw new Error(device.error);
+
+  const previous_uid = device.value.last_firebase_uid;
+  if (previous_uid === firebase_uid) return;
+
+  const previous_user = previous_uid ? await DB.user.findOne({ where: { firebase_uid: previous_uid } }) : null;
+  const user_id = previous_user?.ok ? previous_user.value?.id : null;
+  const state = user_id ? await DB.user_state.findById(user_id) : null;
+
+  if (user_id && state?.ok && state.value) {
+    for (const channel of state.value.active_scopes ?? []) await DB.sync.forgetChannel(channel);
+    await DB.user_state.update(user_id, { active_scopes: [] });
+  }
+
+  // Orders the previous account left behind can't run under this one.
+  const orders = await DB.membership_queue.findMany();
+  if (orders.ok) await DB.membership_queue.removeMany(orders.value.map((order) => order.id));
+
+  const saved = await DB.app_state.patch({ last_firebase_uid: firebase_uid });
+  if (!saved.ok) throw new Error(saved.error);
 }

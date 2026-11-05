@@ -1,4 +1,5 @@
-export { UserTable as user } from "./user";
+export { default as SyncTable } from "./sync-table";
+export { default as LocalTable } from "./local-table";
 export { CategoryTable as category } from "./category";
 export { TaskTable as task } from "./task";
 export { SettingsTable as settings } from "./settings";
@@ -6,8 +7,5 @@ export { SessionTable as session } from "./session";
 export { AppStateTable as app_state } from "./app_state";
 export { UserStateTable as user_state } from "./user_state";
 export { ContactTable as contact } from "./contact";
-export { GroupTable as group } from "./group";
-export { MemberTable as member } from "./member";
-export { SyncQueueTable as sync_queue } from "./sync_queue";
 export { ContactInviteTable as contact_invite } from "./contact_invite";
 export { NotificationTable as notification } from "./notification";

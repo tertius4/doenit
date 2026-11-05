@@ -7,6 +7,10 @@ export function personalChannel(firebase_uid: string): string {
   return `personal_${firebase_uid}`;
 }
 
+export function isPersonalScope(scope_id: string): boolean {
+  return scope_id.startsWith("personal_");
+}
+
 /** A group's documents live in its scope; the rest are personal. ctx.userId is the firebase uid. */
 function channelOf(doc: { scope_id?: string | null }, ctx: ChannelContext): string {
   if (doc.scope_id) return doc.scope_id;
@@ -153,6 +157,8 @@ const app_state = defineTable({
   version: 2,
   fields: {
     source_device: t.string(),
+    /** Whose data is on this device: another account signing in clears what can be fetched again. */
+    last_firebase_uid: t.string().optional(),
     last_opened_at: t.string().optional(),
     open_count: t.number(),
     app_version: t.string().optional(),
@@ -223,12 +229,9 @@ const membership_queue = defineTable({
   sync: "local",
   version: 0,
   fields: {
-    owner_id: t.string(),
     entity_id: t.string(),
     scope_id: t.string(),
     op: t.string(),
-    attempts: t.number(),
-    last_attempt_at: t.number().optional(),
   },
   indexes: ["entity_id"],
 });

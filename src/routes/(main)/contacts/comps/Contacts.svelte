@@ -5,6 +5,7 @@
   import CardInvite from "$display/features/contacts/CardInvite.svelte";
   import t from "$display/translate";
   import View from "$display/view";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import Api from "$logic/api";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -13,19 +14,17 @@
   let editing_contact = $state(null);
   let show_edit_modal = $state(false);
 
-  /** @type {AL.ContactListItem[]} */
-  let contacts = $state([]);
+  const contacts_query = $derived(liveQuery(() => View.contacts.getList(), []));
+  const contacts = $derived(contacts_query.current ?? []);
 
-  /** @type {AL.ContactInviteListItem[]} */
-  let invites = $state([]);
+  const invites_query = $derived(liveQuery(() => View.contacts.getInviteList(), []));
+  const invites = $derived(invites_query.current ?? []);
 
   let other_invites_open = $state(false);
 
   const pending_invites = $derived(invites.filter((i) => i.status === "pending"));
   const other_invites = $derived(invites.filter((i) => i.status !== "pending" && i.status !== "cancelled"));
 
-  onMount(View.contacts.getList(contacts));
-  onMount(View.contacts.getInviteList(invites));
 
   // Pick up anything that arrived while the app was open (the listener covers most, this covers a missed one).
   onMount(() => {

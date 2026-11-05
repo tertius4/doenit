@@ -2,7 +2,7 @@ import t from "$lib/display/translate";
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
-import { visibleSelector } from "$logic/visibility";
+import { visibleWhere } from "$logic/visibility";
 
 export const mapTasksCountToCategories = apiLogger(mapTasksCountToCategoriesHandler);
 export const save = apiLogger(saveCategoryHandler);
@@ -13,7 +13,7 @@ export const assignTasks = apiLogger(assignTasksHandler);
 
 async function mapTasksCountToCategoriesHandler(): Promise<Map<DB.Category["id"], number>> {
   const tasks_result = await DB.task.findMany({
-    selector: visibleSelector(context.user?.id, context.active_scopes),
+    where: visibleWhere(context.user?.firebase_uid, context.active_scopes),
   });
   if (!tasks_result.ok) throw new Error(tasks_result.error);
   const tasks = tasks_result.value;
@@ -22,7 +22,6 @@ async function mapTasksCountToCategoriesHandler(): Promise<Map<DB.Category["id"]
 
   for (const task of tasks) {
     if (task.archived) continue;
-    if (task.soft_deleted) continue;
     const task_firebase_uid = task.assigned_firebase_uid;
     if (task_firebase_uid && task_firebase_uid !== context.user?.firebase_uid) {
       continue;
@@ -71,7 +70,7 @@ async function deleteCategoryHandler(id: string): AsyncResult {
   try {
     if (!id || id === "default") return { ok: false, error: t("cannot_delete_default_category") };
 
-    const tasks = await DB.task.findMany({ selector: { category_id: id } });
+    const tasks = await DB.task.findMany({ where: { category_id: id } });
     if (tasks.ok && tasks.value.length) {
       const cleared = await DB.task.updateMany(
         tasks.value.map((task) => ({ id: task.id, changes: { category_id: "" } })),

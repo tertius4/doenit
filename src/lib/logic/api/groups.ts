@@ -1,7 +1,7 @@
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
-import { SyncQueue } from "$domain/sync/SyncQueue";
+import { MembershipQueue } from "$logic/sync/MembershipQueue";
 import { NotificationService } from "$logic/notifications/NotificationService";
 
 export const save = apiLogger(saveGroupHandler);
@@ -30,13 +30,16 @@ async function saveGroupHandler({ id, name, description }: Partial<DB.Group>): A
       return DB.group.update(id, { name: group_name, description: group_description });
     }
 
-    if (!context.user?.id) return { ok: false, error: "Log in to create a group" };
+    if (!context.user?.firebase_uid) return { ok: false, error: "Log in to create a group" };
 
+    const group_id = crypto.randomUUID();
     const result = await DB.group.create({
+      id: group_id,
+      scope_id: group_id,
       name: group_name,
       description: group_description,
-      owner_id: context.user.id,
-    } as Domain.Group);
+      owner_id: context.user.firebase_uid,
+    });
 
     if (!result.ok) throw Error(result.error);
 
@@ -56,7 +59,7 @@ async function deleteGroupHandler(id: string): AsyncResult {
   try {
     const admin = await requireAdmin(id);
     if (!admin.ok) return admin;
-    if (admin.value.owner_id !== context.user?.id) {
+    if (admin.value.owner_id !== context.user?.firebase_uid) {
       return { ok: false, error: "Only the group owner can disband it" };
     }
 
@@ -68,8 +71,8 @@ async function deleteGroupHandler(id: string): AsyncResult {
 
     if (group_scope_id) {
       const [members_result, tasks_result] = await Promise.all([
-        DB.member.findMany({ selector: { scope_id: group_scope_id, soft_deleted: { $ne: true } } }),
-        DB.task.findMany({ selector: { scope_id: group_scope_id, soft_deleted: { $ne: true } } }),
+        DB.member.findMany({ where: { scope_id: group_scope_id } }),
+        DB.task.findMany({ where: { scope_id: group_scope_id } }),
       ]);
       if (!members_result.ok) return members_result;
       if (!tasks_result.ok) return tasks_result;
@@ -99,18 +102,11 @@ async function deleteGroupHandler(id: string): AsyncResult {
 
     // Membership removals go last: pushing the tombstones above requires the scope membership they revoke.
     if (group_scope_id) {
-      const membership_removals = removed_members
-        .filter((m) => m.firebase_uid)
-        .map((m) => ({
-          table_name: "membership",
-          entity_id: m.firebase_uid,
-          scope_id: group_scope_id,
-          op: "delete" as const,
-        }));
-
-      if (membership_removals.length) {
-        await SyncQueue.enqueueMany(membership_removals);
-      }
+      await MembershipQueue.enqueue(
+        removed_members
+          .filter((m) => m.firebase_uid)
+          .map((m) => ({ entity_id: m.firebase_uid, scope_id: group_scope_id, op: "delete" as const })),
+      );
     }
 
     return { ok: true };
@@ -150,7 +146,7 @@ async function addMemberHandler(group_id: string, contact_id: string): AsyncResu
     // The owner's own membership is needed as well, or the owner never subscribes to the new scope.
     if (!had_scope) await enqueueMembership(context.user?.firebase_uid, group.value.id);
     await enqueueMembership(firebase_uid, group.value.id);
-    if (!existing_member.value || existing_member.value.soft_deleted) {
+    if (!existing_member.value) {
       await NotificationService.createAddedToGroup(firebase_uid, group.value).then(warnOnFailure);
     }
 
@@ -175,14 +171,13 @@ async function removeMemberHandler(member_id: string): AsyncResult {
     if (!member_result.value) return { ok: false, error: "Member not found" };
 
     const member = member_result.value;
-    if (member.soft_deleted) return { ok: true };
 
     const group_result = member.scope_id ? await DB.group.findById(member.scope_id) : null;
     const group = group_result?.ok ? group_result.value : null;
 
     const is_self = member.firebase_uid === context.user?.firebase_uid;
     if (is_self) {
-      if (group && group.owner_id === context.user?.id) {
+      if (group && group.owner_id === context.user?.firebase_uid) {
         return { ok: false, error: "The owner cannot leave the group. Disband it instead." };
       }
     } else {
@@ -195,7 +190,7 @@ async function removeMemberHandler(member_id: string): AsyncResult {
       if (member.role === "admin") return { ok: false, error: "Not allowed to remove the group owner" };
     }
 
-    const result = await DB.member.update(member_id, { soft_deleted: true });
+    const result = await DB.member.remove(member_id);
     if (!result.ok) return result;
 
     await enqueueMembershipRemoval(member.firebase_uid, member.scope_id);
@@ -219,15 +214,13 @@ export type GroupMember = DB.Member & {
 
 async function getMembersHandler(group_id: string): AsyncResult<GroupMember[]> {
   try {
-    const result = await DB.member.findMany({
-      selector: { scope_id: group_id, soft_deleted: { $ne: true } },
-    });
+    const result = await DB.member.findMany({ where: { scope_id: group_id } });
     if (!result.ok) return result;
 
     const members = result.value;
     const contact_result = context.user?.id
       ? await DB.contact.findMany({
-          selector: { user_id: context.user.id, firebase_uid: { $in: members.map((gc) => gc.firebase_uid) } },
+          where: { user_id: context.user.id, firebase_uid: { $in: members.map((gc) => gc.firebase_uid) } },
         })
       : null;
 
@@ -269,8 +262,8 @@ async function getContactsHandler(): AsyncResult<DB.Contact[]> {
   if (!context.user?.id) return { ok: true, value: [] };
 
   const result = await DB.contact.findMany({
-    selector: { user_id: context.user.id },
-    sort: [{ name: "asc" }],
+    where: { user_id: context.user.id },
+    sort: ["name"],
   });
   if (!result.ok) return result;
 
@@ -285,26 +278,20 @@ async function getByIdHandler(id: string): AsyncResult<DB.Group> {
 
     // Make sure the user may access the group. The owner always may, even before they have a member row.
     const group = result.value;
-    if (group.owner_id === context.user?.id) return { ok: true, value: group };
+    if (group.owner_id === context.user?.firebase_uid) return { ok: true, value: group };
     if (group.scope_id) {
       if (!context.user_state.active_scopes.includes(group.scope_id)) {
         return { ok: false, error: "Group not found" };
       }
 
       const member_result = await DB.member.findOne({
-        selector: {
-          scope_id: group.scope_id,
-          firebase_uid: context.user?.firebase_uid,
-          soft_deleted: { $ne: true },
-        },
+        where: { scope_id: group.scope_id, firebase_uid: context.user?.firebase_uid ?? null },
       });
       if (!member_result.ok) return member_result;
       if (!member_result.value) return { ok: false, error: "Group not found" };
     } else {
       // If the group doesn't have a scope_id, only the owner can access it
-      if (group.owner_id !== context.user?.id) {
-        return { ok: false, error: "Group not found" };
-      }
+      return { ok: false, error: "Group not found" };
     }
 
     return { ok: true, value: result.value };
@@ -328,10 +315,10 @@ export async function ensureOwnerMember(group_id: string): AsyncResult<DB.Member
 }
 
 function findMember(group_id: string, firebase_uid: string): AsyncResult<DB.Member | null> {
-  return DB.member.findOne({ selector: { scope_id: group_id, firebase_uid } });
+  return DB.member.findOne({ where: { scope_id: group_id, firebase_uid } });
 }
 
-/** Creates or revives a member row. Pass `known` (null = none) to skip the lookup when the caller already did it. */
+/** Creates a member row or sets its role. Someone removed earlier gets a new row, since tombstones stay gone. */
 async function upsertMember(
   group_id: string,
   firebase_uid: string,
@@ -346,24 +333,12 @@ async function upsertMember(
   }
 
   if (existing) {
-    if (existing.role === role && !existing.soft_deleted) {
-      return { ok: true, value: existing };
-    }
+    if (existing.role === role) return { ok: true, value: existing };
 
-    return DB.member.update(existing.id, {
-      role,
-      soft_deleted: false,
-      scope_id: group_id,
-      firebase_uid,
-    } as Partial<DB.Member>);
+    return DB.member.update(existing.id, { role });
   }
 
-  return DB.member.create({
-    scope_id: group_id,
-    firebase_uid,
-    role,
-    owner_id: context.user?.id || "device",
-  } as Domain.Member);
+  return DB.member.create({ scope_id: group_id, firebase_uid, role });
 }
 
 /** Resolves the group and verifies the current user may administer it (owner, or an admin member). */
@@ -372,16 +347,15 @@ async function requireAdmin(group_id: string): AsyncResult<DB.Group> {
   if (!group_result.ok) return group_result;
 
   const group = group_result.value;
-  if (!group || group.soft_deleted) return { ok: false, error: "Group not found" };
-
-  const my_id = context.user?.id;
-  if (!my_id) return { ok: false, error: "Not authenticated" };
-  if (group.owner_id === my_id) return { ok: true, value: group };
+  if (!group) return { ok: false, error: "Group not found" };
 
   const my_uid = context.user?.firebase_uid;
-  if (group.scope_id && my_uid) {
+  if (!my_uid) return { ok: false, error: "Not authenticated" };
+  if (group.owner_id === my_uid) return { ok: true, value: group };
+
+  if (group.scope_id) {
     const member = await findMember(group.scope_id, my_uid);
-    if (member.ok && member.value && !member.value.soft_deleted && member.value.role === "admin") {
+    if (member.ok && member.value?.role === "admin") {
       return { ok: true, value: group };
     }
   }
@@ -392,37 +366,27 @@ async function requireAdmin(group_id: string): AsyncResult<DB.Group> {
 async function enqueueMembership(firebase_uid: string | undefined, group_id: string) {
   if (!firebase_uid) return;
 
-  await SyncQueue.enqueue({
-    table_name: "membership",
-    entity_id: firebase_uid,
-    scope_id: group_id,
-    op: "upsert",
-  });
+  await MembershipQueue.enqueue([{ entity_id: firebase_uid, scope_id: group_id, op: "upsert" }]);
 }
 
 async function enqueueMembershipRemoval(firebase_uid: string | undefined, group_id: string | null) {
   if (!firebase_uid || !group_id) return;
 
-  await SyncQueue.enqueue({
-    table_name: "membership",
-    entity_id: firebase_uid,
-    scope_id: group_id,
-    op: "delete",
-  });
+  await MembershipQueue.enqueue([{ entity_id: firebase_uid, scope_id: group_id, op: "delete" }]);
 }
 
 async function notifyDeletedGroup(members: DB.Member[], group: DB.Group) {
   const current_firebase_uid = context.user?.firebase_uid;
   await Promise.all(
     members
-      .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid && !member.soft_deleted)
+      .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid)
       .map((member) => NotificationService.createGroupDeleted(member.firebase_uid, group).then(warnOnFailure)),
   );
 }
 
 async function notifyMemberLeft(group: DB.Group) {
   const current_firebase_uid = context.user?.firebase_uid;
-  const members = await DB.member.findMany({ selector: { scope_id: group.id, soft_deleted: { $ne: true } } });
+  const members = await DB.member.findMany({ where: { scope_id: group.id } });
   if (!members.ok) return;
 
   const user_name = context.user?.name || context.user?.email_address || "";

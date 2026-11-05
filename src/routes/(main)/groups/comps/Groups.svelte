@@ -3,12 +3,11 @@
   import CardGroup from "$display/features/groups/CardGroup.svelte";
   import t from "$display/translate";
   import View from "$display/view";
-  import { onMount } from "svelte";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
 
-  /** @type {AL.GroupListItem[]} */
-  let groups = $state([]);
+  const groups_query = $derived(liveQuery(() => View.groups.getList(), []));
+  const groups = $derived(groups_query.current ?? []);
 
-  onMount(View.groups.getList(groups));
 </script>
 
 <div class="flex flex-col space-y-2 pt-2">

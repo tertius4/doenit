@@ -1,56 +1,25 @@
-import type { RxCollection } from "$lib/logic/chunk/rxdb";
 import { App } from "@capacitor/app";
-import { map, type Observable } from "rxjs";
+import BaseTable from "./base-table";
 
-export class AppStateTable {
-  collection: RxCollection<DB.AppState>;
+const ID = "current";
 
-  constructor(collection: RxCollection<DB.AppState>) {
-    this.collection = collection;
-  }
-
+export class AppStateTable extends BaseTable<DB.AppState> {
   async getDevice(): AsyncResult<DB.AppState> {
-    try {
-      const existing = await this.collection.findOne("current").exec();
-      if (existing) {
-        return { ok: true, value: existing.toJSON() as DB.AppState };
-      }
+    const existing = await this.findById(ID);
+    if (!existing.ok) return existing;
+    if (existing.value) return { ok: true, value: existing.value };
 
-      const app_info = await App.getInfo().catch(() => ({ version: "unknown" }));
-      const created = await this.collection.insert({
-        id: "current",
-        device_id: crypto.randomUUID(),
-        last_opened_at: new Date().toISOString(),
-        open_count: 1,
-        app_version: app_info.version,
-        updated_at: new Date().toISOString(),
-      });
-
-      return { ok: true, value: created.toJSON() as DB.AppState };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message };
-    }
+    const app_info = await App.getInfo().catch(() => ({ version: "unknown" }));
+    return this.create({
+      id: ID,
+      source_device: crypto.randomUUID(),
+      last_opened_at: new Date().toISOString(),
+      open_count: 1,
+      app_version: app_info.version,
+    });
   }
 
-  async update(changes: Partial<DB.AppState>): AsyncResult<DB.AppState> {
-    try {
-      const doc = await this.collection.findOne("current").exec();
-      if (!doc) throw new Error("App state not found");
-
-      const updated = await doc.incrementalPatch({
-        ...changes,
-        updated_at: new Date().toISOString(),
-      });
-
-      return { ok: true, value: updated.toJSON() as DB.AppState };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message };
-    }
-  }
-
-  subscribeOne$(id: string): Observable<DB.AppState | null> {
-    return this.collection.findOne(id).$.pipe(map((doc) => (doc ? (doc.toJSON() as DB.AppState) : null)));
+  patch(changes: Partial<DB.AppState>): AsyncResult<DB.AppState> {
+    return this.update(ID, changes);
   }
 }

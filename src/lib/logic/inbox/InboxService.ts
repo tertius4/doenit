@@ -7,7 +7,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { visibleSelector } from "$logic/visibility";
+import { visibleWhere } from "$logic/visibility";
 import * as task_api from "$logic/api/task";
 import * as category_api from "$logic/api/categories";
 
@@ -43,7 +43,7 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
   if (!uid) return;
 
   // The inbox id doubles as the task id, so a doc that was added but not yet deleted is never added twice.
-  const existing = await DB.task.findById(inbox_task.id);
+  const existing = await DB.task.findById(inbox_task.id, { includeDeleted: true });
   if (!existing.ok) throw new Error(existing.error);
 
   if (!existing.value) {
@@ -71,7 +71,7 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
 /** Finds a category by name (ignoring case) or creates it. */
 async function resolveCategory(name: string): Promise<string | undefined> {
   const categories = await DB.category.findMany({
-    selector: { $and: [{ soft_deleted: { $ne: true } }, visibleSelector(context.user?.id, context.active_scopes)] },
+    where: visibleWhere(context.user?.firebase_uid, context.active_scopes),
   });
   if (!categories.ok) throw new Error(categories.error);
 

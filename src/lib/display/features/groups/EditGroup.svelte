@@ -43,7 +43,7 @@
   /** @type {import("$logic/api/groups").GroupMember | null} */
   let member_to_remove = $state(null);
 
-  const is_owner = $derived(!!owner_id && owner_id === context.user?.id);
+  const is_owner = $derived(!!owner_id && owner_id === context.user?.firebase_uid);
   const my_member = $derived(members.find((m) => m.is_me) ?? null);
   const is_admin = $derived(is_owner || my_member?.role === "admin");
   const member_uids = $derived(new Set(members.map((m) => m.firebase_uid)));

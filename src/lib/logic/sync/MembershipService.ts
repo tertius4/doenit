@@ -1,15 +1,13 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
-import { SyncQueue } from "./SyncQueue";
-import { isPersonalScope, PERSONAL_TABLES, personalScope } from "./personal";
+import { isPersonalScope, personalChannel } from "$domain/sinkro/tables";
 import { ContactNames } from "./ContactNames";
-import { context } from "$logic/context.svelte";
 
 export const MembershipService = {
   /**
    * Fetches the user's scope memberships from Firestore and stores them in
-   * local UserState. Call this after login and before SyncEngine.requestTick().
-   * @param user_id  Local RxDB user ID (used as the user_state primary key).
+   * local UserState. Call this after login.
+   * @param user_id  Local user ID (used as the user_state primary key).
    * @param firebase_uid  Firebase UID (used as the Firestore document key).
    * @param known_scopes  Already-fetched memberships (e.g. from reconcileScopes) to avoid a second fetch.
    */
@@ -26,34 +24,18 @@ export const MembershipService = {
   },
 
   /**
-   * Follows personal sync being on or off. When it was just turned on (here or on another device), queues every local
-   * personal task and category and uploads the contact names, so this device's personal data reaches the cloud too.
-   * Later changes are queued by the tables themselves.
+   * Follows personal sync being on or off. When it was just turned on (here or on another device), uploads the contact
+   * names. Personal tasks and categories need nothing: their changes wait in the outbox until the channel is listed.
    * @param previous_scopes  The active scopes stored locally before this change.
    * @param scopes  The active scopes from the memberships document.
    */
   async applyPersonalSync(firebase_uid: string, previous_scopes: string[], scopes: string[]): Promise<void> {
-    const scope_id = personalScope(firebase_uid);
+    const scope_id = personalChannel(firebase_uid);
     const enabled = scopes.includes(scope_id);
-    const just_enabled = enabled && !previous_scopes.includes(scope_id);
 
     // Before watching, so this device's names are uploaded before the synced ones are applied.
-    if (just_enabled) await ContactNames.uploadAll(firebase_uid);
+    if (enabled && !previous_scopes.includes(scope_id)) await ContactNames.uploadAll(firebase_uid);
     ContactNames.watch(firebase_uid, enabled);
-    if (!just_enabled) return;
-
-    for (const table_name of PERSONAL_TABLES) {
-      const table = DB.getCollection(table_name);
-      if (!table) continue;
-
-      const docs = await table.collection.find({ selector: { soft_deleted: { $ne: true } } } as any).exec();
-      const personal = docs.filter((doc: any) => !doc.scope_id && doc.owner_id === context.user?.id);
-      if (!personal.length) continue;
-
-      await SyncQueue.enqueueMany(
-        personal.map((doc: any) => ({ table_name, entity_id: doc.id, scope_id, op: "upsert" as const })),
-      );
-    }
   },
 
   /**

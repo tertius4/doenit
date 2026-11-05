@@ -1,7 +1,7 @@
 import { apiLogger } from "$lib";
 import DB from "$lib/domain/db";
 import { InviteService } from "$logic/invites/InviteService";
-import { ContactNames } from "$domain/sync/ContactNames";
+import { ContactNames } from "$logic/sync/ContactNames";
 
 export const remove = apiLogger(deleteContactHandler);
 export const update = apiLogger(updateContactHandler);

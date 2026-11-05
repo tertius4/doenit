@@ -3,8 +3,9 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { Capacitor } from "@capacitor/core";
 import DB from "$domain/db";
-import * as schema from "$domain/schema";
+import { tables } from "$domain/sinkro/tables";
 import { context } from "$logic/context.svelte";
+import { visibleWhere } from "$logic/visibility";
 import Api from "$logic/api";
 import { err } from "$lib";
 import t from "$display/translate";
@@ -49,9 +50,10 @@ export function mergeDoc(existing: { updated_at: string } | null, incoming: { up
 
 export async function createBackup(options: { photos: boolean }): AsyncResult {
   try {
-    const tasks = await DB.task.findMany({});
+    const where = visibleWhere(context.user?.firebase_uid, context.active_scopes);
+    const tasks = await DB.task.findMany({ where });
     if (!tasks.ok) return tasks;
-    const categories = await DB.category.findMany({});
+    const categories = await DB.category.findMany({ where });
     if (!categories.ok) return categories;
 
     const settings: Partial<DB.Settings> = {};
@@ -61,7 +63,7 @@ export async function createBackup(options: { photos: boolean }): AsyncResult {
       format: FORMAT,
       app_version: context.app_state.app_version,
       exported_at: new Date().toISOString(),
-      schema: { task: schema.task.version, category: schema.category.version },
+      schema: { task: tables.task.version, category: tables.category.version },
       tasks: tasks.value.filter(isPersonal),
       categories: categories.value.filter(isPersonal),
       settings,
@@ -106,7 +108,7 @@ export async function restoreBackup(base64: string): AsyncResult<RestoreSummary>
     if (backup.format !== FORMAT || !Array.isArray(backup.tasks) || !Array.isArray(backup.categories)) {
       return err(t("invalid_backup_data_format"));
     }
-    if (backup.schema.task > schema.task.version || backup.schema.category > schema.category.version) {
+    if (backup.schema.task > tables.task.version || backup.schema.category > tables.category.version) {
       return err(t("invalid_backup_data_format"));
     }
 
@@ -133,6 +135,12 @@ export async function restoreBackup(base64: string): AsyncResult<RestoreSummary>
 
 async function mergeTable<T extends DB.Task | DB.Category>(table: any, docs: T[], summary: RestoreSummary) {
   for (const doc of docs) {
+    // Backups from before sinkro-db hold deleted documents too.
+    if ((doc as any).soft_deleted) {
+      summary.skipped++;
+      continue;
+    }
+
     const existing = await table.findById(doc.id);
     if (!existing.ok) throw new Error(existing.error);
 
@@ -142,14 +150,8 @@ async function mergeTable<T extends DB.Task | DB.Category>(table: any, docs: T[]
       continue;
     }
 
-    // Make the document look native to this phone.
-    const local = {
-      ...doc,
-      scope_id: null,
-      owner_id: context.user?.id || "device",
-      device_id: context.app_state.device_id,
-    };
-    const result = action === "add" ? await table.createRaw(local) : await table.updateRaw(doc.id, local);
+    // Make the document look native to this phone: it goes to the user's own channel.
+    const result = await table.importMany([{ ...doc, scope_id: null }]);
     if (!result.ok) throw new Error(result.error);
 
     if (action === "add") summary.added++;

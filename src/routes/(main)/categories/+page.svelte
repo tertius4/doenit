@@ -3,6 +3,7 @@
   import { backHandler, navHistory } from "$logic/navigation";
   import t from "$display/translate";
   import View from "$display/view";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import { onMount } from "svelte";
   import Api from "$logic/api";
   import alert from "$display/toast/toast.svelte";
@@ -12,14 +13,13 @@
   let error_message = $state("");
   let is_editing = $state(false);
 
-  /** @type {AL.CategoryListItem[]} */
-  let categories = $state([]);
+  const categories_query = $derived(liveQuery(() => View.categories.categoryList(), []));
+  const categories = $derived(categories_query.current ?? []);
   let new_name = $state("");
 
   const tasks_count_map = $derived(await Api.cats.mapTasksCountToCategories());
   const filtered_categories = $derived(categories.filter((category) => category.id !== "default"));
 
-  onMount(View.categories.categoryList(categories));
   onMount(() => {
     const token = backHandler.register(() => navHistory.back(`/`), -1);
     return () => backHandler.unregister(token);

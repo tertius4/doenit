@@ -173,7 +173,7 @@ async function updateTaskHandler(task) {
 async function ensureGroupScope(group_id) {
   const group = await DB.group.findById(group_id);
   if (!group.ok) return group;
-  if (!group.value || group.value.soft_deleted) return { ok: false, error: t("group_not_found") };
+  if (!group.value) return { ok: false, error: t("group_not_found") };
 
   if (!group.value.scope_id) {
     const updated = await DB.group.update(group.value.id, { scope_id: group.value.id });
@@ -181,7 +181,7 @@ async function ensureGroupScope(group_id) {
   }
 
   // A group that never had members added has no owner member row yet; without it the scope has no members.
-  if (group.value.owner_id === context.user?.id) {
+  if (group.value.owner_id === context.user?.firebase_uid) {
     const owner = await ensureOwnerMember(group.value.id);
     if (!owner.ok) return owner;
   }
@@ -331,7 +331,7 @@ async function uncompleteTaskHandler(id) {
  */
 async function getTasksByIdsHandler(task_ids) {
   try {
-    return DB.task.findMany({ selector: { id: { $in: task_ids } } });
+    return DB.task.findMany({ where: { id: { $in: task_ids } } });
   } catch (err) {
     logger.error("Error fetching tasks by IDs:", err);
     const error = err instanceof Error ? err.message : JSON.stringify(err);
@@ -346,7 +346,7 @@ async function getTasksByIdsHandler(task_ids) {
  */
 async function getShareTaskTextHandler({ ids }) {
   try {
-    const result = await DB.task.findMany({ selector: { id: { $in: ids } } });
+    const result = await DB.task.findMany({ where: { id: { $in: ids } } });
     if (!result.ok) return result;
 
     const tasks = result.value;
@@ -369,7 +369,7 @@ async function getShareTaskTextHandler({ ids }) {
  */
 async function deleteAllHandler({ ids, reset_repeating = false }) {
   try {
-    const result = await DB.task.findMany({ selector: { id: { $in: ids } } });
+    const result = await DB.task.findMany({ where: { id: { $in: ids } } });
     if (!result.ok) return result;
 
     const tasks = result.value;

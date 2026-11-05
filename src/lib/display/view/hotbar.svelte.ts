@@ -1,5 +1,4 @@
-import { subscribeHotbarCategoryList } from "./categories.js";
-import type { Subscription } from "rxjs";
+import { hotbarCategoryList } from "./categories.js";
 
 /**
  * The hotbar's categories live at module scope on purpose.
@@ -13,19 +12,17 @@ import type { Subscription } from "rxjs";
  */
 export const hotbar_categories: AL.CategoryListItem[] = $state([]);
 
-let subscription: Subscription | undefined;
-let starting = false;
+let started = false;
 
 /** Subscribes once per app session. Safe to call from every mount; later calls are no-ops. */
 export function startHotbarCategories() {
-  if (subscription || starting) return;
-  starting = true;
+  if (started) return;
+  started = true;
 
-  subscribeHotbarCategoryList()
-    .then((pipe) => pipe.subscribe((data) => hotbar_categories.splice(0, hotbar_categories.length, ...data)))
-    .then((sub) => (subscription = sub))
-    .catch((error) => {
-      starting = false;
-      console.warn("[hotbar] category subscription failed:", error);
-    });
+  // Outlives every component, and starts over when the visible channels change.
+  $effect.root(() => {
+    $effect(() =>
+      hotbarCategoryList().subscribe((data) => hotbar_categories.splice(0, hotbar_categories.length, ...data)),
+    );
+  });
 }

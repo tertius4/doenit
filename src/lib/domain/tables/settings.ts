@@ -1,62 +1,36 @@
 import Table from "./local-table";
 
-export class SettingsTable extends Table<Domain.Settings> {
+export class SettingsTable extends Table<DB.Settings> {
   async getSettings(user_id?: string): AsyncResult<DB.Settings> {
-    try {
-      if (user_id) {
-        const user_settings = await this.collection.findOne(user_id).exec();
-        if (user_settings) {
-          return { ok: true, value: user_settings.toJSON() } as Result<DB.Settings>;
-        }
+    const existing = await this.findById(user_id || "device");
+    if (!existing.ok) return existing;
+    if (existing.value) return { ok: true, value: existing.value };
 
-        // Copy settings from device.
-        const device_settings = await this.collection.findOne("device").exec();
-        if (device_settings) {
-          const created = await this.collection.insert({
-            ...device_settings.toJSON(),
-            id: user_id,
-            user_id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-          return { ok: true, value: created.toJSON() } as Result<DB.Settings>;
-        }
+    if (!user_id) {
+      return this.create({
+        id: "device",
+        owner_id: "device",
+        user_id: "device",
 
-        return {
-          ok: false,
-          error: `No settings found for user_id "${user_id}" and failed to copy from device settings`,
-        } as Result<DB.Settings>;
-      } else {
-        const existing = await this.collection.findOne(user_id || "device").exec();
-        if (existing) {
-          return { ok: true, value: existing.toJSON() } as Result<DB.Settings>;
-        }
+        theme: "dark",
+        automatic_backup: false,
 
-        const date = new Date().toISOString();
-        const created = await this.collection.insert({
-          id: "device",
-          owner_id: "device",
-          user_id: "device",
-
-          theme: "dark",
-          automatic_backup: false,
-
-          notifications_enabled: true,
-          present_task_reminder_enabled: true,
-          present_task_reminder_time: "09:00",
-          past_task_reminder_enabled: false,
-          past_task_reminder_time: "09:00",
-          text_size: "md",
-
-          created_at: date,
-          updated_at: date,
-        });
-
-        return { ok: true, value: created.toJSON() } as Result<DB.Settings>;
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : JSON.stringify(error);
-      return { ok: false, error: message } as Result<DB.Settings>;
+        notifications_enabled: true,
+        present_task_reminder_enabled: true,
+        present_task_reminder_time: "09:00",
+        past_task_reminder_enabled: false,
+        past_task_reminder_time: "09:00",
+        text_size: "md",
+      });
     }
+
+    // Copy settings from device.
+    const device_settings = await this.findById("device");
+    if (!device_settings.ok) return device_settings;
+    if (!device_settings.value) {
+      return { ok: false, error: `No settings found for user_id "${user_id}" and failed to copy from device settings` };
+    }
+
+    return this.create({ ...device_settings.value, id: user_id, user_id });
   }
 }

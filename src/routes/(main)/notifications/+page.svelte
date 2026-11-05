@@ -1,15 +1,16 @@
 <script>
-  import { subscribeList } from "$display/view/notifications";
+  import { list } from "$display/view/notifications";
+  import { liveQuery } from "@tertius4/sinkro-db/svelte";
   import Api from "$logic/api";
   import { context } from "$logic/context.svelte";
   import NotificationList from "$display/notifications/NotificationList.svelte";
   import t from "$display/translate";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import { backHandler, navHistory } from "$logic/navigation";
 
-  let notifications = $state.raw(/** @type {DB.Notification[]} */ ([]));
-  let unsubscribe = () => {};
-  
+  const notifications_query = $derived(liveQuery(() => list(context.user?.firebase_uid ?? ""), []));
+  const notifications = $derived(notifications_query.current ?? []);
+
   onMount(() => {
     const token = backHandler.register(() => navHistory.back("/"), -1);
     return () => backHandler.unregister(token);
@@ -19,18 +20,6 @@
     Api.notifications.pull().catch((error) => console.warn("[notifications] pull failed:", error));
   });
 
-  $effect(() => {
-    const user_id = context.user?.firebase_uid ?? "";
-
-    unsubscribe();
-    notifications = [];
-
-    if (!user_id) return;
-
-    unsubscribe = subscribeList(user_id, (items) => (notifications = items));
-  });
-
-  onDestroy(() => unsubscribe());
 </script>
 
 {#if context.user?.firebase_uid}

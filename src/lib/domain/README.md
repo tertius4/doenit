@@ -9,9 +9,6 @@ This layer manages:
 * Entities
 * Database access
 * Persistence operations
-* Sync logic
-* Merge rules
-* Metadata (updatedAt, deviceId, etc.)
 
 It defines how your app’s data behaves and is stored.
 
@@ -21,7 +18,7 @@ It does not know about UI or business decisions.
 
 ## It May:
 
-* Use storage adapters (RxDB, etc.)
+* Use the database package (sinkro-db)
 * Be called by `app/`
 * Be called by sync engine
 

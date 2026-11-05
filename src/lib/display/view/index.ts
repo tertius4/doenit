@@ -4,12 +4,10 @@ import * as done_page from "./done-page.js";
 import * as groups from "./groups.js";
 import * as group_tasks from "./group_tasks.js";
 import * as contacts from "./contacts.js";
-import * as db from "./db.js";
 
 export default class View {
   static readonly categories = {
     categoryList: categories.categoryList,
-    listAssignTask: categories.listAssignTask,
   };
 
   static readonly main_page = {
@@ -20,13 +18,6 @@ export default class View {
     taskList: done_page.taskList,
   };
   
-  static readonly db = {
-    users: db.users,
-    category: db.category,
-    tasks: db.tasks,
-    sync_queues: db.sync_queues,
-  }
-
   static readonly groups = {
     getList: groups.getList,
     getOne: groups.getOne,

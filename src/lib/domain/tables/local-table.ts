@@ -1,51 +1,11 @@
-import type { MangoQuery, RxCollection } from "$lib/logic/chunk/rxdb";
-import { context } from "$logic/context.svelte";
 import BaseTable from "./base-table";
 
-export default class Table<T> extends BaseTable<T & DB.MetaDataPrivate> {
-  constructor(collection: RxCollection<T & DB.MetaDataPrivate>) {
-    super(collection);
-  }
+export default class LocalTable<T extends { id: string; created_at?: string; updated_at?: string }> extends BaseTable<T> {
+  /** Stores a copy from Firestore with its own times. An older or equally old copy leaves the stored one as it is. */
+  async upsert(doc: T): AsyncResult<T> {
+    const result = (await this.importMany([doc])) as Result<number>;
+    if (!result.ok) return { ok: false, error: result.error } as Result<T>;
 
-  async create(item: Partial<T>): AsyncResult<T & DB.MetaDataPrivate> {
-    return super.create({
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      owner_id: context.user?.id || "device",
-      ...item,
-    } as T & DB.MetaDataPrivate);
-  }
-
-  async createMany(items: Partial<T>[]): AsyncResult<(T & DB.MetaDataPrivate)[]> {
-    if (!items.length) return { ok: true, value: [] } as Result<(T & DB.MetaDataPrivate)[]>;
-
-    const date = new Date().toISOString();
-    const new_items = items.map((item) => ({
-      id: crypto.randomUUID(),
-      created_at: date,
-      updated_at: date,
-      owner_id: context.user?.id || "device",
-      ...item,
-    })) as (T & DB.MetaDataPrivate)[];
-
-    return super.createMany(new_items);
-  }
-
-  async update(id: string, changes: Partial<T>): AsyncResult<T & DB.MetaDataPrivate> {
-    return super.update(id, {
-      updated_at: new Date().toISOString(),
-      ...changes,
-    } as Partial<T & DB.MetaDataPrivate>);
-  }
-
-  async updateMany(
-    updates: { id: string; changes: Partial<T & DB.MetaDataPrivate> }[],
-  ): AsyncResult<(T & DB.MetaDataPrivate)[]> {
-    return super.updateMany(updates) as AsyncResult<(T & DB.MetaDataPrivate)[]>;
-  }
-
-  async findMany(query?: MangoQuery<T & DB.MetaDataPrivate>): AsyncResult<(T & DB.MetaDataPrivate)[]> {
-    return super.findMany(query) as AsyncResult<(T & DB.MetaDataPrivate)[]>;
+    return { ok: true, value: doc } as Result<T>;
   }
 }
