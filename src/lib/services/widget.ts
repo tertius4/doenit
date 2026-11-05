@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { combineLatest, debounceTime, distinctUntilChanged, map, Subscription } from "rxjs";
 import db from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { compareTasks, isDoNowTask } from "$lib";
+import { compareTasks } from "$lib";
 import logger from "$display/logger";
 import toast from "$display/toast/toast.svelte";
 
@@ -41,9 +41,9 @@ export class Widget {
       combineLatest([tasks$, categories$])
         .pipe(debounceTime(500))
         .subscribe(([tasks, categories]) => {
-          const today = new Date();
           const uid = context.user?.firebase_uid ?? null;
-          const mine = tasks.filter((t) => (!t.assigned_firebase_uid || t.assigned_firebase_uid === uid) && isDoNowTask(t, today));
+          // Send every dated task; the widget filters to "do now" against its own date, so it rolls over at midnight.
+          const mine = tasks.filter((t) => (!t.assigned_firebase_uid || t.assigned_firebase_uid === uid) && (t.start_date || t.due_date));
           Widget.updateTasks(mine.sort(compareTasks), categories);
         }),
     );

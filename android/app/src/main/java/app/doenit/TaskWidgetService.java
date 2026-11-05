@@ -229,9 +229,12 @@ public class TaskWidgetService extends RemoteViewsService {
             try {
                 JSONObject categories = Utils.isEmpty(categoriesJson) ? new JSONObject() : new JSONObject(categoriesJson);
                 JSONArray tasksArray = new JSONArray(tasksJson);
+                String today = dayString(0);
+                String dueLimit = dayString(2);
 
                 for (int i = 0; i < tasksArray.length(); i++) {
                     JSONObject taskJson = tasksArray.getJSONObject(i);
+                    if (!isDoNow(taskJson.optString("start_date", ""), taskJson.optString("due_date", ""), today, dueLimit)) continue;
 
                     Task task = new Task();
                     task.id = taskJson.optString("id", "");
@@ -254,6 +257,24 @@ public class TaskWidgetService extends RemoteViewsService {
                 Log.e(Const.LOG_TAG_DOENIT_WIDGET, "Error parsing JSON", e);
                 e.printStackTrace();
             }
+        }
+
+        /** Same rule as isDoNowTask in src/lib/index.ts. Dates are compared as yyyy-MM-dd strings. */
+        private boolean isDoNow(String startDate, String dueDate, String today, String dueLimit) {
+            if (!Utils.isEmpty(startDate)) return day(startDate).compareTo(today) <= 0;
+            if (!Utils.isEmpty(dueDate)) return day(dueDate).compareTo(dueLimit) <= 0;
+            return false;
+        }
+
+        private String day(String date) {
+            return date.length() > 10 ? date.substring(0, 10) : date;
+        }
+
+        /** Today plus `offset` days as yyyy-MM-dd, in local time. */
+        private String dayString(int offset) {
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_MONTH, offset);
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(cal.getTime());
         }
 
         private String getCategoryName(String category_id, JSONObject categories) {

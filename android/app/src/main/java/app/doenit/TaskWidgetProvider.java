@@ -62,6 +62,9 @@ public class TaskWidgetProvider extends AppWidgetProvider {
         for (int i = 0; i < appWidgetIds.length; i++) {
             updateAppWidget(context, appWidgetManager, appWidgetIds[i]);
         }
+
+        // Reload the list so the "do now" filter is re-applied against today's date (runs every 30 min).
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list_view);
     }
 
     @Override
