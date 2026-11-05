@@ -204,6 +204,8 @@ const af = {
   copy_email_address: "Kopieer e-posadres",
   private_relay_email_hint: "Jy het met Apple ingeteken en jou e-posadres versteek. Deel die adres hieronder sodat ander mense jou kan uitnooi.",
   manage: "Bestuur",
+  mark_all_as_read: "Merk alles as gelees",
+  mark_as_read: "Merk as gelees",
   me: "Ek",
   medium: "Medium",
   menu: "Kieslys",

@@ -12,6 +12,7 @@ import t from "$display/translate";
 
 export const pull = () => NotificationService.pull();
 export const markAsRead = apiLogger(markAsReadHandler);
+export const markAllAsRead = apiLogger(() => NotificationService.markAllAsRead());
 export const open = (notification: DB.Notification) => NotificationRouter.open(notification);
 export const requestPermission = apiLogger(requestPermissionHandler);
 export const syncPush = () => PushService.sync();

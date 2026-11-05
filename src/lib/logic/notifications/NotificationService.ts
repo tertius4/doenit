@@ -214,4 +214,29 @@ export const NotificationService = {
       return { ok: false, error: message };
     }
   },
+
+  /** Marks every unread notification as read. Returns how many were marked. */
+  async markAllAsRead(): AsyncResult<number> {
+    const my_uid = myFirebaseUid();
+    if (!my_uid) return { ok: false, error: "Not signed in" };
+
+    const unread = await DB.notification.findMany(DB.notification.unreadQuery(my_uid));
+    if (!unread.ok) return unread;
+    if (!unread.value.length) return { ok: true, value: 0 };
+
+    const read_at = new Date().toISOString();
+    const updated = unread.value.map((notification) => ({ ...notification, read_at, updated_at: read_at }));
+
+    try {
+      // Local first so reading works offline; the remote write is best-effort.
+      for (const notification of updated) await DB.notification.upsert(notification);
+      firestore
+        .upsertNotifications(my_uid, updated)
+        .catch((error) => console.warn("[notifications] failed to sync read state:", error));
+      return { ok: true, value: updated.length };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      return { ok: false, error: message };
+    }
+  },
 };

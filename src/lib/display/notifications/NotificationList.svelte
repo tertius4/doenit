@@ -56,18 +56,24 @@
   }
 </script>
 
+{#if notifications.some((notification) => !notification.read_at)}
+  <div class="flex justify-end mb-2">
+    <button type="button" onclick={() => Api.notifications.markAllAsRead()} class="text-sm font-semibold text-primary px-2 py-1">
+      {t("mark_all_as_read")}
+    </button>
+  </div>
+{/if}
+
 <ul class="space-y-2">
   {#each notifications as notification (notification.id)}
-    <li>
-      <button
-        type="button"
-        onclick={() => open(notification)}
-        class={{
-          "w-full bg-surface rounded-lg px-4 py-3 text-left flex gap-3 border transition-colors hover:bg-card active:bg-card": true,
-          "border-primary": !notification.read_at,
-          "border-default": !!notification.read_at,
-        }}
-      >
+    <li
+      class={{
+        "bg-surface rounded-lg flex border transition-colors hover:bg-card active:bg-card": true,
+        "border-primary": !notification.read_at,
+        "border-default": !!notification.read_at,
+      }}
+    >
+      <button type="button" onclick={() => open(notification)} class="flex-1 min-w-0 px-4 py-3 text-left flex gap-3">
         <div
           class={{
             "mt-0.5 rounded-full p-2 shrink-0 h-fit": true,
@@ -85,6 +91,17 @@
           <p class="mt-1 text-sm text-muted line-clamp-2">{notificationText(notification).body}</p>
         </div>
       </button>
+      {#if !notification.read_at}
+        <button
+          type="button"
+          aria-label={t("mark_as_read")}
+          title={t("mark_as_read")}
+          onclick={() => Api.notifications.markAsRead(notification)}
+          class="shrink-0 px-3 text-primary"
+        >
+          <Icon name="check" size={20} />
+        </button>
+      {/if}
     </li>
   {:else}
     <div class="h-full min-h-80 flex flex-col items-center justify-center text-center text-muted px-6">

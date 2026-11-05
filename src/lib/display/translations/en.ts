@@ -206,6 +206,8 @@ const en: Record<keyof typeof af, string> = {
   copy_email_address: "Copy email address",
   private_relay_email_hint: "You signed in with Apple and hid your email address. Share the address below so other people can invite you.",
   manage: "Manage",
+  mark_all_as_read: "Mark all as read",
+  mark_as_read: "Mark as read",
   me: "Me",
   medium: "Medium",
   menu: "Menu",

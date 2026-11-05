@@ -336,6 +336,17 @@ class Firestore {
     await setDoc(ref, { ...notification, synced_at: serverTimestamp() }, { merge: true });
   }
 
+  /** Writes several notifications in one batch (one round trip). */
+  async upsertNotifications(user_id: string, notifications: DB.Notification[]): Promise<void> {
+    const db = this.getDb();
+    const batch = writeBatch(db);
+    for (const notification of notifications) {
+      const ref = doc(db, "users", user_id, "notifications", notification.id);
+      batch.set(ref, { ...notification, synced_at: serverTimestamp() }, { merge: true });
+    }
+    await batch.commit();
+  }
+
   /**
    * Attaches a real-time listener to a scope's items collection. Watches only the most recently synced item (one read
    * per change), and fires on every remote write after the initial snapshot, however old the item's updated_at is.

@@ -67,6 +67,7 @@ export default class Api {
     pull: notifications.pull,
     syncPush: notifications.syncPush,
     markAsRead: notifications.markAsRead,
+    markAllAsRead: notifications.markAllAsRead,
     open: notifications.open,
     schedule: notifications.schedule,
     requestPermission: notifications.requestPermission,
