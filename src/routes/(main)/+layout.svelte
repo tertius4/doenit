@@ -3,7 +3,7 @@
   import Heading from "$display/features/header/Heading.svelte";
   import { context } from "$logic/context.svelte";
   import { installHardwareBack, navHistory } from "$logic/navigation";
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { Capacitor } from "@capacitor/core";
   import { setContext, onMount, mount, untrack } from "svelte";
   import "../../app.css";
@@ -112,23 +112,33 @@
   $effect(() => {
     document.documentElement.style.setProperty("--base-size", `var(--${context._settings?.text_size || "md"})`);
   });
+
+  /** Web only: "n" opens the create-task page unless the user is typing. @param {KeyboardEvent} e */
+  function onkeydown(e) {
+    if (!is_web || e.key !== "n" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((e.target instanceof Element) && e.target.closest("input, textarea, select, [contenteditable]")) return;
+    e.preventDefault();
+    goto("/create");
+  }
 </script>
+
+<svelte:window {onkeydown} />
 
 {#if is_gated}
   <WebGate />
 {:else}
   <main
-    class="h-dvh relative grid grid-rows-[auto_1fr_auto] text-md text-normal bg-page **:select-none **:transition-all **:duration-300"
+    class="min-h-dvh relative flex flex-col text-md text-normal bg-page select-none **:transition-all **:duration-300"
   >
     <Heading />
 
-    <div class="relative max-w-250 scrollbar-none overflow-x-hidden w-full md:mx-auto grow bg-page overflow-y-auto p-2">
+    <div class="relative max-w-250 overflow-x-hidden w-full md:mx-auto grow bg-page p-2">
       {#if versionGate.outdated}
         <UpdateBanner />
       {/if}
 
       {#await data.ready}
-        <div class="h-full flex items-center justify-center">
+        <div class="min-h-[50dvh] flex items-center justify-center">
           <Icon name="loading" class="animate-spin text-2xl" />
         </div>
       {:then ok}

@@ -71,8 +71,10 @@
   }
 </script>
 
+<svelte:head><title>{title} · Doenit</title></svelte:head>
+
 <div
-  class="bg-surface"
+  class="bg-surface sticky top-0 z-30"
   style="padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);"
 >
   <div class="relative flex items-center border-default border-b h-14">

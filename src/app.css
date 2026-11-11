@@ -360,3 +360,51 @@
     color: var(--color-error);
   }
 }
+
+/* Website polish: pointer cursor, hover tint (mouse only), keyboard focus, selection, scrollbar */
+@layer base {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-0) transparent;
+  }
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
+  button:not(:disabled),
+  [role="button"],
+  a[href],
+  summary,
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+  input,
+  textarea {
+    user-select: text;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  @media (hover: hover) {
+    button:not(:disabled):hover,
+    [role="button"]:hover,
+    a[href]:not(.group):hover {
+      background-image: linear-gradient(
+        color-mix(in srgb, currentColor 8%, transparent),
+        color-mix(in srgb, currentColor 8%, transparent)
+      );
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}

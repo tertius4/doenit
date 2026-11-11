@@ -45,7 +45,7 @@
       class={{
         "focus:outline-none w-full p-4 flex items-center justify-between rounded-lg transition-colors": true,
         "cursor-not-allowed": disabled,
-        "hover:bg-t-primary-700 active:bg-t-primary-700": !disabled,
+        "hover:bg-card active:bg-card": !disabled,
       }}
     >
       <div class="flex items-center gap-2">

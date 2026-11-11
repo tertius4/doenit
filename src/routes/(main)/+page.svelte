@@ -132,8 +132,8 @@
 <button
   type="button"
   onclick={() => goto("/create")}
-  class="fixed right-4 z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
-  style="bottom: calc(136px + env(safe-area-inset-bottom)); "
+  class="fixed z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg hover:scale-110 active:scale-95"
+  style="bottom: calc(136px + env(safe-area-inset-bottom)); right: max(1rem, calc((100vw - 1000px) / 2 + 1rem));"
   aria-label="Add task"
 >
   {#if navigating.to}
