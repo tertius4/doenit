@@ -80,12 +80,20 @@ service cloud.firestore {
             .union(scopesBefore().toSet().difference(scopesAfter().toSet()));
         }
 
+        // Fields this write changes. request.resource.data is the whole document after the write, so its keys() also
+        // hold fields the owner set (e.g. personal_sync_enabled_at); only what actually changes may be limited.
+        function changedKeys() {
+          return resource == null
+            ? request.resource.data.keys().toSet()
+            : request.resource.data.diff(resource.data).affectedKeys();
+        }
+
         // Group members add and remove scopes on behalf of the users they invite or remove.
         // They may change at most one scope per write, and only one that they belong to themselves.
         function isMemberManaging() {
           return signedIn()
             && doc_id == 'memberships'
-            && request.resource.data.keys().hasOnly(['scopes', 'updated_at'])
+            && changedKeys().hasOnly(['scopes', 'updated_at'])
             && changedScopes().size() <= 1
             && changedScopes().difference(get(membershipsPath(request.auth.uid)).data.get('scopes', []).toSet()).size() == 0;
         }
