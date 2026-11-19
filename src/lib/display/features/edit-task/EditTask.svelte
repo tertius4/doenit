@@ -29,6 +29,7 @@
   let name_invalid = $state(false);
   let is_prompting = $state(false);
   let is_editing_description = $state(false);
+  let is_date_picker_open = $state(false);
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
   const scope_id = $derived(/** @type {any} */ (task).scope_id);
@@ -45,6 +46,7 @@
   async function handleSubmit(event) {
     event.preventDefault();
 
+    is_date_picker_open = false;
     is_loading = true;
 
     const result = await onsubmit(JSON.parse(JSON.stringify(task)));
@@ -102,7 +104,7 @@
 
   <div class="w-full">
     <label class="font-semibold" for="date">{date_title}</label>
-    <DatePicker bind:start={task.start_date} bind:end={task.due_date} />
+    <DatePicker bind:start={task.start_date} bind:end={task.due_date} bind:is_open={is_date_picker_open} />
     <DatePickerShortcut date={task.start_date} onchange={(value) => (task.start_date = value)} />
   </div>
 
@@ -143,8 +145,12 @@
 
   <PhotoGallery bind:photo_ids={task.photo_ids} class="mt-4" bind:is_prompting />
 
+  <!-- While the date picker is open, the submit button sits between its shade (z-40) and its panel (z-50). -->
   <div
-    class="fixed flex inset-0 justify-between items-center w-full h-fit z-10 top-auto px-2"
+    class={[
+      "fixed flex inset-0 justify-between items-center w-full h-fit top-auto px-2",
+      is_date_picker_open ? "z-45 pointer-events-none" : "z-10",
+    ]}
     style="bottom: max(16px, env(safe-area-inset-bottom));"
   >
     {#if config.photos_enabled}
@@ -152,12 +158,17 @@
         type="button"
         onclick={() => (is_prompting = true)}
         disabled={is_loading}
-        class="flex justify-center bg-card items-center aspect-square rounded-full size-13 p-3 disabled:opacity-50"
+        class={[
+          "flex justify-center bg-card items-center aspect-square rounded-full size-13 p-3 disabled:opacity-50",
+          is_date_picker_open && "invisible",
+        ]}
       >
         <Icon name="camera" />
       </button>
     {/if}
 
-    <ButtonSubmitTask loading={is_loading} />
+    <div class="pointer-events-auto ml-auto">
+      <ButtonSubmitTask loading={is_loading} />
+    </div>
   </div>
 </form>

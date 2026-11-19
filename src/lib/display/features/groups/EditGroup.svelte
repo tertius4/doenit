@@ -11,6 +11,7 @@
   import Modal from "$display/comps/modal/Modal.svelte";
   import ModalHeader from "$display/comps/modal/ModalHeader.svelte";
   import ModalEditGroupInfo from "./ModalEditGroupInfo.svelte";
+  import ModalSendInvite from "$display/comps/modal/ModalSendInvite.svelte";
   import ButtonLeaveGroup from "./ButtonLeaveGroup.svelte";
   import ButtonDisbandGroup from "./ButtonDisbandGroup.svelte";
   import { goto, invalidate } from "$app/navigation";
@@ -31,6 +32,7 @@
   const SEARCH_THRESHOLD = 6;
 
   let edit_open = $state(false);
+  let invite_open = $state(false);
   let is_loading = $state(false);
   let search = $state("");
 
@@ -274,8 +276,9 @@
           <ul class="space-y-1">
             {#each members as member (member.id)}
               {@const contact = member.contact}
-              <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
-                <span class="grow flex items-center gap-1 truncate text-sm">
+              <li class="flex items-center gap-3 rounded-xl bg-card px-3 py-2 min-h-14">
+                {@render avatar(memberLabel(member), 36)}
+                <span class="grow flex items-center gap-1 truncate">
                   {#if member.role === "admin"}
                     <Icon name="crown" size={12} />
                   {/if}
@@ -316,12 +319,7 @@
             <p class="font-semibold mb-2">{t("add_member")}</p>
 
             {#if !available_contacts.length}
-              <p class="text-sm text-muted">
-                {t("no_contacts_to_add")}
-                {#if !is_loading}
-                  · <a href="/contacts" class="text-primary underline">{t("contacts")}</a>
-                {/if}
-              </p>
+              <p class="text-sm text-muted mb-2">{t("no_contacts_to_add")}</p>
             {:else}
               {#if available_contacts.length >= SEARCH_THRESHOLD}
                 <input
@@ -333,26 +331,53 @@
                 />
               {/if}
 
-              <ul class="space-y-1">
+              <ul class="space-y-2 mb-2">
                 {#each filtered_contacts as contact (contact.id)}
-                  <li class="flex items-center gap-2 rounded-lg bg-card px-3 py-2 h-12">
-                    <span class="grow truncate text-sm">{contact.name || contact.email_address}</span>
-                    {#if contact.name}
-                      <span class="text-xs text-muted truncate">{contact.email_address ?? ""}</span>
-                    {/if}
+                  {@const label = contact.name || contact.email_address || ""}
+                  <li>
+                    <!-- The whole card adds the contact; the pill only shows what a tap does. -->
                     <button
                       type="button"
-                      title={t("add_member")}
-                      aria-label={t("add_member")}
-                      class="text-primary shrink-0 disabled:opacity-50"
+                      aria-label={t("add_member_named", { name: label })}
+                      class="w-full flex items-center gap-3 min-h-16 px-3 py-2 rounded-xl bg-card border border-default text-left active:scale-[0.98] disabled:opacity-60"
                       disabled={pending.has(contact.id)}
                       onclick={() => addMember(contact)}
                     >
-                      <Icon name="plus" size={18} />
+                      {@render avatar(label, 40)}
+                      <span class="grow min-w-0 flex flex-col">
+                        <span class="font-semibold truncate">{label}</span>
+                        {#if contact.name && contact.email_address}
+                          <span class="text-sm text-muted truncate">{contact.email_address}</span>
+                        {/if}
+                      </span>
+                      <span class="shrink-0 flex items-center gap-1 h-8 px-3 rounded-full bg-primary text-alt text-sm font-semibold">
+                        {#if pending.has(contact.id)}
+                          <Icon name="loading" size={14} class="animate-spin" />
+                        {:else}
+                          <Icon name="plus" size={14} />
+                        {/if}
+                        {t("add")}
+                      </span>
                     </button>
                   </li>
                 {/each}
               </ul>
+            {/if}
+
+            {#if !is_loading}
+              <button
+                type="button"
+                class="w-full flex items-center gap-3 min-h-14 px-3 py-2 rounded-xl border border-dashed border-default text-left"
+                onclick={() => (invite_open = true)}
+              >
+                <span class="shrink-0 h-10 w-10 rounded-full border border-dashed border-primary text-primary flex items-center justify-center">
+                  <Icon name="user-plus" size={18} />
+                </span>
+                <span class="flex flex-col">
+                  <span class="font-semibold text-primary">{t("invite_someone_new")}</span>
+                  <span class="text-xs text-muted">{t("invite_someone_new_hint")}</span>
+                </span>
+              </button>
             {/if}
           </div>
         {/if}
@@ -370,6 +395,7 @@
   </div>
 
   <ModalEditGroupInfo bind:open={edit_open} {name} {description} onsubmit={handleEditSave} />
+  <ModalSendInvite bind:open={invite_open} />
 
   <Modal is_open={!!member_to_remove} close_on_outside_click={false} onclose={() => (member_to_remove = null)}>
     <ModalHeader>{t("remove_from_group")}</ModalHeader>
@@ -384,3 +410,13 @@
     </footer>
   </Modal>
 {/if}
+
+{#snippet avatar(/** @type {string} */ label, /** @type {number} */ size)}
+  <span
+    class="shrink-0 rounded-full bg-surface text-muted font-semibold uppercase flex items-center justify-center"
+    style="width: {size}px; height: {size}px;"
+    aria-hidden="true"
+  >
+    {label.trim().charAt(0) || "?"}
+  </span>
+{/snippet}

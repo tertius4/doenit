@@ -4,15 +4,17 @@
   import { page } from "$app/state";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
+  import { is_web } from "$services/platform";
 </script>
 
 <ButtonMainSubmit class="mb-4 mr-4" />
 
 <!-- min-w-0: as a grid item this defaults to min-width:auto, so the hotbar's min-content width
-     (unshrinkable text-nowrap tags) would size the layout grid's single column and stretch every
+     (unshrinkable whitespace-nowrap tags) would size the layout grid's single column and stretch every
      row - widening the whole page and pushing the header's right-hand buttons off-screen instead of
      letting the hotbar scroll. -->
-<nav class="shadow-t-sm border-t border-default min-w-0 sticky bottom-0 z-30 bg-surface mt-auto">
+<!-- On the web's desktop width the Sidebar takes over the hotbar and these links, so hide both. -->
+<nav class={["shadow-t-sm border-t border-default min-w-0 sticky bottom-0 z-30 bg-surface mt-auto", is_web && "lg:hidden"]}>
   {#if page.data.is_home}
     {#await page.data.ready then ok}
       {#if ok}<Hotbar />{/if}

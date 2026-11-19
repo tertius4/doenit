@@ -4,6 +4,13 @@ import { context } from "$logic/context.svelte";
 import { cursorKey, patchSyncCursors } from "$domain/sync/cursors";
 import { NotificationService } from "$logic/notifications/NotificationService";
 import { ContactNames } from "$domain/sync/ContactNames";
+import { generateCode, normalizeCode } from "./invite-code.svelte";
+
+/**
+ * An invite as stored in Firestore. `via_code` (remote only, never stored locally) is the receiver's invite code the
+ * sender used, so the receiver's device accepts it on its own.
+ */
+type RemoteInvite = DB.ContactInvite & { via_code?: string };
 
 function relationshipId(a: string, b: string): string {
   return [a, b].sort().join(":");
@@ -36,8 +43,8 @@ export const InviteService = {
     return this.sendTo(target);
   },
 
-  /** Sends a contact invite to a user whose uid is already known. */
-  async sendTo(target: { uid: string; email_address: string }): AsyncResult<DB.ContactInvite> {
+  /** Sends a contact invite to a user whose uid is already known. `via_code` is their invite code, when that is how. */
+  async sendTo(target: { uid: string; email_address: string }, via_code?: string): AsyncResult<DB.ContactInvite> {
     const my_uid = myFirebaseUid();
     const my_local_id = myLocalId();
     const my_email = context.user?.email_address;
@@ -66,7 +73,7 @@ export const InviteService = {
     };
 
     // Write to receiver's inbox so they can discover the invite
-    await firestore.upsertInvite([target.uid, my_uid], invite);
+    await firestore.upsertInvite([target.uid, my_uid], via_code ? { ...invite, via_code } : invite);
     await DB.contact_invite.upsert(invite);
     return { ok: true, value: invite };
   },
@@ -91,9 +98,11 @@ export const InviteService = {
         }
 
         // A stale remote copy (older than ours, e.g. "accepted" after we removed the contact) must not be acted on.
-        const is_stored = await this._store(invite);
-        if (is_stored) await this._process(invite);
-        if (is_stored) await this._acceptIfEmailInvited(invite, my_uid);
+        const { via_code, ...stored } = invite as RemoteInvite;
+        const is_stored = await this._store(stored);
+        if (is_stored) await this._process(stored);
+        if (is_stored) await this._acceptIfEmailInvited(stored, my_uid);
+        if (is_stored && via_code) await this._acceptIfInvitedByCode(stored, via_code, my_uid);
       } catch (error) {
         const message = error instanceof Error ? error.message : JSON.stringify(error);
         console.error("Failed to process invite", { invite, error: message });
@@ -141,6 +150,80 @@ export const InviteService = {
     await firestore.deleteEmailInvite(invite.from_email, my_uid);
     const notified = await NotificationService.createInviteAccepted(result.value);
     if (!notified.ok) console.warn("[InviteService] failed to create notification:", notified.error);
+  },
+
+  /**
+   * Someone used my invite code (a link, QR code or typed in) and sent me an invite: accept it, since sharing the code
+   * was my invitation. Only if the code is still mine, so a replaced code stops working.
+   */
+  async _acceptIfInvitedByCode(invite: DB.ContactInvite, via_code: string, my_uid: string): Promise<void> {
+    if (invite.status !== "pending" || invite.to_firebase_uid !== my_uid) return;
+    if ((await firestore.fetchInviteCodeOwner(via_code)) !== my_uid) return;
+
+    const result = await this.accept(invite.id);
+    if (!result.ok) return console.warn("[InviteService] auto-accept by code failed:", result.error);
+
+    const notified = await NotificationService.createInviteAccepted(result.value);
+    if (!notified.ok) console.warn("[InviteService] failed to create notification:", notified.error);
+  },
+
+  /** My invite code, made the first time it is asked for. */
+  async myCode(): AsyncResult<string> {
+    const my_uid = myFirebaseUid();
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
+
+    const existing = await firestore.fetchMyInviteCode(my_uid);
+    if (existing) return { ok: true, value: existing };
+    return this._claimCode(my_uid, null);
+  },
+
+  /** Replaces my invite code, so links and codes shared before stop working. */
+  async resetCode(): AsyncResult<string> {
+    const my_uid = myFirebaseUid();
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
+
+    return this._claimCode(my_uid, await firestore.fetchMyInviteCode(my_uid));
+  },
+
+  async _claimCode(my_uid: string, previous: string | null): AsyncResult<string> {
+    // A taken code fails the write; with 32^6 codes a few tries are plenty.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = generateCode();
+      try {
+        await firestore.saveInviteCode(my_uid, code, previous);
+        return { ok: true, value: code };
+      } catch (error) {
+        console.warn("[InviteService] could not claim invite code:", error);
+      }
+    }
+    return { ok: false, error: "invite_error_code_failed" };
+  },
+
+  /** Who an invite code belongs to. */
+  async lookupCode(input: string): AsyncResult<{ uid: string; email_address: string; name: string }> {
+    const my_uid = myFirebaseUid();
+    if (!my_uid) return { ok: false, error: "invite_error_not_authenticated" };
+
+    const code = normalizeCode(input);
+    if (!code) return { ok: false, error: "invite_error_code_invalid" };
+
+    const owner = await firestore.fetchInviteCodeOwner(code);
+    if (!owner) return { ok: false, error: "invite_error_code_unknown" };
+    if (owner === my_uid) return { ok: false, error: "invite_error_self" };
+
+    const profile = await firestore.fetchUserProfile(owner);
+    if (!profile) return { ok: false, error: "invite_error_code_unknown" };
+    return { ok: true, value: profile };
+  },
+
+  /** Sends an invite to the owner of an invite code. Their device accepts it on its own (see _acceptIfInvitedByCode). */
+  async sendByCode(input: string): AsyncResult<DB.ContactInvite> {
+    const code = normalizeCode(input);
+    if (!code) return { ok: false, error: "invite_error_code_invalid" };
+
+    const target = await this.lookupCode(code);
+    if (!target.ok) return target;
+    return this.sendTo(target.value, code);
   },
 
   /** People who invited my e-mail address before I joined Doenit. */

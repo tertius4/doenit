@@ -16,9 +16,34 @@ export const pull = () => InviteService.pull();
 export const sendEmail = apiLogger(sendEmailHandler);
 export const fetchEmailInvites = () => InviteService.fetchEmailInvites();
 export const answerEmailInvites = apiLogger(answerEmailInvitesHandler);
+export const myCode = apiLogger(myCodeHandler);
+export const resetCode = apiLogger(resetCodeHandler);
+export const lookupCode = apiLogger(lookupCodeHandler);
+export const sendByCode = apiLogger(sendByCodeHandler);
 
 async function sendInviteHandler(to_email: string): AsyncResult<DB.ContactInvite> {
   const result = await InviteService.send(to_email);
+  if (!result.ok) return result;
+
+  const notified = await NotificationService.createInviteReceived(result.value);
+  if (!notified.ok) console.warn("[invites] failed to create notification:", notified.error);
+  return result;
+}
+
+async function myCodeHandler(): AsyncResult<string> {
+  return InviteService.myCode();
+}
+
+async function resetCodeHandler(): AsyncResult<string> {
+  return InviteService.resetCode();
+}
+
+async function lookupCodeHandler(code: string): AsyncResult<{ uid: string; email_address: string; name: string }> {
+  return InviteService.lookupCode(code);
+}
+
+async function sendByCodeHandler(code: string): AsyncResult<DB.ContactInvite> {
+  const result = await InviteService.sendByCode(code);
   if (!result.ok) return result;
 
   const notified = await NotificationService.createInviteReceived(result.value);

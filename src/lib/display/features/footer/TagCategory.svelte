@@ -39,17 +39,19 @@
   }
 </script>
 
+<!-- whitespace-nowrap in Tag keeps the name on one line (Tailwind 4's text-nowrap is text-wrap, which
+     iOS Safari before 17.4 ignores); max-w + truncate cap long names with an ellipsis. -->
 <Tag
-  class={category.task_count != null ? "pr-1! " : ""}
+  class={["max-w-40", category.task_count != null ? "pr-1!" : ""]}
   {is_selected}
   onclick={() => toggle(category)}
   onlongpress={handleLongPress}
 >
-  <span>{category.name}</span>
+  <span class="truncate min-w-0">{category.name}</span>
   {#if category.task_count != null}
     <div
       class={{
-        "rounded-full px-2  flex items-center justify-center": true,
+        "rounded-full px-2 shrink-0 flex items-center justify-center": true,
         "h-fit aspect-square": category.task_count < 10,
         "h-full": category.task_count >= 10,
         "bg-secondary-600 text-alt": is_selected,

@@ -16,6 +16,7 @@
   import { navigating, page } from "$app/state";
   import DoNowSwitch from "$display/features/task-list/DoNowSwitch.svelte";
   import { context } from "$logic/context.svelte";
+  import { is_web } from "$services/platform";
 
   selected_tasks.clear();
 
@@ -132,8 +133,12 @@
 <button
   type="button"
   onclick={() => goto("/create")}
-  class="fixed z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg hover:scale-110 active:scale-95"
-  style="bottom: calc(136px + env(safe-area-inset-bottom)); right: max(1rem, calc((100vw - 1000px) / 2 + 1rem));"
+  class={[
+    "fixed z-40 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg hover:scale-110 active:scale-95",
+    "bottom-[calc(136px+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))]",
+    // Web desktop has no footer (the Sidebar replaces it), so sit in the screen's bottom-right corner.
+    is_web && "lg:bottom-6 lg:right-6",
+  ]}
   aria-label="Add task"
 >
   {#if navigating.to}

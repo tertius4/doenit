@@ -249,6 +249,38 @@ async function firebaseSessionMatches(user_id: string | null): Promise<boolean> 
 }
 
 /**
+ * App open only. Firebase Auth reloads its stored user from the server before it reports who is
+ * signed in, which on a weak signal can take a minute, so this runs after the UI shows local data.
+ * Sync waits for it: syncing with a Firebase user that is missing or changed would only fail.
+ */
+async function verifySessionThenSync(user_id: string | null, firebase_uid: string | null) {
+  if (user_id && !(await firebaseSessionMatches(user_id))) {
+    // The user may have signed in or out while the check ran; then that flow owns the session.
+    const session = await DB.session.get();
+    if (!session.ok || session.value.user_id !== user_id) return;
+
+    console.warn("[initApp] Firebase session missing or changed, signing out locally");
+    await DB.session.update({ user_id: null });
+    await initApp(null);
+    return;
+  }
+
+  await syncRemote(user_id, firebase_uid, true);
+}
+
+let is_resume_listening = false;
+
+/** The WebView can close the database while the app is in the background, so reopen it as soon as the app returns. */
+function listenForResume() {
+  if (is_resume_listening) return;
+  is_resume_listening = true;
+
+  App.addListener("resume", () => {
+    DB.reopen().catch((err) => console.warn("[context] reopening DB on resume failed:", err));
+  }).catch((err) => console.warn("[context] resume listener failed:", err));
+}
+
+/**
  * Call on app open (no argument) or explicitly after sign-in / sign-out (pass user_id or null).
  * - App open: reads the session, initialises app state, then wires subscriptions.
  * - Sign-in / sign-out: skips app-state init and re-wires subscriptions for the new user.
@@ -262,13 +294,6 @@ export async function initApp(user_id?: string | null) {
     resolved_user_id = (result.ok && result.value.user_id) || null;
   } else {
     resolved_user_id = user_id;
-  }
-
-  const is_local_and_firebase_match = await firebaseSessionMatches(resolved_user_id);
-  if (is_app_open && resolved_user_id && !is_local_and_firebase_match) {
-    console.warn("[initApp] Firebase session missing or changed, signing out locally");
-    await DB.session.update({ user_id: null });
-    resolved_user_id = null;
   }
 
   // Ensure the correct settings document exists before subscribing.
@@ -299,12 +324,18 @@ export async function initApp(user_id?: string | null) {
 
   subscribeForUser(resolved_user_id);
 
-  // Network sync is not needed to render. On app open it runs in the background;
+  // Network sync is not needed to render. On app open it runs in the background, after the
+  // Firebase session check (which waits on the network, so it must not hold up the task list);
   // after sign-in / sign-out callers expect fresh data, so it is awaited - but only briefly. A
   // Firestore call that never settles would otherwise hold the sign-in spinner open forever; the
   // sync keeps running in the background either way.
-  const remote_sync = syncRemote(resolved_user_id, firebase_uid, is_app_open);
-  if (!is_app_open) await Promise.race([remote_sync, wait(REMOTE_SYNC_TIMEOUT_MS)]);
+  if (is_app_open) {
+    verifySessionThenSync(resolved_user_id, firebase_uid).catch((err) =>
+      console.warn("[initApp] background session check failed:", err),
+    );
+  } else {
+    await Promise.race([syncRemote(resolved_user_id, firebase_uid, false), wait(REMOTE_SYNC_TIMEOUT_MS)]);
+  }
 
   if (is_app_open) {
     const app_state_result = await DB.app_state.getDevice();
@@ -336,6 +367,8 @@ export async function initApp(user_id?: string | null) {
       // Set synchronously: the subscription below emits asynchronously and callers read app_state right after initApp.
       context.app_state = update_result.ok ? update_result.value : app_state_result.value;
     }
+
+    listenForResume();
 
     _app_subscriptions.unsubscribe();
     _app_subscriptions = new Subscription();

@@ -21,7 +21,7 @@
   {onclick}
   class={[
     {
-      "py-1 gap-1 text-nowrap flex items-center justify-center w-fit": true,
+      "py-1 gap-1 whitespace-nowrap shrink-0 flex items-center justify-center w-fit": true,
       "bg-secondary-500 ring-secondary-600 ring-2 text-alt": is_selected,
       "bg-card ring-primary-500": !is_selected,
       "px-2 rounded-md": !round,

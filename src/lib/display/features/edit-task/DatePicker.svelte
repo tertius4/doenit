@@ -10,16 +10,18 @@
   import Button from "$display/comps/button/Button.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { context } from "$logic/context.svelte";
-  import { slide } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
+  import { backdropClose } from "$display/comps/modal/backdrop";
 
   /**
    * @typedef {Object} Props
    * @property {string?} start - Selected start date string
    * @property {string?} end - Selected end date string
+   * @property {boolean} [is_open] - Whether the picker modal is open
    */
 
   /** @type {Props} */
-  let { start = $bindable(), end = $bindable() } = $props();
+  let { start = $bindable(), end = $bindable(), is_open = $bindable(false) } = $props();
 
   let is_mounted = false;
   let enable_range = $state(!!end);
@@ -32,8 +34,6 @@
   let start_time = $state(start?.split(" ")[1] ?? "");
   /** @type {string | undefined} */
   let end_time = $state(end?.split(" ")[1] ?? "");
-
-  let is_open = $state(false);
 
   const display_end = $derived(end_date ? DateUtil.format(end_date, "D MMM YYYY") : null);
   const display_start = $derived(start_date ? DateUtil.format(start_date, "D MMM YYYY") : null);
@@ -55,6 +55,11 @@
 
     if (!is_mounted) return;
     enable_range = true;
+  });
+
+  // Closing the picker (also from outside, e.g. on submit) ends range mode.
+  $effect(() => {
+    if (!is_open && is_mounted) enable_range = false;
   });
 
   onMount(() => (is_mounted = true));
@@ -107,7 +112,24 @@
   {/if}
 </div>
 
-<Modal bind:is_open close_button={false} class="*:space-y-2">
+<!--
+  Own shade below the modal, so the form's submit button (z-[45]) can sit between the shade and the panel.
+  The Modal's own backdrop is made transparent and click-through; only its panel stays interactive.
+-->
+{#if is_open}
+  <div
+    class="fixed inset-0 z-40 bg-black/40"
+    transition:fade={{ duration: 150 }}
+    {@attach backdropClose(() => (is_open = false))}
+    role="none"
+  ></div>
+{/if}
+
+<Modal
+  bind:is_open
+  style="background: transparent; pointer-events: none;"
+  class="*:space-y-2 pointer-events-auto"
+>
   <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
   <div>
     <Calendar

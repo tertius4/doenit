@@ -8,6 +8,7 @@
   import { mount, unmount } from "svelte";
   import * as env from "$env/static/public";
   import ModalPersonalSync from "$display/comps/modal/ModalPersonalSync.svelte";
+  import { formatCode, pendingInvite } from "$logic/invites/invite-code.svelte";
 
   /**
    * Shown on the web until the user is signed in and has Sync on. The browser is only a window onto the synced tasks:
@@ -33,6 +34,16 @@
 <div class="h-dvh flex flex-col items-center justify-center gap-6 p-6 text-center bg-page text-normal">
   <img src="/logo.png" alt="Doenit" class="w-24 h-24" />
   <h1 class="text-2xl font-bold">{t("web_gate_title")}</h1>
+
+  {#if pendingInvite.code}
+    <!-- Someone opened an invite link in the browser: offer the app first, signing in here works too. -->
+    <div class="max-w-sm flex flex-col items-center gap-2 rounded-xl bg-surface p-4">
+      <p class="text-sm">{t("invite_open_in_app", { code: formatCode(pendingInvite.code) })}</p>
+      <a class="py-2 px-4 rounded-lg font-medium bg-primary text-alt" href="doenit://nooi/{pendingInvite.code}">
+        {t("open_in_app")}
+      </a>
+    </div>
+  {/if}
 
   {#if !context.user}
     <p class="max-w-sm text-muted">{t("web_gate_sign_in")}</p>

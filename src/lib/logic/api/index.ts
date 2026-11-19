@@ -61,6 +61,10 @@ export default class Api {
     sendEmail: invites.sendEmail,
     fetchEmailInvites: invites.fetchEmailInvites,
     answerEmailInvites: invites.answerEmailInvites,
+    myCode: invites.myCode,
+    resetCode: invites.resetCode,
+    lookupCode: invites.lookupCode,
+    sendByCode: invites.sendByCode,
   };
 
   static readonly notifications = {

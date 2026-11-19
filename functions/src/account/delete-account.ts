@@ -49,6 +49,9 @@ async function deleteAccount(method: string, authorization: string | undefined):
     );
 
     batch.delete(db.doc(`user_profiles/${uid}`));
+    // The invite code lives outside users/{uid}, so it would outlive the account and still point at it.
+    const invite_code = (await user_ref.collection("meta").doc("invite_code").get()).data()?.code;
+    if (typeof invite_code === "string" && invite_code) batch.delete(db.doc(`invite_codes/${invite_code}`));
     await batch.commit();
 
     await db.recursiveDelete(db.doc(`scopes/personal_${uid}`));

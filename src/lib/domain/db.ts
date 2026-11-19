@@ -7,6 +7,7 @@ import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv";
 import * as schema from "./schema";
 import * as tables from "./tables";
 import * as env from "$env/static/public";
+import { keepReopenable, reopenClosed } from "./reopen";
 
 type tables =
   | tables.task
@@ -59,6 +60,12 @@ class DBClass {
     this._member = new tables.member(db.collections.member);
     this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
     this.is_initialized = true;
+  }
+
+  /** Reopens connections the WebView closed while the app was in the background. */
+  async reopen() {
+    if (!this.is_initialized) return;
+    await reopenClosed();
   }
 
   private get _collectionMap(): Record<string, any> {
@@ -168,6 +175,7 @@ async function initDB() {
     storage: wrappedValidateAjvStorage({
       storage: getRxStorageDexie({
         allowEmptyDB: true,
+        onCreate: keepReopenable,
       }),
     }),
   });

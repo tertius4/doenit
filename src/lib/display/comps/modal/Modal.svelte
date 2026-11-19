@@ -5,6 +5,7 @@
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import { on } from "svelte/events";
+  import { backdropClose } from "./backdrop";
 
   /**
    * @typedef {Object} Props
@@ -34,10 +35,8 @@
     return () => backHandler.unregister(token);
   });
 
-  /** @param {Event} e */
-  function handleBackdropClick(e) {
+  function handleBackdropClick() {
     if (close_on_outside_click === false) return;
-    if (e.target !== e.currentTarget) return;
 
     handleClose();
   }
@@ -81,7 +80,7 @@
       "text-normal **:select-none **:transition-all **:duration-300",
     ]}
     transition:fade={{ duration: 150, easing: quadInOut }}
-    onclick={handleBackdropClick}
+    {@attach backdropClose(handleBackdropClick)}
     role="none"
   >
     <div

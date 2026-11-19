@@ -226,7 +226,7 @@ class Firestore {
   }
 
   /** Writes the invite to every given inbox in one atomic batch. */
-  async upsertInvite(user_ids: string[], invite: DB.ContactInvite): Promise<void> {
+  async upsertInvite(user_ids: string[], invite: DB.ContactInvite & { via_code?: string }): Promise<void> {
     const db = this.getDb();
     const batch = writeBatch(db);
     // contact_name is private to the sender's device.
@@ -456,6 +456,39 @@ class Firestore {
 
   async deleteEmailInvite(email: string, sender_uid: string): Promise<void> {
     await deleteDoc(doc(this.getDb(), "email_invites", email.toLowerCase(), "senders", sender_uid));
+  }
+
+  /** The user's own invite code, kept in their meta so every device shows the same one. */
+  async fetchMyInviteCode(user_id: string): Promise<string | null> {
+    const snap = await getDoc(doc(this.getDb(), "users", user_id, "meta", "invite_code"));
+    return (snap.data()?.code as string | undefined) ?? null;
+  }
+
+  /**
+   * Claims `code` for the user and saves it as their current code, replacing `previous` if given. Rejects when the code
+   * is already taken (the rules only allow creating a code, so a taken one fails the whole batch).
+   */
+  async saveInviteCode(user_id: string, code: string, previous: string | null): Promise<void> {
+    const db = this.getDb();
+    const batch = writeBatch(db);
+    batch.set(doc(db, "invite_codes", code), { uid: user_id, created_at: serverTimestamp() });
+    batch.set(doc(db, "users", user_id, "meta", "invite_code"), { code, updated_at: serverTimestamp() });
+    if (previous && previous !== code) batch.delete(doc(db, "invite_codes", previous));
+    await batch.commit();
+  }
+
+  /** Whose invite code this is, or null when no one has it (never made, or replaced by a new one). */
+  async fetchInviteCodeOwner(code: string): Promise<string | null> {
+    const snap = await getDoc(doc(this.getDb(), "invite_codes", code));
+    return (snap.data()?.uid as string | undefined) ?? null;
+  }
+
+  /** Looks up a user's public profile by uid. */
+  async fetchUserProfile(uid: string): Promise<{ uid: string; email_address: string; name: string } | null> {
+    const snap = await getDoc(doc(this.getDb(), "user_profiles", uid));
+    const data = snap.data();
+    if (!data?.email_address) return null;
+    return { uid, email_address: data.email_address, name: data.name ?? "" };
   }
 }
 

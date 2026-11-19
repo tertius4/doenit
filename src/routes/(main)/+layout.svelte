@@ -20,9 +20,12 @@
   import Api from "$logic/api";
   import DrawerLanguage from "$display/features/settings/DrawerLanguage.svelte";
   import WebGate from "$display/features/web/WebGate.svelte";
+  import Sidebar from "$display/features/footer/Sidebar.svelte";
   import UpdateBanner from "$display/features/update/UpdateBanner.svelte";
   import { is_web, registerServiceWorker } from "$services/platform";
   import versionGate from "$services/version-gate.svelte";
+  import { captureInviteLinks, pendingInvite } from "$logic/invites/invite-code.svelte";
+  import ModalConnectByCode from "$display/comps/modal/ModalConnectByCode.svelte";
 
   const { children, data } = $props();
 
@@ -59,6 +62,8 @@
 
   onMount(() => installHardwareBack(() => t("press_again_to_exit")));
   onMount(registerServiceWorker);
+  // Invite links and QR codes (?nooi=CODE) open ModalConnectByCode below once the user is signed in.
+  onMount(captureInviteLinks);
 
   afterNavigate((navigation) => navHistory.record(navigation));
 
@@ -132,24 +137,39 @@
   >
     <Heading />
 
-    <div class="relative max-w-250 overflow-x-hidden w-full md:mx-auto grow bg-page p-2">
-      {#if versionGate.outdated}
-        <UpdateBanner />
+    <!-- Web desktop: a sidebar replaces the footer's hotbar and bottom nav (see Footer). -->
+    <div class="flex grow min-w-0">
+      {#if is_web}
+        {#await data.ready then ok}
+          {#if ok}<Sidebar />{/if}
+        {/await}
       {/if}
 
-      {#await data.ready}
-        <div class="min-h-[50dvh] flex items-center justify-center">
-          <Icon name="loading" class="animate-spin text-2xl" />
-        </div>
-      {:then ok}
-        {#if ok}
-          {@render children()}
+      <div class="relative max-w-250 overflow-x-hidden w-full min-w-0 md:mx-auto grow bg-page p-2">
+        {#if versionGate.outdated}
+          <UpdateBanner />
         {/if}
-      {/await}
+
+        {#await data.ready}
+          <div class="min-h-[50dvh] flex items-center justify-center">
+            <Icon name="loading" class="animate-spin text-2xl" />
+          </div>
+        {:then ok}
+          {#if ok}
+            {@render children()}
+          {/if}
+        {/await}
+      </div>
     </div>
 
     <Footer />
   </main>
+{/if}
+
+{#if is_ready && context.user && pendingInvite.code}
+  {#key pendingInvite.code}
+    <ModalConnectByCode code={pendingInvite.code} onclose={() => (pendingInvite.code = null)} />
+  {/key}
 {/if}
 
 {#if show_migration_notice}

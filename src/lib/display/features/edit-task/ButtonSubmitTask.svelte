@@ -14,7 +14,7 @@
 
 <button
   type="submit"
-  class="flex justify-center text-alt bg-secondary-500 items-center aspect-square rounded-full size-13 p-3"
+  class="ml-auto flex justify-center text-alt bg-secondary-500 items-center aspect-square rounded-full size-13 p-3"
   aria-label={t("create_new_item")}
   disabled={loading || !!navigating.to}
 >
