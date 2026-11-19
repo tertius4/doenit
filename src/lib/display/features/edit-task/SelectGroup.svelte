@@ -48,7 +48,7 @@
         id="group"
         disabled={is_locked}
         class={[
-          "text-left bg-card h-12 p-2 w-full border border-default rounded-lg appearance-none outline-none focus:ring ring-primary pr-6 truncate",
+          "text-left bg-card h-12 p-2 w-full border border-default rounded-lg appearance-none outline-none focus:ring ring-primary pr-12 truncate",
           !selected_group && "text-muted",
         ]}
         onclick={() => (is_open = true)}

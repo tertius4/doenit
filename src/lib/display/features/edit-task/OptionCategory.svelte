@@ -12,10 +12,12 @@
 
 <button
   type="button"
+  role="radio"
+  aria-checked={is_selected}
   {onclick}
   class={[
-    "flex text-left border rounded-lg border-primary w-full p-2 outline-none gap-1 cursor-pointer",
-    is_selected && "bg-primary/20 text-alt ",
+    "flex text-left border rounded-lg w-full p-2 outline-none gap-1 cursor-pointer focus-visible:ring-2 ring-primary",
+    is_selected && "border-primary bg-primary/20 text-alt",
     !is_selected && "border-default bg-card hover:opacity-80",
   ]}
 >
@@ -30,7 +32,7 @@
     {/if}
   </div>
 
-  <div class={["w-full p-1", !is_selected && "border-default"]}>
+  <div class="w-full p-1">
     <span>{label}</span>
   </div>
 </button>
