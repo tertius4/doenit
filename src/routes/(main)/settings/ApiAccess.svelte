@@ -1,17 +1,18 @@
 <script>
   import Accordion from "$display/comps/button/Accordion.svelte";
-  import Button from "$display/comps/button/Button.svelte";
-  import InputText from "$display/comps/input/InputText.svelte";
-  import Icon from "$display/comps/Icon.svelte";
   import toast from "$display/toast/toast.svelte";
   import t from "$display/translate";
   import Api from "$logic/api";
   import { context } from "$logic/context.svelte";
-  import { API_URL, DOCS_URL, MAX_KEYS } from "$logic/api/api-keys";
+  import { DOCS_URL, MAX_KEYS } from "$logic/api/api-keys";
   import { Browser } from "@capacitor/browser";
   import { Toast } from "@capacitor/toast";
   import { mount, unmount } from "svelte";
   import ModalDeleteApiKey from "./comps/ModalDeleteApiKey.svelte";
+  import CardApiKey from "./comps/CardApiKey.svelte";
+  import FormCreateApiKey from "./comps/FormCreateApiKey.svelte";
+  import NewApiKey from "./comps/NewApiKey.svelte";
+  import ApiDeveloperInfo from "./comps/ApiDeveloperInfo.svelte";
 
   let show = $state(false);
   /** The API needs Sync, so tasks sent through it reach every device. */
@@ -19,16 +20,14 @@
     !context.user ? t("sign_in_to_use") : !Api.personal_sync.isEnabled() ? t("api_requires_sync") : "",
   );
   let loaded = $state(false);
-  let busy = $state(false);
-  let label = $state("");
+  let loading = $state(false);
+  let load_failed = $state(false);
   /** @type {AL.ApiKey[]} */
   let keys = $state([]);
-  /** The plaintext of a key that was just created. It is only shown once. */
-  let new_key = $state("");
+  /** A key that was just created. Its plaintext is only shown once, until the user taps Done. */
+  let new_key = $state({ key: "", label: "" });
 
-  const example = $derived(
-    `curl -X POST ${API_URL} \\\n  -H "Authorization: Bearer ${new_key || "dk_..."}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"name": "Buy milk"}'`,
-  );
+  const at_limit = $derived(keys.length >= MAX_KEYS);
 
   // Keys are only fetched once the section is opened, so the settings page costs no Firestore reads.
   $effect(() => {
@@ -37,22 +36,21 @@
 
   async function load() {
     loaded = true;
+    loading = true;
+    load_failed = false;
     const result = await Api.api_keys.list();
-    if (!result.ok) return toast.error(result.error);
+    loading = false;
+    if (!result.ok) {
+      load_failed = true;
+      return;
+    }
     keys = result.value;
   }
 
-  async function createKey() {
-    if (busy) return;
-
-    busy = true;
-    const result = await Api.api_keys.create(label);
-    busy = false;
-    if (!result.ok) return toast.error(result.error);
-
-    keys = [...keys, result.value.api_key];
-    new_key = result.value.key;
-    label = "";
+  /** @param {{ key: string, api_key: AL.ApiKey }} created */
+  function handleCreated({ key, api_key }) {
+    keys = [...keys, api_key];
+    new_key = { key, label: api_key.label };
   }
 
   /** @param {AL.ApiKey} key */
@@ -72,90 +70,54 @@
     Toast.show({ text: t("api_key_revoked"), duration: "short" });
   }
 
-  /** @param {string} text */
-  async function copy(text) {
-    const result = await Api.clipboard.copy(text);
-    if (!result.ok) toast.error(t("copy_failed"));
-  }
-
-  /** @param {string | undefined} date */
-  function formatDate(date) {
-    return date ? new Date(date).toLocaleDateString() : t("api_key_never_used");
+  function openDocs() {
+    Browser.open({ url: DOCS_URL });
   }
 </script>
 
-<Accordion
-  label={t("api_access")}
-  bind:show
-  disabled={!!disabled_message}
-  {disabled_message}
->
+<Accordion label={t("api_access")} bind:show {loading} disabled={!!disabled_message} {disabled_message}>
   <div class="space-y-4 text-sm">
-    <div class="bg-card rounded-md p-3 space-y-2">
-      <p class="font-semibold flex items-center gap-2">
-        <Icon name="info" size={18} />
-        {t("api_when_title")}
-      </p>
-      <p>{t("api_when_body")}</p>
-    </div>
+    <p class="text-muted">
+      {t("api_intro")}
+      <button type="button" class="text-primary font-medium" onclick={openDocs}>{t("api_how_it_works")}</button>
+    </p>
 
-    {#if new_key}
-      <div class="border border-default rounded-md p-3 space-y-2">
-        <p class="font-semibold">{t("api_key_created")}</p>
-        <p class="text-muted">{t("api_key_shown_once")}</p>
-        <code class="block break-all bg-card rounded p-2 select-all">{new_key}</code>
-        <Button onclick={() => copy(new_key)}>
-          <Icon name="copy" size={18} />
-          <span>{t("api_key_copy")}</span>
-        </Button>
-      </div>
+    {#if new_key.key}
+      <NewApiKey key={new_key.key} label={new_key.label} ondone={() => (new_key = { key: "", label: "" })} />
     {/if}
 
     <div class="space-y-2">
-      <p class="font-semibold">{t("api_keys")}</p>
-      {#if loaded && !keys.length}
-        <p class="text-muted">{t("api_no_keys")}</p>
-      {/if}
-      {#each keys as key (key.id)}
-        <div class="flex items-center gap-2 bg-card rounded-md">
-          <div class="flex-1 min-w-0 p-3">
-            <p class="font-medium truncate">{key.label}</p>
-            <p class="text-muted text-xs">{key.prefix} · {t("api_key_last_used")}: {formatDate(key.last_used_at)}</p>
-          </div>
-          <button type="button" class="p-3" onclick={() => confirmRevoke(key)}>
-            <Icon name="trash" class="text-error" size={18} />
-          </button>
+      <div class="flex items-center justify-between">
+        <p class="font-semibold">{t("api_keys")}</p>
+        {#if !loading && !load_failed}
+          <span class={["text-xs rounded-full bg-card px-2 py-0.5", at_limit ? "text-warning" : "text-muted"]}>
+            {keys.length} / {MAX_KEYS}
+          </span>
+        {/if}
+      </div>
+
+      {#if load_failed}
+        <div class="bg-card rounded-lg p-3 flex items-center justify-between gap-2">
+          <p class="text-muted">{t("api_load_failed")}</p>
+          <button type="button" class="shrink-0 text-primary font-medium" onclick={load}>{t("try_again")}</button>
         </div>
+      {:else if !loading && !keys.length}
+        <p class="text-muted text-center border border-dashed border-default rounded-lg p-4">{t("api_no_keys")}</p>
+      {/if}
+
+      {#each keys as key (key.id)}
+        <CardApiKey {key} onrevoke={confirmRevoke} />
       {/each}
+
+      {#if load_failed || loading}
+        <!-- Nothing to create against until the list is known. -->
+      {:else if at_limit}
+        <p class="text-muted text-xs">{t("api_keys_limit_info")}</p>
+      {:else}
+        <FormCreateApiKey oncreated={handleCreated} />
+      {/if}
     </div>
 
-    {#if keys.length < MAX_KEYS}
-      <div class="space-y-2">
-        <InputText
-          value={label}
-          maxlength={50}
-          placeholder={t("api_key_label_placeholder")}
-          onchange={(/** @type {string} */ value) => (label = value)}
-        />
-        <Button onclick={createKey} disabled={busy}>
-          <Icon name="plus" size={20} />
-          {t("api_key_create")}
-        </Button>
-      </div>
-    {/if}
-
-    <div class="space-y-2">
-      <p class="font-semibold">{t("api_example")}</p>
-      <pre class="bg-card rounded-md p-3 text-xs overflow-x-auto whitespace-pre">{example}</pre>
-      <Button onclick={() => copy(example)}>
-        <Icon name="copy" size={18} />
-        <span>{t("api_example_copy")}</span>
-      </Button>
-    </div>
-
-    <Button onclick={() => Browser.open({ url: DOCS_URL })}>
-      <Icon name="file-lines" size={18} />
-      <span>{t("api_read_docs")}</span>
-    </Button>
+    <ApiDeveloperInfo new_key={new_key.key} onopendocs={openDocs} />
   </div>
 </Accordion>
