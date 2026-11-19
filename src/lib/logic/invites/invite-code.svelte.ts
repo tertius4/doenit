@@ -1,13 +1,12 @@
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import * as env from "$env/static/public";
 
 /** No 0, O, 1 or I, so a code read out loud or off a screen can't be mistyped. Keep in step with firestore.rules. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const CODE_LENGTH = 6;
 
 /** Where invite links point: the web app, which hands the code to Doenit (see captureInviteLinks). */
-export const INVITE_URL = `https://${env.PUBLIC_FIREBASE_PROJECT_ID}.web.app/`;
+export const INVITE_URL = "https://doenit.org/";
 
 export function generateCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH));

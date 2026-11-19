@@ -17,8 +17,7 @@ export const corsHandler = cors({
     "http://localhost", // Capacitor Android
     "https://localhost", // HTTPS localhost
     /^capacitor:\/\/.*$/, // Any capacitor protocol
-    /^https:\/\/.*\.firebaseapp\.com$/, // Firebase hosting
-    /^https:\/\/.*\.web\.app$/, // Firebase web app
+    "https://doenit.org", // The web app
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
