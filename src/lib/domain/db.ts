@@ -207,9 +207,10 @@ async function initDB() {
     contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
     // Version 2 adds the optional local-only contact_name: documents are unchanged.
     contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
-    // Version 1 only widens the type enum: documents are unchanged.
-    notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
-    list: { schema: schema.list },
+    // Versions 1 and 2 only widen the type enum: documents are unchanged.
+    notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
+    // Version 1 makes a list completable (a project): existing lists are not.
+    list: { schema: schema.list, migrationStrategies: { 1: (doc) => ({ ...doc, completable: false, target_date: null, completed_at: null }) } },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },
   });
@@ -221,6 +222,7 @@ async function initDB() {
     "contact",
     "contact_invite",
     "notification",
+    "list",
     "member",
     "user_state",
     "app_state",

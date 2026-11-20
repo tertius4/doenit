@@ -22,7 +22,8 @@
 
   /** @type {AL.ListOption[]} */
   const options = $state([]);
-  onMount(View.lists.options(options));
+  // svelte-ignore state_referenced_locally
+  onMount(View.lists.options(options, list_id ?? null));
 
   let is_open = $state(false);
   let is_adding = $state(false);
@@ -57,7 +58,7 @@
       class="text-left bg-card h-12 p-2 w-full border border-default rounded-lg appearance-none outline-none focus:ring ring-primary pr-12 flex items-center gap-2"
       onclick={() => (is_open = true)}
     >
-      <Icon name={selected?.is_shared ? "users" : "categories"} size={18} class="shrink-0 text-muted" />
+      <Icon name={selected?.icon ?? "tasks"} size={18} class="shrink-0 text-muted" />
       <span class="truncate">{selected?.name ?? t("inbox")}</span>
     </button>
 
@@ -75,7 +76,7 @@
       <OptionList
         is_selected={option.id === selected_id}
         label={option.name}
-        icon={option.is_shared ? "users" : undefined}
+        icon={option.icon}
         onclick={() => select(option.id, option.is_shared)}
       />
     {/each}

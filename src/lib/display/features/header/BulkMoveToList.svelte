@@ -65,7 +65,7 @@
       <OptionList
         is_selected={option.id === chosen_id}
         label={option.name}
-        icon={option.is_shared ? "users" : undefined}
+        icon={option.icon}
         onclick={() => moveTo(option.id)}
       />
     {/each}

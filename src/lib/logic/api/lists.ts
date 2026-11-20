@@ -1,4 +1,5 @@
 import { apiLogger } from "$lib";
+import DateUtil from "$display/date-util";
 import t from "$lib/display/translate";
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
@@ -14,6 +15,8 @@ export const getMembers = apiLogger(getMembersHandler);
 export const getContacts = apiLogger(getContactsHandler);
 export const getById = apiLogger(getByIdHandler);
 export const moveTasks = apiLogger(moveTasksHandler);
+export const complete = apiLogger(completeListHandler);
+export const reopen = apiLogger(reopenListHandler);
 
 const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 250;
@@ -24,7 +27,13 @@ const MAX_DESCRIPTION_LENGTH = 250;
  * when everyone else has left again.
  */
 
-async function saveListHandler({ id, name, description }: Partial<DB.List>): AsyncResult<DB.List> {
+async function saveListHandler({
+  id,
+  name,
+  description,
+  completable = false,
+  target_date = null,
+}: Partial<DB.List>): AsyncResult<DB.List> {
   try {
     const list_name = name?.trim();
     const list_description = description?.trim() ?? "";
@@ -32,14 +41,25 @@ async function saveListHandler({ id, name, description }: Partial<DB.List>): Asy
     if (list_name.length > MAX_NAME_LENGTH) return { ok: false, error: t("list_name_too_long") };
     if (list_description.length > MAX_DESCRIPTION_LENGTH) return { ok: false, error: t("list_description_too_long") };
 
+    // Only a list with an end (a project) has a target date or can be completed.
+    const project = completable
+      ? { completable: true, target_date: target_date || null }
+      : { completable: false, target_date: null, completed_at: null };
+
     if (id) {
       const admin = await requireAdmin(id);
       if (!admin.ok) return admin;
 
-      return DB.list.update(id, { name: list_name, description: list_description });
+      return DB.list.update(id, { name: list_name, description: list_description, ...project });
     }
 
-    return DB.list.create({ name: list_name, description: list_description, scope_id: null });
+    return DB.list.create({
+      name: list_name,
+      description: list_description,
+      scope_id: null,
+      completed_at: null,
+      ...project,
+    });
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };
@@ -104,6 +124,43 @@ async function deleteListHandler(id: string, keep_tasks: boolean): AsyncResult {
     }
 
     return { ok: true };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : JSON.stringify(err);
+    return { ok: false, error };
+  }
+}
+
+/**
+ * Completes a project by hand. Its open tasks stay open, but only show in the project itself. The other members of a
+ * shared project are told.
+ */
+async function completeListHandler(id: string): AsyncResult<DB.List> {
+  try {
+    const admin = await requireAdmin(id);
+    if (!admin.ok) return admin;
+
+    const list = admin.value;
+    if (!list.completable) return { ok: false, error: t("list_not_completable") };
+    if (list.completed_at) return { ok: true, value: list };
+
+    const result = await DB.list.update(id, { completed_at: DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss") });
+    if (!result.ok) return result;
+
+    if (list.scope_id) await notifyCompletedList(result.value);
+    return result;
+  } catch (err) {
+    const error = err instanceof Error ? err.message : JSON.stringify(err);
+    return { ok: false, error };
+  }
+}
+
+async function reopenListHandler(id: string): AsyncResult<DB.List> {
+  try {
+    const admin = await requireAdmin(id);
+    if (!admin.ok) return admin;
+    if (!admin.value.completed_at) return { ok: true, value: admin.value };
+
+    return DB.list.update(id, { completed_at: null });
   } catch (err) {
     const error = err instanceof Error ? err.message : JSON.stringify(err);
     return { ok: false, error };
@@ -304,6 +361,7 @@ async function moveTasksHandler(list_id: string | null, task_ids: string[]): Asy
     if (list_id) {
       const list = await getByIdHandler(list_id);
       if (!list.ok) return list;
+      if (list.value.completed_at) return { ok: false, error: t("project_is_completed") };
       scope_id = list.value.scope_id ?? null;
     }
 
@@ -477,6 +535,19 @@ async function notifyMemberLeft(list: DB.List) {
     members.value
       .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid)
       .map((member) => NotificationService.createUserLeftList(member.firebase_uid, list, user_name).then(warnOnFailure)),
+  );
+}
+
+async function notifyCompletedList(list: DB.List) {
+  const current_firebase_uid = context.user?.firebase_uid;
+  const members = await DB.member.findMany({ selector: { scope_id: list.id, soft_deleted: { $ne: true } } });
+  if (!members.ok) return;
+
+  const user_name = context.user?.name || context.user?.email_address || "";
+  await Promise.all(
+    members.value
+      .filter((member) => member.firebase_uid && member.firebase_uid !== current_firebase_uid)
+      .map((member) => NotificationService.createListCompleted(member.firebase_uid, list, user_name).then(warnOnFailure)),
   );
 }
 

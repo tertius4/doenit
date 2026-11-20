@@ -96,6 +96,12 @@ export function syncApiLogger<T extends (...args: any[]) => any>(fn: T): (...arg
 /** Stands for the Inbox (tasks without a list) wherever a list id is expected, like the list filter. */
 export const INBOX_ID = "inbox";
 
+/** The icon for a list: a folder for a project, people for a shared list, else the plain list icon. */
+export function listIcon(list: { completable?: boolean; scope_id?: string | null }): string {
+  if (list.completable) return "folder";
+  return list.scope_id ? "users" : "categories";
+}
+
 export function filterTasks(
   tasks: AL.MainPageTask[],
   search_text: string,

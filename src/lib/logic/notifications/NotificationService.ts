@@ -121,6 +121,20 @@ export const NotificationService = {
     });
   },
 
+  async createListCompleted(user_id: string, list: DB.List, user_name: string): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "list_completed",
+      title: "Project completed",
+      body: `${user_name} completed ${list.name}.`,
+      data: {
+        group_id: list.id,
+        group_name: list.name,
+        user_name,
+      },
+    });
+  },
+
   async createUserLeftList(user_id: string, list: DB.List, user_name: string): AsyncResult<DB.Notification> {
     return this.create({
       user_id,

@@ -1,7 +1,7 @@
 import t from "$display/translate";
 import DB from "$domain/db";
 import DateUtil from "$display/date-util";
-import { getGroup, INBOX_ID } from "$lib";
+import { getGroup, INBOX_ID, listIcon } from "$lib";
 import { context } from "$logic/context.svelte";
 import { combineLatest, distinctUntilChanged, map, switchMap } from "rxjs";
 import { visible$ } from "./visible";
@@ -35,11 +35,12 @@ export function getOne(list_id, list) {
  * Fills `list` with the Inbox and every list, each with its number of open tasks for the current user. For
  * pickers (the task form, moving tasks). Use as `onMount(View.lists.options(list))`.
  * @param {AL.ListOption[]} list
+ * @param {string | null} [current_id] A completed project is left out, unless it is this one (the task's own list).
  * @returns {() => () => void}
  */
-export function options(list) {
+export function options(list, current_id = null) {
   return () => {
-    const subscription = subscribeOptions().subscribe((data) => list.splice(0, list.length, ...data));
+    const subscription = subscribeOptions(current_id).subscribe((data) => list.splice(0, list.length, ...data));
     return () => subscription.unsubscribe();
   };
 }
@@ -57,8 +58,11 @@ export function subscribeFilterOptions() {
   );
 }
 
-/** @returns {import("rxjs").Observable<AL.ListOption[]>} */
-function subscribeOptions() {
+/**
+ * @param {string | null} [current_id]
+ * @returns {import("rxjs").Observable<AL.ListOption[]>}
+ */
+function subscribeOptions(current_id = null) {
   const lists$ = visible$(DB.list, { selector: { soft_deleted: { $ne: true } }, sort: [{ name: "asc" }] });
   const tasks$ = visible$(DB.task, { selector: { soft_deleted: { $ne: true }, archived: { $ne: true } } });
 
@@ -72,13 +76,17 @@ function subscribeOptions() {
         counts.set(list_id, (counts.get(list_id) || 0) + 1);
       }
 
+      // A completed project takes no new tasks, so it is not offered.
+      const open_lists = lists.filter((list) => !list.completed_at || list.id === current_id);
+
       return [
-        { id: INBOX_ID, name: t("inbox"), task_count: counts.get(INBOX_ID) || 0, is_shared: false },
-        ...lists.map((list) => ({
+        { id: INBOX_ID, name: t("inbox"), task_count: counts.get(INBOX_ID) || 0, is_shared: false, icon: "tasks" },
+        ...open_lists.map((list) => ({
           id: list.id,
           name: list.name,
           task_count: counts.get(list.id) || 0,
           is_shared: !!list.scope_id,
+          icon: listIcon(list),
         })),
       ];
     }),
@@ -117,7 +125,6 @@ function subscribeListList(list_id) {
       const tasks$ = visible$(DB.task, {
         selector: {
           ...(list_id ? { list_id } : { list_id: { $ne: null } }),
-          archived: { $ne: true },
           soft_deleted: { $ne: true },
         },
       });
@@ -127,11 +134,16 @@ function subscribeListList(list_id) {
     map(([lists, members, contacts, tasks]) => {
       const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c]));
 
+      // Open and done tasks per list, for the task count and a project's progress. A repeating task is never done
+      // for good, so it always counts as open.
       /** @type {Map<string, number>} */
       const task_count_map = new Map();
+      /** @type {Map<string, number>} */
+      const done_count_map = new Map();
       for (const task of tasks) {
         if (!task.list_id) continue;
-        task_count_map.set(task.list_id, (task_count_map.get(task.list_id) || 0) + 1);
+        const count_map = task.archived ? done_count_map : task_count_map;
+        count_map.set(task.list_id, (count_map.get(task.list_id) || 0) + 1);
       }
 
       /** @type {Map<string, DB.Member[]>} */
@@ -174,6 +186,10 @@ function subscribeListList(list_id) {
           owner_id: list.owner_id,
           is_shared: formatted_names.length > 1,
           task_count: task_count_map.get(list.id) || 0,
+          done_count: done_count_map.get(list.id) || 0,
+          completable: !!list.completable,
+          target_date: list.target_date ?? null,
+          completed_at: list.completed_at ?? null,
           members: formatted_names.sort((a, b) => {
             if (a.is_me && !b.is_me) return -1;
             if (!a.is_me && b.is_me) return 1;

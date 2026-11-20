@@ -12,6 +12,7 @@ const PUSH_TYPES = [
   "group_removed",
   "group_deleted",
   "user_left_group",
+  "list_completed",
   "task_assigned",
   "task_completed",
   "mentioned",
@@ -104,6 +105,8 @@ function getTemplateTitle(type: string, lang: "af" | "en"): string {
       return en ? "List deleted" : "Lys geskrap";
     case "user_left_group":
       return en ? "Member left list" : "Lid het lys verlaat";
+    case "list_completed":
+      return en ? "Project completed" : "Projek voltooi";
     case "task_assigned":
       return en ? "New task assigned" : "Nuwe taak toegeken";
     case "task_completed":
@@ -128,6 +131,8 @@ function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, s
       return en ? `${data.group_name} was deleted.` : `${data.group_name} is geskrap.`;
     case "user_left_group":
       return en ? `${data.user_name} left ${data.group_name}.` : `${data.user_name} het ${data.group_name} verlaat.`;
+    case "list_completed":
+      return en ? `${data.user_name} completed ${data.group_name}.` : `${data.user_name} het ${data.group_name} voltooi.`;
     case "task_assigned":
       return en ? `Task "${data.task_name}" was assigned to you.` : `Taak "${data.task_name}" is aan jou toegeken.`;
     case "task_completed":

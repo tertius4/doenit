@@ -384,6 +384,8 @@ export async function initApp(user_id?: string | null) {
 
     // Tasks change locally and through sync pulls (which bypass the tables), so watch the collection itself.
     _app_subscriptions.add(DB.task.collection.$.subscribe(() => Api.notifications.schedule()));
+    // Completing or reopening a project hides or shows its open tasks' reminders.
+    _app_subscriptions.add(DB.list.collection.$.subscribe(() => Api.notifications.schedule()));
     Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
     Api.notifications.listenForPush().catch((err) => console.warn("[initApp] push listener failed:", err));
   }

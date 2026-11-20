@@ -126,7 +126,12 @@ async function rebuildSchedule() {
 
     // Tasks completed in the widget are only written to the DB when the app next opens; never re-schedule them.
     const completed_in_widget = await Widget.getPendingCompletions().catch(() => [] as string[]);
-    const open_tasks = tasks.value.filter((task) => !completed_in_widget.includes(task.id));
+    // The open tasks of a completed project only show in the project, so they don't remind either.
+    const done_projects = await DB.list.findMany({ selector: { completed_at: { $ne: null }, soft_deleted: { $ne: true } } });
+    const done_project_ids = new Set(done_projects.ok ? done_projects.value.map((list) => list.id) : []);
+    const open_tasks = tasks.value.filter(
+      (task) => !completed_in_widget.includes(task.id) && !(task.list_id && done_project_ids.has(task.list_id)),
+    );
 
     notifications = buildSchedule({ tasks: open_tasks, present_time, past_time, now: new Date(), t });
   }

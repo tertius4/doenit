@@ -408,6 +408,21 @@ const en: Record<keyof typeof af, string> = {
   remove_from_list: "Remove from list",
   share_list: "Share list",
   sign_in_to_share: "Sign in to share this list with others.",
+  list_has_end: "Project",
+  list_has_end_hint: "Has an end: shows progress and can be completed.",
+  target_date: "Target date",
+  optional: "optional",
+  project_completed: "Completed",
+  progress: "Progress",
+  list_not_completable: "This list is not a project.",
+  project_is_completed: "This project is completed. Reopen it first.",
+  complete_project: "Complete project",
+  reopen_project: "Reopen",
+  projects: "Projects",
+  completed_projects: "Completed projects",
+  notification_list_completed_title: "Project completed",
+  notification_list_completed_body: "{{user}} completed {{group}}.",
+  datepicker_choose_date: "Choose a date",
 };
 
 export default en;

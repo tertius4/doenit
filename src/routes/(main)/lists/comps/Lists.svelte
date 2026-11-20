@@ -13,6 +13,11 @@
   let options = $state([]);
 
   const inbox_count = $derived(options.find((o) => o.id === INBOX_ID)?.task_count ?? 0);
+  const projects = $derived(lists.filter((l) => l.completable && !l.completed_at));
+  const plain_lists = $derived(lists.filter((l) => !l.completable));
+  const completed = $derived(lists.filter((l) => l.completable && l.completed_at));
+
+  let show_completed = $state(false);
 
   onMount(View.lists.getList(lists));
   onMount(View.lists.options(options));
@@ -30,20 +35,41 @@
     <span class="text-sm text-muted font-mono">{inbox_count}</span>
   </button>
 
-  {#each lists as list (list.id)}
-    <CardList
-      id={list.id}
-      name={list.name}
-      description={list.description}
-      owner_id={list.owner_id}
-      is_shared={list.is_shared}
-      task_count={list.task_count}
-      members={list.members}
-    />
-  {:else}
+  {#if projects.length}
+    <h2 class="text-sm font-semibold text-muted px-1 pt-2">{t("projects")}</h2>
+    {#each projects as list (list.id)}
+      <CardList {list} />
+    {/each}
+  {/if}
+
+  {#if plain_lists.length && projects.length}
+    <h2 class="text-sm font-semibold text-muted px-1 pt-2">{t("lists")}</h2>
+  {/if}
+  {#each plain_lists as list (list.id)}
+    <CardList {list} />
+  {/each}
+
+  {#if !lists.length}
     <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
       <Icon name="categories" size={48} class="text-muted opacity-40" />
       <p class="text-muted">{t("no_lists_yet")}</p>
     </div>
-  {/each}
+  {/if}
+
+  {#if completed.length}
+    <button
+      type="button"
+      onclick={() => (show_completed = !show_completed)}
+      class="flex items-center gap-1 text-sm font-semibold text-muted px-1 pt-2"
+      aria-expanded={show_completed}
+    >
+      <Icon name="chevron-right" size={16} class={show_completed ? "transition-transform rotate-90" : "transition-transform"} />
+      {t("completed_projects")} ({completed.length})
+    </button>
+    {#if show_completed}
+      {#each completed as list (list.id)}
+        <CardList {list} />
+      {/each}
+    {/if}
+  {/if}
 </div>

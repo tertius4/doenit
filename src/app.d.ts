@@ -61,6 +61,12 @@ declare global {
       description?: string;
       /** Null while the list is private; the list's own id once it is shared. */
       scope_id?: string | null;
+      /** A list with an end: a project. */
+      completable?: boolean;
+      /** YYYY-MM-DD; only on a completable list. */
+      target_date?: string | null;
+      /** Set once the project is completed by hand. */
+      completed_at?: string | null;
     }
 
     interface Member {
@@ -104,6 +110,7 @@ declare global {
       | "group_removed"
       | "group_deleted"
       | "user_left_group"
+      | "list_completed"
       | "task_assigned"
       | "task_completed"
       | "mentioned";
@@ -277,6 +284,7 @@ declare global {
       name: string;
       task_count: number;
       is_shared: boolean;
+      icon: string;
     }
 
     interface MainPageTask {
@@ -350,7 +358,13 @@ declare global {
       description?: string;
       owner_id: string;
       is_shared: boolean;
+      /** Open tasks. */
       task_count: number;
+      /** Completed tasks; with task_count, a project's progress. */
+      done_count: number;
+      completable: boolean;
+      target_date: string | null;
+      completed_at: string | null;
       members: { name: string; is_admin?: boolean; is_me?: boolean }[];
     }
   }

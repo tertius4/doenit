@@ -42,8 +42,15 @@ export class Widget {
         .pipe(debounceTime(500))
         .subscribe(([tasks, lists]) => {
           const uid = context.user?.firebase_uid ?? null;
+          // The open tasks of a completed project only show in the project itself.
+          const done_projects = new Set(lists.filter((l) => l.completed_at).map((l) => l.id));
           // Send every dated task; the widget filters to "do now" against its own date, so it rolls over at midnight.
-          const mine = tasks.filter((t) => (!t.assigned_firebase_uid || t.assigned_firebase_uid === uid) && (t.start_date || t.due_date));
+          const mine = tasks.filter(
+            (t) =>
+              (!t.assigned_firebase_uid || t.assigned_firebase_uid === uid) &&
+              (t.start_date || t.due_date) &&
+              !(t.list_id && done_projects.has(t.list_id)),
+          );
           Widget.updateTasks(mine.sort(compareTasks), lists);
         }),
     );

@@ -6,7 +6,7 @@
    * @prop {(value: boolean) => void} onchange - Callback function to call when the toggle state changes.
    */
 
-  /** @type {Props} */
+  /** @type {Props & Record<string, any>} */
   const { value, onchange, ...rest } = $props();
 
   function handleClick() {

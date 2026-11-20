@@ -111,5 +111,7 @@ export default class Api {
     getContacts: lists.getContacts,
     getById: lists.getById,
     moveTasks: lists.moveTasks,
+    complete: lists.complete,
+    reopen: lists.reopen,
   };
 }

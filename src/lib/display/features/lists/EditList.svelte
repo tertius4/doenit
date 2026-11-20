@@ -24,6 +24,8 @@
    * @prop {string} [name=""]
    * @prop {string} [description=""]
    * @prop {boolean} [is_shared=false] - Whether the list has its own scope yet.
+   * @prop {boolean} [completable=false]
+   * @prop {string | null} [target_date=null]
    * @prop {number} [task_count=0] - Open tasks in the list.
    * @prop {() => *} [onclose]
    */
@@ -36,6 +38,8 @@
     name = "",
     description = "",
     is_shared = false,
+    completable = false,
+    target_date = null,
     task_count = 0,
     onclose,
   } = $props();
@@ -189,11 +193,10 @@
   }
 
   /**
-   * @param {string} new_name
-   * @param {string} new_description
+   * @param {{ name: string, description: string, completable: boolean, target_date: string | null }} values
    */
-  async function handleEditSave(new_name, new_description) {
-    const result = await Api.lists.save({ id, name: new_name, description: new_description });
+  async function handleEditSave(values) {
+    const result = await Api.lists.save({ id, ...values });
     if (result.ok) await invalidate("lists:page");
 
     return result;
@@ -428,7 +431,7 @@
     </div>
   </div>
 
-  <ModalEditListInfo bind:open={edit_open} {name} {description} onsubmit={handleEditSave} />
+  <ModalEditListInfo bind:open={edit_open} {name} {description} {completable} {target_date} onsubmit={handleEditSave} />
   <ModalSendInvite bind:open={invite_open} />
 
   <Modal is_open={!!contact_to_share} close_on_outside_click={false} onclose={() => (contact_to_share = null)}>

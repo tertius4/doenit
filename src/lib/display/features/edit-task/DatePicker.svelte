@@ -15,13 +15,14 @@
 
   /**
    * @typedef {Object} Props
-   * @property {string?} start - Selected start date string
-   * @property {string?} end - Selected end date string
+   * @property {string | null} [start] - Selected start date string
+   * @property {string | null} [end] - Selected end date string
    * @property {boolean} [is_open] - Whether the picker modal is open
+   * @property {boolean} [single] - Pick one date (YYYY-MM-DD) into `start`: no range and no times.
    */
 
   /** @type {Props} */
-  let { start = $bindable(), end = $bindable(), is_open = $bindable(false) } = $props();
+  let { start = $bindable(), end = $bindable(), is_open = $bindable(false), single = false } = $props();
 
   let is_mounted = false;
   let enable_range = $state(!!end);
@@ -53,7 +54,7 @@
   $effect(() => {
     start_date;
 
-    if (!is_mounted) return;
+    if (!is_mounted || single) return;
     enable_range = true;
   });
 
@@ -93,7 +94,7 @@
 <div class="border border-default h-12 bg-card rounded-lg w-full flex">
   <button type="button" onclick={() => (is_open = !is_open)} class="w-full flex items-center justify-between p-2">
     {#if !start_date && !end_date}
-      <span class="text-muted">{t("datepicker_choose_dates")}</span>
+      <span class="text-muted">{single ? t("datepicker_choose_date") : t("datepicker_choose_dates")}</span>
     {:else if start_date && !end_date}
       <span>{display_start} {display_start_time}</span>
     {:else if start_date && end_date}
@@ -130,7 +131,7 @@
   style="background: transparent; pointer-events: none;"
   class="*:space-y-2 pointer-events-auto"
 >
-  <ModalHeader>{t("datepicker_choose_start_and_end_date")}</ModalHeader>
+  <ModalHeader>{single ? t("target_date") : t("datepicker_choose_start_and_end_date")}</ModalHeader>
   <div>
     <Calendar
       is_range_enabled={enable_range}
@@ -142,7 +143,7 @@
   </div>
 
   <div class="flex items-center gap-2">
-    {#if start_date}
+    {#if start_date && !single}
       <div transition:slide class="w-full">
         <InputTime
           class="w-full"

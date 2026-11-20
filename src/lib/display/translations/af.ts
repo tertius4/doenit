@@ -406,6 +406,21 @@ const af = {
   remove_from_list: "Verwyder uit lys",
   share_list: "Deel lys",
   sign_in_to_share: "Teken in om hierdie lys met ander te deel.",
+  list_has_end: "Projek",
+  list_has_end_hint: "Het 'n einde: wys vordering en kan voltooi word.",
+  target_date: "Teikendatum",
+  optional: "opsioneel",
+  project_completed: "Voltooi",
+  progress: "Vordering",
+  list_not_completable: "Hierdie lys is nie 'n projek nie.",
+  project_is_completed: "Hierdie projek is voltooi. Maak dit eers weer oop.",
+  complete_project: "Voltooi projek",
+  reopen_project: "Maak weer oop",
+  projects: "Projekte",
+  completed_projects: "Voltooide projekte",
+  notification_list_completed_title: "Projek voltooi",
+  notification_list_completed_body: "{{user}} het {{group}} voltooi.",
+  datepicker_choose_date: "Kies 'n datum",
 };
 
 export default af;

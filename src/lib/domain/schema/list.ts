@@ -3,12 +3,13 @@ import type { RxJsonSchema } from "rxdb";
 /**
  * A list of tasks. Private while scope_id is null (synced through the personal scope, like a task); shared once it
  * has its own scope, which is then the list's id. The list document of a shared list lives at scopes/{id}/items/{id}.
+ * A completable list is a project: it can have a target date and is completed by hand.
  */
 export const list: RxJsonSchema<DB.List> = {
   primaryKey: "id",
   required: [],
   type: "object",
-  version: 0,
+  version: 1,
   title: "list",
   description: "Lists that hold tasks",
   properties: {
@@ -28,5 +29,11 @@ export const list: RxJsonSchema<DB.List> = {
 
     name: { type: "string" },
     description: { type: "string" },
+    /** A list with an end: a project. */
+    completable: { type: "boolean" },
+    /** YYYY-MM-DD. Only on a completable list. */
+    target_date: { type: ["string", "null"] },
+    /** When the project was completed, YYYY-MM-DD HH:mm:ss. Only on a completable list. */
+    completed_at: { type: ["string", "null"] },
   },
 };

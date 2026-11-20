@@ -43,6 +43,7 @@
       group_removed: !!group,
       group_deleted: !!group,
       user_left_group: !!group && !!user,
+      list_completed: !!group && !!user,
       task_assigned: !!task,
       task_completed: !!task && !!group && !!user,
     };

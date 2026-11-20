@@ -2,7 +2,7 @@ import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
-import { compareTasks, getGroup, isDoNowTask } from "$lib";
+import { compareTasks, getGroup, isDoNowTask, listIcon } from "$lib";
 import { visible$ } from "./visible";
 
 /**
@@ -41,9 +41,11 @@ async function subscribeTaskList() {
       const list_map = new Map(lists.map((l) => [l.id, l]));
       const today = new Date();
 
-      tasks.sort(compareTasks);
+      // The open tasks of a completed project only show in the project itself.
+      const shown = tasks.filter((task) => !(task.list_id && list_map.get(task.list_id)?.completed_at));
+      shown.sort(compareTasks);
 
-      return tasks.map((task) => formatTask(task, list_map, today));
+      return shown.map((task) => formatTask(task, list_map, today));
     }),
   );
 }
@@ -74,7 +76,7 @@ function formatTask(task, list_map, today) {
   }
 
   const list = task.list_id ? list_map.get(task.list_id) : undefined;
-  if (list) pills.push({ type: "square", label: list.name, pre_icon: list.scope_id ? "users" : "categories" });
+  if (list) pills.push({ type: "square", label: list.name, pre_icon: listIcon(list) });
 
   /** @type {AL.MainPageTask['top_right_icons']} */
   const top_right_icons = [];

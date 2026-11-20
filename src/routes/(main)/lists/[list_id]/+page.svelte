@@ -23,6 +23,9 @@
     data.list ? `/create?list_id=${data.list.id}&redirect=/lists/${list_id}` : `/create?redirect=/lists/${list_id}`,
   );
 
+  // A completed project takes no new tasks until it is reopened.
+  const can_add = $derived(!data.list?.completed_at);
+
   selected_tasks.clear();
   const search_text = getContext("search_text");
 
@@ -101,6 +104,7 @@
   {#if !tasks.length && show_empty.value}
     <div class="flex flex-col items-center gap-4 py-12" in:fade={{ delay: 150 }}>
       <span class="text-lg">{t("empty_list")}</span>
+      {#if can_add}
       <button
         type="button"
         class="rounded-lg bg-card px-12 py-6 flex justify-center items-center gap-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -109,11 +113,13 @@
         <Icon name="plus" />
         <span class="text-lg">{t("create_new_task")}</span>
       </button>
+      {/if}
     </div>
   {/if}
 </div>
 
 <!-- FAB -->
+{#if can_add}
 <button
   type="button"
   onclick={() => goto(create_url)}
@@ -123,3 +129,4 @@
 >
   <Icon name="plus" class="text-2xl text-white" />
 </button>
+{/if}

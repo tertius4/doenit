@@ -20,6 +20,9 @@
 
   let name = $state("");
   let description = $state("");
+  let completable = $state(false);
+  /** @type {string | null} */
+  let target_date = $state(null);
   let error_message = $state("");
   let name_invalid = $state(false);
   let is_loading = $state(false);
@@ -27,6 +30,8 @@
   function reset() {
     name = "";
     description = "";
+    completable = false;
+    target_date = null;
     error_message = "";
     name_invalid = false;
   }
@@ -50,7 +55,7 @@
     is_loading = true;
 
     try {
-      const result = await Api.lists.save({ name, description });
+      const result = await Api.lists.save({ name, description, completable, target_date });
       if (!result.ok) return (error_message = result.error);
 
       reset();
@@ -70,7 +75,7 @@
 <Modal bind:is_open={open} onclose={handleClose} onsubmit={saveList} class="*:space-y-4">
   <ModalHeader>{t("new_list")}</ModalHeader>
 
-  <ListForm bind:name bind:description error={error_message} {name_invalid} onedit={clearError} />
+  <ListForm bind:name bind:description bind:completable bind:target_date error={error_message} {name_invalid} onedit={clearError} />
 
   <button
     class="bg-primary flex gap-1 items-center text-alt px-4 py-2 rounded-md ml-auto disabled:opacity-50"

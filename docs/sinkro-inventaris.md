@@ -82,7 +82,8 @@ Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `require
 | `scope_id` | string, null | volg die lys se scope. 'n Skuif na 'n ander scope maak 'n nuwe dokument (`stableId`) en 'n grafsteen (`moveTask` in `logic/api/lists.ts`); sien 8.2 |
 | valt weg | `soft_deleted`, `version`, `device_id`, `field_times` | |
 
-**`list`** (skema 0, `sync-table`, sinkroniseer per veld): `name`, `description`, `owner_id` (onveranderlik), `scope_id`,
+**`list`** (skema 1, `sync-table`, sinkroniseer per veld): `name`, `description`, `owner_id` (onveranderlik), `scope_id`,
+`completable`, `target_date` en `completed_at` (fase 2: projekte; nuwe velde vra 'n hoër `min_version`),
 plus die wegvallers. 'n Privaat lys het `scope_id: null` en sinkroniseer deur die eienaar se `personal_{uid}`. By die
 eerste deel kry dit sy eie scope, gelyk aan sy `id` (`ensureListScope` in `lists.ts`), en sy take skuif daarheen.
 `firestore.scopeDeleted` lees `scopes/{id}/items/{id}`, so die lys se dokument-id moet die scope bly.
@@ -101,7 +102,7 @@ Dié pas nie by "alle tabelle is `synced`" nie, want hulle pad, reëls en logika
 | Tabel | Firestore | Velde |
 | ----- | --------- | ----- |
 | `contact_invite` | `users/{uid}/invites/{id}`, een kopie by elke party | `id`, `relationship_id` (index), `from_firebase_uid`, `from_email`, `to_firebase_uid`, `to_email`, `status` (index; `pending`, `accepted`, `rejected`, `cancelled`), `created_at`, `updated_at`, `responded_at`, `contact_name` (net plaaslik) |
-| `notification` | `users/{uid}/notifications/{id}`, ander gebruikers skep dit | `id`, `user_id`, `type` (9 waardes), `title`, `body`, `read_at`, `data` (json), `created_at`, `updated_at` |
+| `notification` | `users/{uid}/notifications/{id}`, ander gebruikers skep dit | `id`, `user_id`, `type` (10 waardes, `list_completed` bygevoeg in fase 2), `title`, `body`, `read_at`, `data` (json), `created_at`, `updated_at` |
 | `contact` | Geen. Afgelei van aanvaarde uitnodigings. Net die naam sinkroniseer, in `users/{uid}/meta/contact_names` | `id`, `created_at`, `updated_at`, `owner_id`, `user_id` (index), `firebase_uid` (index), `relationship_id` (index), `name`, `avatar_url`, `email_address` |
 
 ### 3.3 Net plaaslik

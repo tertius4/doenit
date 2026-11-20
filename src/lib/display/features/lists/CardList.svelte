@@ -4,38 +4,36 @@
   import { slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import t from "$display/translate";
+  import ProjectProgress from "./ProjectProgress.svelte";
 
   /**
    * @typedef {Object} Props
-   * @property {string} id
-   * @property {string} name
-   * @property {string} [description]
-   * @property {number} task_count
-   * @property {string} owner_id
-   * @property {boolean} [is_shared]
-   * @property {{ name: string, is_admin?: boolean }[]} [members]
+   * @property {AL.ListListItem} list
    */
 
   /** @type {Props} */
-  const { id, name, description, members = [], is_shared = false, task_count } = $props();
+  const { list } = $props();
 </script>
 
 <button
   type="button"
   in:slide
-  onclick={() => goto(`/lists/${id}`)}
+  onclick={() => goto(`/lists/${list.id}`)}
   class="relative w-full flex items-center gap-3 bg-surface rounded-lg px-3 py-2 text-left active:bg-card transition-colors"
 >
   <div class="flex-1">
-    <h1 class="text-secondary-400 font-semibold text-lg leading-none truncate">{name}</h1>
+    <h1 class="text-secondary-400 font-semibold text-lg leading-none truncate pr-20 flex items-center gap-1.5">
+      {#if list.completable}<Icon name="folder" size={16} class="shrink-0" />{/if}
+      <span class="truncate">{list.name}</span>
+    </h1>
 
-    <p class="text-sm text-muted truncate empty:hidden mt-px">{description}</p>
+    <p class="text-sm text-muted truncate empty:hidden mt-px">{list.description}</p>
     <!-- Only a shared list shows who is in it; a private list has no mark. -->
-    {#if is_shared}
+    {#if list.is_shared}
       <div class="flex gap-1 font-medium text-sm mt-1">
         <Icon name="users" size={16} />
 
-        {#each members as member, i}
+        {#each list.members as member, i}
           {#if !!i}<span>, </span>{/if}
           <div class="flex gap-1 items-center justify-center truncate" title={member.name}>
             {#if member.is_admin}
@@ -46,14 +44,27 @@
         {/each}
       </div>
     {/if}
+
+    {#if list.completable}
+      <div class="mt-2">
+        <ProjectProgress
+          done={list.done_count}
+          open={list.task_count}
+          target_date={list.target_date}
+          completed_at={list.completed_at}
+        />
+      </div>
+    {/if}
   </div>
 
   <div class="absolute top-2 right-2 flex flex-col items-end gap-1 shrink-0">
-    <Tag>
-      <span class="capitalize text-xs font-bold text-secondary-300">
-        {task_count}
-        {task_count === 1 ? t("task") : t("tasks")}
-      </span>
-    </Tag>
+    {#if !list.completable}
+      <Tag>
+        <span class="capitalize text-xs font-bold text-secondary-300">
+          {list.task_count}
+          {list.task_count === 1 ? t("task") : t("tasks")}
+        </span>
+      </Tag>
+    {/if}
   </div>
 </button>

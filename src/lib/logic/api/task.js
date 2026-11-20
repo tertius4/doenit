@@ -123,7 +123,7 @@ async function updateTaskHandler(task) {
       }
     }
 
-    const list = await resolveList(task.list_id);
+    const list = await resolveList(task.list_id, original_task.list_id ?? null);
     if (!list.ok) return list;
 
     // Everything but the list is saved in place; a new list may then move the task to another scope (new id).
@@ -157,16 +157,19 @@ async function updateTaskHandler(task) {
 }
 
 /**
- * The list a task is put in and that list's scope. A list that is gone leaves the task in the Inbox.
+ * The list a task is put in and that list's scope. A list that is gone leaves the task in the Inbox. A completed
+ * project takes no new tasks; one already in it may still be edited.
  * @param {string | null | undefined} list_id
+ * @param {string | null} [current_list_id] The list the task is in now, when it is edited.
  * @returns {AsyncResult<{ list_id: string | null, scope_id: string | null }>}
  */
-async function resolveList(list_id) {
+async function resolveList(list_id, current_list_id = null) {
   if (!list_id) return { ok: true, value: { list_id: null, scope_id: null } };
 
   const list = await DB.list.findById(list_id);
   if (!list.ok) return list;
   if (!list.value || list.value.soft_deleted) return { ok: true, value: { list_id: null, scope_id: null } };
+  if (list.value.completed_at && list.value.id !== current_list_id) return { ok: false, error: t("project_is_completed") };
 
   return { ok: true, value: { list_id: list.value.id, scope_id: list.value.scope_id ?? null } };
 }

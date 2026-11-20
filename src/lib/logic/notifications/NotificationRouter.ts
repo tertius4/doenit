@@ -15,6 +15,7 @@ export const NotificationRouter = {
         }
         break;
       case "user_left_group":
+      case "list_completed":
         if (typeof notification.data.group_id === "string") {
           await goto(`/lists/${notification.data.group_id}`);
         } else {

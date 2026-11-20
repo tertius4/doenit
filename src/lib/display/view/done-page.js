@@ -1,6 +1,7 @@
 import DB from "$lib/domain/db";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
+import { listIcon } from "$lib";
 import { visible$ } from "./visible";
 
 /**
@@ -59,7 +60,7 @@ function formatTask(task, list_map) {
   }
 
   const list = task.list_id ? list_map.get(task.list_id) : undefined;
-  if (list) pills.push({ type: "square", label: list.name, pre_icon: list.scope_id ? "users" : "categories" });
+  if (list) pills.push({ type: "square", label: list.name, pre_icon: listIcon(list) });
 
   return {
     id: task.id,
