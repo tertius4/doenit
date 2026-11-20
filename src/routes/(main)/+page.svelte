@@ -1,8 +1,7 @@
 <script>
-  import { selected_categories, selected_tasks } from "$display/selected.svelte";
+  import { selected_lists, selected_tasks } from "$display/selected.svelte";
   import TaskGroupList from "$display/features/task-list/TaskGroupList.svelte";
-  import { markCompleting } from "$display/features/task-list/task-transitions";
-  import { useDelayedEmpty } from "$display/features/task-list/delayed-empty.svelte";
+  import { markCompleting, useDelayedEmpty } from "$display/features/task-list/task-transitions.svelte";
   import Icon from "$display/comps/Icon.svelte";
   import { getContext, onMount } from "svelte";
   import { Haptics } from "@capacitor/haptics";
@@ -25,7 +24,7 @@
   /** @type {AL.MainPageTask[]} */
   let all_tasks = $state([]);
 
-  const filtered_tasks = $derived(filterTasks(all_tasks, search_text.value, selected_categories));
+  const filtered_tasks = $derived(filterTasks(all_tasks, search_text.value, selected_lists));
   const do_now_count = $derived(filtered_tasks.filter((task) => task.is_do_now).length);
   const is_now = $derived(context.home_mode === "now");
   const tasks = $derived(is_now ? filtered_tasks.filter((task) => task.is_do_now) : filtered_tasks);
@@ -98,7 +97,7 @@
       <span class="text-lg">
         {#if is_now && filtered_tasks.length}
           {t("nothing_to_do_now")}
-        {:else if !selected_categories.size}
+        {:else if !selected_lists.size}
           {t("empty_list")}
         {:else if search_text.value?.trim().length}
           {t("no_tasks_found_for_search")}

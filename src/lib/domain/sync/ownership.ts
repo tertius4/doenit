@@ -1,10 +1,10 @@
 /**
- * Who owns personal tasks and categories on this device. `owner_id` is the local user id ("device" while signed out),
+ * Who owns personal tasks and private lists on this device. `owner_id` is the local user id ("device" while signed out),
  * which differs per device, so it is set here locally and never synced as a change (it is not merged per field).
  */
 
 import DB from "$domain/db";
-import { PERSONAL_TABLES } from "./personal";
+import { PERSONAL_TABLES } from "./scopes";
 
 /** Gives every personal document whose owner passes `isTarget` to `owner_id`. Direct writes, nothing is queued. */
 async function setOwner(isTarget: (owner_id: string) => boolean, owner_id: string): Promise<void> {

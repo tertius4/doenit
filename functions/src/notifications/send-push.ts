@@ -97,13 +97,13 @@ function getTemplateTitle(type: string, lang: "af" | "en"): string {
     case "invite_accepted":
       return en ? "Contact invite accepted" : "Kontak-uitnodiging aanvaar";
     case "group_added":
-      return en ? "Added to group" : "By groep gevoeg";
+      return en ? "Added to list" : "By lys gevoeg";
     case "group_removed":
-      return en ? "Removed from group" : "Uit groep verwyder";
+      return en ? "Removed from list" : "Uit lys verwyder";
     case "group_deleted":
-      return en ? "Group deleted" : "Groep uitgevee";
+      return en ? "List deleted" : "Lys geskrap";
     case "user_left_group":
-      return en ? "Member left group" : "Lid het groep verlaat";
+      return en ? "Member left list" : "Lid het lys verlaat";
     case "task_assigned":
       return en ? "New task assigned" : "Nuwe taak toegeken";
     case "task_completed":
@@ -125,7 +125,7 @@ function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, s
     case "group_removed":
       return en ? `You were removed from ${data.group_name}.` : `Jy is uit ${data.group_name} verwyder.`;
     case "group_deleted":
-      return en ? `${data.group_name} was deleted.` : `${data.group_name} is uitgevee.`;
+      return en ? `${data.group_name} was deleted.` : `${data.group_name} is geskrap.`;
     case "user_left_group":
       return en ? `${data.user_name} left ${data.group_name}.` : `${data.user_name} het ${data.group_name} verlaat.`;
     case "task_assigned":

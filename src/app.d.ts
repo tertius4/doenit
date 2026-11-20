@@ -47,25 +47,24 @@ declare global {
       repeat_specific_days: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
       repeat_interval_number: number;
       important: boolean;
-      assigned_firebase_uid?: string;
+      assigned_firebase_uid?: string | null;
       photo_ids?: string[];
 
-      category_id?: string;
-      // No group_id; Scope_id will be same as group_id
+      /** The list the task is in; null is the Inbox. */
+      list_id?: string | null;
+      /** The scope the task syncs in: the list's scope (null for a private list or the Inbox). */
       scope_id?: string | null;
     }
 
-    interface Category {
-      name: string;
-    }
-
-    interface Group {
+    interface List {
       name: string;
       description?: string;
+      /** Null while the list is private; the list's own id once it is shared. */
+      scope_id?: string | null;
     }
 
     interface Member {
-      // Already exists to a scope_id (=group_id)
+      // Belongs to the scope_id of a shared list (= list id)
       firebase_uid: string;
       role: "admin" | "member";
     }
@@ -133,12 +132,14 @@ declare global {
       last_opened_at: string;
       open_count: number;
       migration_1_complete?: boolean;
+      /** Groups and categories became lists (logic/migrations/2_3). */
+      migration_2_complete?: boolean;
       home_mode?: HomeMode;
       app_version: string;
       updated_at: string;
     }
 
-    // User-specific app state, like last opened category, last sync time, etc.
+    // User-specific app state, like the last sync time, etc.
     interface UserState {
       id: string; // primary key — same value as user_id
       user_id: string;
@@ -166,7 +167,7 @@ declare global {
       device_id: string;
 
       owner_id: string;
-      scope_id: string | null; // Will be same as group_id.
+      scope_id: string | null; // null for personal documents; a shared list's id for its documents.
 
       soft_deleted?: boolean;
     }
@@ -185,11 +186,10 @@ declare global {
       owner_id: string;
     }
 
-    type Group = DB.MetaDataShared & DB.FieldTimes & Domain.Group;
+    type List = DB.MetaDataShared & DB.FieldTimes & Domain.List;
     type Task = DB.MetaDataShared & DB.FieldTimes & Domain.Task;
-    type Category = DB.MetaDataShared & DB.FieldTimes & Domain.Category;
 
-    // Join table between Group and Contact
+    // Join table between a shared list and a user
     type Member = DB.MetaDataShared & Domain.Member;
     type Contact = DB.MetaDataPrivate & Domain.Contact;
 
@@ -238,8 +238,8 @@ declare global {
       due_date: string | null;
       start_date: string | null;
       important: boolean;
-      category: string | null;
-      group_id: string | null;
+      /** A list the user can see, or null for the Inbox. */
+      list_id: string | null;
       /** Missing on inbox docs written before the API supported repeats. */
       repeat_interval?: string;
       repeat_interval_number?: number;
@@ -271,17 +271,19 @@ declare global {
       webview_path?: string; // Optional webview path for displaying the photo.
     };
 
-    interface CategoryListItem {
+    /** An entry in a list picker or filter. The Inbox has id `INBOX_ID`. */
+    interface ListOption {
       id: string;
       name: string;
       task_count: number;
+      is_shared: boolean;
     }
 
     interface MainPageTask {
       id: string;
       time_group_number: number;
       name: string;
-      category_id?: string;
+      list_id?: string | null;
       is_for_someone_else?: boolean;
       is_do_now?: boolean;
       is_ongoing: boolean;
@@ -342,11 +344,12 @@ declare global {
       other_email: string;
     }
 
-    interface GroupListItem {
+    interface ListListItem {
       id: string;
       name: string;
       description?: string;
       owner_id: string;
+      is_shared: boolean;
       task_count: number;
       members: { name: string; is_admin?: boolean; is_me?: boolean }[];
     }

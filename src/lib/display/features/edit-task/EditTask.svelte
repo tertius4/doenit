@@ -1,7 +1,6 @@
 <script>
   import SelectRepeatInterval from "$display/features/repeat/SelectRepeatInterval.svelte";
-  import DropdownCategory from "$display/features/edit-task/DropdownCategory.svelte";
-  import SelectGroup from "$display/features/edit-task/SelectGroup.svelte";
+  import SelectList from "$display/features/edit-task/SelectList.svelte";
   import SelectAssignee from "$display/features/edit-task/SelectAssignee.svelte";
   import InputName from "$display/features/edit-task/InputName.svelte";
   import t from "$display/translate";
@@ -32,9 +31,11 @@
   let is_date_picker_open = $state(false);
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
-  const scope_id = $derived(/** @type {any} */ (task).scope_id);
+  // The scope of the list chosen in the form. The task itself only moves when it is saved.
+  // svelte-ignore state_referenced_locally
+  let scope_id = $state(/** @type {string | null} */ (/** @type {any} */ (task).scope_id ?? null));
 
-  // The assignee must be a member of the task's group.
+  // Only members of a shared list can be assigned a task.
   $effect(() => {
     if (!scope_id && task.assigned_firebase_uid) task.assigned_firebase_uid = undefined;
   });
@@ -93,14 +94,9 @@
     <DescriptionEditor bind:value={task.description} onclose={() => (is_editing_description = false)} />
   {/if}
 
-  <div>
-    <label class="font-semibold" for="category">{t("category")}</label>
-    <DropdownCategory bind:category_id={task.category_id} />
-  </div>
+  <SelectList bind:list_id={task.list_id} bind:scope_id />
 
-  <SelectGroup bind:value={task.scope_id} />
-
-  <SelectAssignee {scope_id} bind:value={task.assigned_firebase_uid} />
+  <SelectAssignee scope_id={scope_id ?? undefined} bind:value={task.assigned_firebase_uid} />
 
   <div class="w-full">
     <label class="font-semibold" for="date">{date_title}</label>

@@ -49,7 +49,7 @@ export async function migrateTasks(legacyDb: any) {
         repeat_interval_number:
           typeof old_task.repeat_interval_number === "number" ? old_task.repeat_interval_number : 1,
         important: !!old_task.important,
-        category_id: old_task.category_id || "",
+        list_id: old_task.category_id && old_task.category_id !== "default" ? old_task.category_id : null,
         assigned_firebase_uid: null,
         photo_ids: Array.isArray(old_task.photo_ids) ? old_task.photo_ids : [],
         archived: !!old_task.archived,

@@ -1,5 +1,5 @@
 <script>
-  import BulkAssignCategory from "./BulkAssignCategory.svelte";
+  import BulkMoveToList from "./BulkMoveToList.svelte";
   import { PUBLIC_DEV_EMAILS } from "$env/static/public";
   import { selected_tasks } from "$display/selected.svelte";
   import ButtonShareTask from "./ButtonShareTask.svelte";
@@ -70,13 +70,13 @@
     </a>
 
     <a
-      aria-label={t("categories")}
+      aria-label={t("lists")}
       draggable="false"
-      href="/categories"
+      href="/lists"
       class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
     >
       <Icon name="categories" size={16} />
-      <span>{t("categories")}</span>
+      <span>{t("lists")}</span>
     </a>
 
     <a
@@ -93,7 +93,7 @@
   {#if !!selected_tasks.size || is_dev}
     <div class="p-2 space-y-1 border-t border-default">
       <ButtonShareTask onclick={() => (show = false)} hidden={!selected_tasks.size} />
-      <BulkAssignCategory onclose={closeBulkAssign} hidden={!selected_tasks.size} />
+      <BulkMoveToList onclose={closeBulkAssign} hidden={!selected_tasks.size} />
       {#if context.user && PUBLIC_DEV_EMAILS.includes(context.user?.email_address)}
         <a
           aria-label={t("database")}

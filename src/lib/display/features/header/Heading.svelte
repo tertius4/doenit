@@ -23,11 +23,10 @@
     "/(main)/[task_id]": t("edit_task"),
     "/(main)/friends": t("friends"),
     "/(main)/complete": t("completed_tasks"),
-    "/(main)/categories": t("categories"),
     "/(main)/settings": t("settings"),
     "/(main)/subscriptions": t("doenit_plus"),
-    "/(main)/groups": t("groups"),
-    "/(main)/groups/[group_id]": t("groups"),
+    "/(main)/lists": t("lists"),
+    "/(main)/lists/[list_id]": t("lists"),
     "/(main)/contacts": t("contact_list"),
     "/(main)/notifications": t("notifications"),
     "/db/[collection]": capitalize(t("database")),
@@ -104,7 +103,7 @@
     <div class="flex gap-2 z-2 ml-auto shrink-0">
       {#if selected_tasks.size}
         <DeleteAll />
-      {:else if page.data.is_home || page.data.is_completed_page || page.data.is_group_page}
+      {:else if page.data.is_home || page.data.is_completed_page || page.data.is_list_page}
         <ButtonSearchTask bind:show={show_searchbar} />
       {/if}
 

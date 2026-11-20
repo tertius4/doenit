@@ -9,21 +9,21 @@ export const NotificationRouter = {
         break;
       case "group_added":
         if (typeof notification.data.group_id === "string") {
-          await goto(`/groups/${notification.data.group_id}`);
+          await goto(`/lists/${notification.data.group_id}`);
         } else {
-          await goto("/groups");
+          await goto("/lists");
         }
         break;
       case "user_left_group":
         if (typeof notification.data.group_id === "string") {
-          await goto(`/groups/${notification.data.group_id}`);
+          await goto(`/lists/${notification.data.group_id}`);
         } else {
-          await goto("/groups");
+          await goto("/lists");
         }
         break;
       case "group_removed":
       case "group_deleted":
-        await goto("/groups");
+        await goto("/lists");
         break;
       case "task_assigned":
       case "task_completed":

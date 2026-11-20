@@ -3,8 +3,9 @@
   import EditTask from "$display/features/edit-task/EditTask.svelte";
   import Api from "$logic/api";
   import { navHistory } from "$logic/navigation";
-  import { selected_categories } from "$display/selected.svelte";
+  import { selected_lists } from "$display/selected.svelte";
   import { page } from "$app/state";
+  import { INBOX_ID } from "$lib";
 
   const task = $state(getTask());
 
@@ -12,10 +13,11 @@
 
   /** @returns {Domain.Task} */
   function getTask() {
-    const category_id = selected_categories.size === 1 ? selected_categories.values().next().value : undefined;
-    const scope_id = page.url.searchParams.get("scope_id") ?? undefined;
+    // A list from the URL (a list's page), else the one list filtered on at home.
+    const selected = selected_lists.size === 1 ? selected_lists.values().next().value : undefined;
+    const list_id = page.url.searchParams.get("list_id") ?? selected;
 
-    return Api.task.getNewTask({ category_id, scope_id });
+    return Api.task.getNewTask({ list_id: list_id && list_id !== INBOX_ID ? list_id : null });
   }
 
   /**

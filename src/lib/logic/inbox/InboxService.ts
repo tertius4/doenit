@@ -7,9 +7,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { context } from "$logic/context.svelte";
-import { visibleSelector } from "$logic/visibility";
 import * as task_api from "$logic/api/task";
-import * as category_api from "$logic/api/categories";
 
 let running = false;
 /** Inbox docs that arrived while a drain was running; handled right after it. */
@@ -47,7 +45,6 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
   if (!existing.ok) throw new Error(existing.error);
 
   if (!existing.value) {
-    const category_id = inbox_task.category ? await resolveCategory(inbox_task.category) : undefined;
     const task = task_api.getNewTask({
       name: inbox_task.name,
       description: inbox_task.description ?? "",
@@ -57,8 +54,7 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
       repeat_interval: inbox_task.repeat_interval ?? "",
       repeat_interval_number: inbox_task.repeat_interval_number ?? 1,
       repeat_specific_days: inbox_task.repeat_specific_days ?? [],
-      category_id,
-      scope_id: inbox_task.group_id ?? undefined,
+      list_id: inbox_task.list_id ?? null,
     });
 
     const result = await task_api.createTask({ ...task, id: inbox_task.id } as Domain.Task);
@@ -66,20 +62,4 @@ async function addTask(inbox_task: AL.InboxTask): Promise<void> {
   }
 
   await firestore.deleteInboxTask(uid, inbox_task.id);
-}
-
-/** Finds a category by name (ignoring case) or creates it. */
-async function resolveCategory(name: string): Promise<string | undefined> {
-  const categories = await DB.category.findMany({
-    selector: { $and: [{ soft_deleted: { $ne: true } }, visibleSelector(context.user?.id, context.active_scopes)] },
-  });
-  if (!categories.ok) throw new Error(categories.error);
-
-  const wanted = name.trim().toLowerCase();
-  const match = categories.value.find((category) => category.name.trim().toLowerCase() === wanted);
-  if (match) return match.id;
-
-  const created = await category_api.save({ name: name.trim() });
-  if (!created.ok) throw new Error(created.error);
-  return created.value.id;
 }

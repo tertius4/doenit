@@ -11,7 +11,6 @@ import { keepReopenable, reopenClosed } from "./reopen";
 
 type tables =
   | tables.task
-  | tables.category
   | tables.user
   | tables.settings
   // | tables.session
@@ -20,14 +19,13 @@ type tables =
   | tables.contact
   | tables.contact_invite
   | tables.notification
-  | tables.group
+  | tables.list
   | tables.member
   | tables.sync_queue;
 
 class DBClass {
   private is_initialized = false;
 
-  private _category: tables.category | undefined;
   private _user: tables.user | undefined;
   private _task: tables.task | undefined;
   private _settings: tables.settings | undefined;
@@ -37,7 +35,7 @@ class DBClass {
   private _contact: tables.contact | undefined;
   private _contact_invite: tables.contact_invite | undefined;
   private _notification: tables.notification | undefined;
-  private _group: tables.group | undefined;
+  private _list: tables.list | undefined;
   private _member: tables.member | undefined;
   private _sync_queue: tables.sync_queue | undefined;
 
@@ -47,7 +45,6 @@ class DBClass {
     const db = await initDB();
 
     this._task = new tables.task(db.collections.task);
-    this._category = new tables.category(db.collections.category);
     this._user = new tables.user(db.collections.user);
     this._settings = new tables.settings(db.collections.settings);
     this._session = new tables.session(db.collections.session);
@@ -56,7 +53,7 @@ class DBClass {
     this._contact = new tables.contact(db.collections.contact);
     this._contact_invite = new tables.contact_invite(db.collections.contact_invite);
     this._notification = new tables.notification(db.collections.notification);
-    this._group = new tables.group(db.collections.group);
+    this._list = new tables.list(db.collections.list);
     this._member = new tables.member(db.collections.member);
     this._sync_queue = new tables.sync_queue(db.collections.sync_queue);
     this.is_initialized = true;
@@ -71,13 +68,12 @@ class DBClass {
   private get _collectionMap(): Record<string, any> {
     return {
       task: this._task,
-      category: this._category,
       user: this._user,
       settings: this._settings,
       contact: this._contact,
       contact_invite: this._contact_invite,
       notification: this._notification,
-      group: this._group,
+      list: this._list,
       member: this._member,
       sync_queue: this._sync_queue,
     };
@@ -94,11 +90,6 @@ class DBClass {
   get task() {
     if (!this._task) throw new Error("DB not initialized");
     return this._task;
-  }
-
-  get category() {
-    if (!this._category) throw new Error("DB not initialized");
-    return this._category;
   }
 
   get user() {
@@ -141,9 +132,9 @@ class DBClass {
     return this._notification;
   }
 
-  get group() {
-    if (!this._group) throw new Error("DB not initialized");
-    return this._group;
+  get list() {
+    if (!this._list) throw new Error("DB not initialized");
+    return this._list;
   }
 
   get member() {
@@ -190,12 +181,13 @@ async function initDB() {
         1: (doc) => ({ ...doc, assigned_firebase_uid: doc.assigned_user_id ?? null }),
         // Version 2 adds the optional field_times: documents are unchanged.
         2: (doc) => doc,
+        // Version 3 replaces category_id with list_id. Lists keep the id of the category or group they came from;
+        // logic/migrations/2_3 settles which list each task ends up in.
+        3: ({ category_id, ...doc }) => ({
+          ...doc,
+          list_id: category_id && category_id !== "default" ? category_id : (doc.scope_id ?? null),
+        }),
       },
-    },
-    // Version 1 adds the optional field_times: documents are unchanged.
-    category: {
-      schema: schema.category,
-      migrationStrategies: { 1: (doc) => doc },
     },
     session: { schema: schema.session },
     app_state: {
@@ -204,6 +196,8 @@ async function initDB() {
         1: (doc) => ({ ...doc, migration_1_complete: false }),
         // Version 2 adds the optional home_mode: documents are unchanged.
         2: (doc) => doc,
+        // Version 3 adds migration_2_complete: false until logic/migrations/2_3 has run.
+        3: (doc) => ({ ...doc, migration_2_complete: false }),
       },
     },
     // Version 1 adds the optional fcm_token fields and version 2 the optional home_mode: documents are unchanged.
@@ -215,24 +209,18 @@ async function initDB() {
     contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
     // Version 1 only widens the type enum: documents are unchanged.
     notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc } },
-    // Version 1 adds the optional field_times: documents are unchanged.
-    group: {
-      schema: schema.group,
-      migrationStrategies: { 1: (doc) => doc },
-    },
+    list: { schema: schema.list },
     member: { schema: schema.member },
     sync_queue: { schema: schema.sync_queue },
   });
 
   for (const name of [
     "settings",
-    "category",
     "task",
     "user",
     "contact",
     "contact_invite",
     "notification",
-    "group",
     "member",
     "user_state",
     "app_state",

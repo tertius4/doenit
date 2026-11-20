@@ -219,7 +219,7 @@ public class TaskWidgetService extends RemoteViewsService {
             Log.d(Const.LOG_TAG_DOENIT_SIMPLE, "Loading tasks from widget data");
 
             String tasksJson = DB.getString(Const.WIDGET_TASKS);
-            String categoriesJson = DB.getString(Const.WIDGET_CATEGORIES);
+            String categoriesJson = DB.getString(Const.WIDGET_LISTS);
 
             if (Utils.isEmpty(tasksJson)) {
                 return;
@@ -242,8 +242,8 @@ public class TaskWidgetService extends RemoteViewsService {
                     task.dueDate = toDisplayDate(taskJson.optString("due_date", ""));
                     task.startDate = toDisplayDate(taskJson.optString("start_date", ""));
 
-                    // Get category name from category ID
-                    String category_id = taskJson.optString("category_id", "");
+                    // Name of the task's list
+                    String category_id = taskJson.optString("list_id", "");
                     task.category = getCategoryName(category_id, categories);
                     task.important = taskJson.optBoolean("important", false);
                     task.is_repeating = !taskJson.optString("repeat_interval", "").isEmpty();
@@ -278,7 +278,7 @@ public class TaskWidgetService extends RemoteViewsService {
         }
 
         private String getCategoryName(String category_id, JSONObject categories) {
-            // Get category name from category ID
+            // Name of the task's list
             if (!category_id.isEmpty() && categories.has(category_id)) {
                 try {
                     JSONObject category = categories.getJSONObject(category_id);

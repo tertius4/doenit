@@ -31,7 +31,7 @@ import {
 import { Capacitor } from "@capacitor/core";
 import * as env from "$env/static/public";
 import { config } from "$lib/config";
-import { personalScope } from "$domain/sync/personal";
+import { personalScope } from "$domain/sync/scopes";
 
 export type RemoteDoc = DB.MetaDataShared & { scope_id: string; collection: string };
 

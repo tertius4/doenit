@@ -19,7 +19,7 @@ const TASK_PATH = /^\/v1\/tasks(?:\/([A-Za-z0-9_-]{1,50}))?$/;
  *   POST   /v1/tasks       create a task
  *   PATCH  /v1/tasks/{id}  change a task
  *   DELETE /v1/tasks/{id}  delete a task
- * Tasks are read and written in Firestore directly (personal scope or group scope), so it needs Sync to be on.
+ * Tasks are read and written in Firestore directly (personal scope or a shared list's scope), so it needs Sync to be on.
  * Keys are created by the app and stored as users/{uid}/api_keys/{sha256(secret)}, so a lookup is a single read.
  */
 export async function handleApi(req: Request, res: Response): Promise<void> {
@@ -86,6 +86,6 @@ async function loadAccess(uid: string): Promise<Result<Access>> {
     return { ok: false, error: "Turn on Sync in Doenit to use the API", status_code: 403 };
   }
 
-  const group_scopes = ((snap.get("scopes") as string[] | undefined) ?? []).filter((id) => !id.startsWith("personal_"));
-  return { ok: true, value: { uid, personal_scope: `personal_${uid}`, group_scopes } };
+  const shared_scopes = ((snap.get("scopes") as string[] | undefined) ?? []).filter((id) => !id.startsWith("personal_"));
+  return { ok: true, value: { uid, personal_scope: `personal_${uid}`, shared_scopes } };
 }

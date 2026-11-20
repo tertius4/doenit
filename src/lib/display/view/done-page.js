@@ -26,23 +26,23 @@ async function subscribeTaskList() {
     selector: { $or: [{ archived: { $eq: true } }, { completed: { $gt: 0 } }], soft_deleted: { $ne: true } },
     sort: [{ completed_at: "desc" }],
   });
-  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const lists$ = DB.list.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  return combineLatest([tasks$, categories$]).pipe(
-    map(([tasks, categories]) => {
-      /** @type {Map<string, DB.Category>} */
-      const categoryMap = new Map(categories.map((c) => [c.id, c]));
-      return tasks.map((task) => formatTask(task, categoryMap));
+  return combineLatest([tasks$, lists$]).pipe(
+    map(([tasks, lists]) => {
+      /** @type {Map<string, DB.List>} */
+      const list_map = new Map(lists.map((l) => [l.id, l]));
+      return tasks.map((task) => formatTask(task, list_map));
     }),
   );
 }
 
 /**
  * @param {DB.Task} task
- * @param {Map<string, DB.Category>} categoryMap
+ * @param {Map<string, DB.List>} list_map
  * @returns {AL.DonePageTask}
  */
-function formatTask(task, categoryMap) {
+function formatTask(task, list_map) {
   const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
   const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
 
@@ -58,10 +58,8 @@ function formatTask(task, categoryMap) {
     });
   }
 
-  if (task.category_id) {
-    const category = categoryMap.get(task.category_id);
-    if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
-  }
+  const list = task.list_id ? list_map.get(task.list_id) : undefined;
+  if (list) pills.push({ type: "square", label: list.name, pre_icon: list.scope_id ? "users" : "categories" });
 
   return {
     id: task.id,

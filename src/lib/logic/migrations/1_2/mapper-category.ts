@@ -22,11 +22,11 @@ export async function migrateCategories(legacyDb: any) {
     // Skip default categories and invalid IDs.
     const filtered_old_categories = old_categories.filter((cat: any) => !cat.is_default && !!cat.id);
 
-    const new_categories: Domain.Category[] = [];
+    const new_lists: Domain.List[] = [];
     let skipped = 0;
 
     for (const old_cat of filtered_old_categories) {
-      const existing = await DB.category.findById(old_cat.id);
+      const existing = await DB.list.findById(old_cat.id);
       if (!existing.ok) {
         return { ok: false, error: existing.error };
       }
@@ -35,15 +35,16 @@ export async function migrateCategories(legacyDb: any) {
         continue;
       }
 
-      new_categories.push({
+      new_lists.push({
         id: old_cat.id,
-        name: old_cat.name || "",
+        name: old_cat.name || "?",
+        scope_id: null,
         ...(old_cat.created_at && { created_at: old_cat.created_at }),
         ...(old_cat.updated_at && { updated_at: old_cat.updated_at }),
       } as any);
     }
 
-    const insert_result = await DB.category.createMany(new_categories as any);
+    const insert_result = await DB.list.createMany(new_lists as any);
     if (!insert_result.ok) return insert_result;
 
     return {

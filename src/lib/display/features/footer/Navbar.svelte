@@ -16,7 +16,7 @@
   const NAVIGATION_TIMES = $derived([
     { icon: "home", label: t("home"), href: "/", show: true },
     { icon: "check", label: t("completed_tasks"), href: "/complete" },
-    { icon: "categories", label: t("categories"), href: "/categories" },
+    { icon: "categories", label: t("lists"), href: "/lists" },
   ]);
 
   onMount(() => {

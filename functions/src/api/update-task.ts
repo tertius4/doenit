@@ -1,11 +1,13 @@
 import { type Result } from "../shared/result";
 import { deepClone } from "../shared/clone";
-import { type Access, categoryNames, findTask, resolveCategory, stampChange, writeItem } from "./store";
+import { type Access, findTask, scopeOfList, stampChange, writeItem } from "./store";
 import { type PublicTask, markDone, parseTask, toPublicTask, toTaskBody } from "./task-fields";
 
 /**
  * PATCH /v1/tasks/{id}: the sent fields are merged onto the task and validated as a whole, so the rules are the same
  * as for POST and `null` clears a field. `completed` completes or reopens it, like ticking it off in the app.
+ * `list_id` may only change between lists in the same scope (private lists and the Inbox): moving a task to or from a
+ * shared list gives it a new id in the other scope, which the app does.
  */
 export async function updateTask(access: Access, id: string, body: unknown): Promise<Result<PublicTask>> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -21,19 +23,19 @@ export async function updateTask(access: Access, id: string, body: unknown): Pro
   const { scope_id } = found;
   const task = deepClone(found.task);
 
-  const names = await categoryNames(scope_id);
-  const current = toPublicTask(task, names);
-  if ("group_id" in changes && (changes.group_id ?? null) !== current.group_id) {
-    return { ok: false, error: "group_id can't be changed", status_code: 400 };
-  }
+  const current = toPublicTask(task);
 
   const parsed = parseTask({ ...toTaskBody(current), ...changes });
   if (!parsed.ok) return parsed;
-  const { category, group_id: _group_id, ...fields } = parsed.value!;
+  const { list_id, ...fields } = parsed.value!;
 
-  if (category !== current.category) {
-    task.category_id = category ? await resolveCategory(access, scope_id, category) : null;
-    if (category && task.category_id) names.set(task.category_id, category);
+  if (list_id !== current.list_id) {
+    const target_scope = await scopeOfList(access, list_id);
+    if (!target_scope) return { ok: false, error: "Unknown list", status_code: 400 };
+    if (target_scope !== scope_id) {
+      return { ok: false, error: "A task can't move to or from a shared list through the API", status_code: 400 };
+    }
+    task.list_id = list_id;
   }
   Object.assign(task, fields);
 
@@ -43,5 +45,5 @@ export async function updateTask(access: Access, id: string, body: unknown): Pro
   const stamped = stampChange(found.task, task);
   await writeItem(scope_id, stamped);
 
-  return { ok: true, value: toPublicTask(stamped, names) };
+  return { ok: true, value: toPublicTask(stamped) };
 }

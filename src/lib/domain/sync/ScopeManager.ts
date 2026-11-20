@@ -63,12 +63,12 @@ class ScopeManager {
   }
 
   /**
-   * Deletes the local copies of a scope's data (tasks, categories, groups, members and queued pushes) after the
+   * Deletes the local copies of a scope's data (tasks, lists, members and queued pushes) after the
    * user lost access to it. Writes straight to the collections, so nothing is queued for sync. Also drops the scope's
    * pull cursor, so re-joining later pulls everything again instead of only what changed since leaving.
    */
   async purgeLocalScope(scope_id: string): Promise<void> {
-    const names = ["task", "category", "group", "member", "sync_queue"] as const;
+    const names = ["task", "list", "member", "sync_queue"] as const;
     await Promise.all(
       names.map(async (name) => {
         const table = DB.getCollection(name);

@@ -2,7 +2,7 @@
   import { selected_tasks } from "$display/selected.svelte";
   import t from "$display/translate";
   import CardTask from "./CardTask.svelte";
-  import { taskIn, taskOut } from "./task-transitions";
+  import { taskIn, taskOut } from "./task-transitions.svelte";
 
   /**
    * @typedef {Object} Props

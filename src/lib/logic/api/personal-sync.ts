@@ -1,7 +1,7 @@
 import { apiLogger } from "$lib";
 import firestore from "$services/firestore";
 import { context } from "$logic/context.svelte";
-import { personalScope } from "$domain/sync/personal";
+import { personalScope } from "$domain/sync/scopes";
 import t from "$display/translate";
 
 export const enable = apiLogger(enableHandler);
@@ -15,7 +15,7 @@ export function isEnabled(): boolean {
 
 /**
  * Turns device sync on for the whole account. The memberships listener on every device then adds the personal scope
- * and queues that device's personal tasks and categories.
+ * and queues that device's personal tasks and lists.
  */
 async function enableHandler(): AsyncResult {
   return setEnabled(true);

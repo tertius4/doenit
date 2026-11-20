@@ -6,13 +6,13 @@
   import { wait } from "$lib";
 
   /**
-   * @typedef {DB.Member & { is_me?: boolean, contact: { name?: string, email_address: string } | null }} GroupMember
+   * @typedef {DB.Member & { is_me?: boolean, contact: { name?: string, email_address: string } | null }} ListMember
    */
 
   /**
    * @typedef {Object} Props
    * @property {string | undefined} scope_id
-   * @property {string | undefined} value
+   * @property {string | null | undefined} value
    */
 
   /** @type {Props & Record<string, any>} */
@@ -36,7 +36,7 @@
   const ROW_CLASS =
     "flex items-center gap-3 w-full min-h-13 px-2 py-1.5 rounded-lg text-left cursor-pointer outline-none focus-visible:ring-2 ring-primary";
 
-  /** @type {GroupMember[]} */
+  /** @type {ListMember[]} */
   let members = $state([]);
   let is_loading = $state(false);
   let is_searching = $state(false);
@@ -76,19 +76,19 @@
     }
 
     is_loading = true;
-    Api.groups.getMembers(id).then((result) => {
+    Api.lists.getMembers(id).then((result) => {
       if (id !== scope_id) return;
       is_loading = false;
       if (!result.ok) return;
 
       members = result.value;
-      // The assignee must be a member of the (new) group.
+      // The assignee must be a member of the (new) list.
       if (value && !members.some((m) => m.firebase_uid === value)) value = undefined;
     });
   });
 
   /**
-   * @param {GroupMember} member
+   * @param {ListMember} member
    * @returns {string}
    */
   function displayName(member) {
@@ -97,7 +97,7 @@
   }
 
   /**
-   * @param {GroupMember} member
+   * @param {ListMember} member
    * @returns {string}
    */
   function initials(member) {

@@ -41,17 +41,17 @@
       </a>
 
       <a
-        href="/groups"
+        href="/lists"
         draggable="false"
         class="flex flex-col font-medium justify-center items-center h-full w-fit mx-auto group px-2"
       >
         <div
-          class:bg-card={page.url.pathname.startsWith("/groups")}
+          class:bg-card={page.url.pathname.startsWith("/lists")}
           class="py-1 px-4 my-1 rounded-2xl group-hover:bg-card transition-colors"
         >
-          <Icon name="users" class="w-5 h-5 mb-1" />
+          <Icon name="categories" class="w-5 h-5 mb-1" />
         </div>
-        <span>{t("groups")}</span>
+        <span>{t("lists")}</span>
       </a>
 
       <a

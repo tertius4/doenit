@@ -1,15 +1,13 @@
 import * as task from "./task";
-import * as categories from "./categories";
+import * as lists from "./lists";
 import * as settings from "./settings";
 import * as auth from "./auth";
 import * as contacts from "./contacts";
-import * as groups from "./groups";
 import * as invites from "./invites";
 import * as notifications from "./notifications";
 import * as widget from "./widget";
 import * as api_keys from "./api-keys";
 import * as personal_sync from "./personal-sync";
-import * as clipboard from "./clipboard";
 import * as share from "./share";
 import { InboxService } from "$logic/inbox/InboxService";
 
@@ -33,11 +31,6 @@ export default class Api {
     isTaskUpdated: task.isTaskUpdated,
     uncomplete: task.uncomplete,
     updateTask: task.updateTask,
-  };
-
-  static readonly cats = {
-    ...categories,
-    delete: categories.remove,
   };
 
   static readonly auth = {
@@ -102,20 +95,21 @@ export default class Api {
   };
 
   static readonly clipboard = {
-    copy: clipboard.copy,
+    copy: share.copy,
   };
 
   static readonly inbox = {
     drain: (tasks: AL.InboxTask[]) => InboxService.drain(tasks),
   };
 
-  static readonly groups = {
-    save: groups.save,
-    delete: groups.remove,
-    addMember: groups.addMember,
-    removeMember: groups.removeMember,
-    getMembers: groups.getMembers,
-    getContacts: groups.getContacts,
-    getById: groups.getById,
+  static readonly lists = {
+    save: lists.save,
+    delete: lists.remove,
+    addMember: lists.addMember,
+    removeMember: lists.removeMember,
+    getMembers: lists.getMembers,
+    getContacts: lists.getContacts,
+    getById: lists.getById,
+    moveTasks: lists.moveTasks,
   };
 }

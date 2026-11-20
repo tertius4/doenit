@@ -1,6 +1,6 @@
 <script>
   import Modal, { ModalHeader } from "$display/comps/modal";
-  import { tempMediaManager } from "$logic/temp-media";
+  import { tempMediaManager } from "$lib/services/photos.svelte";
   import toast from "$display/toast/toast.svelte";
   import { backHandler } from "$logic/navigation";
   import Icon from "$display/comps/Icon.svelte";

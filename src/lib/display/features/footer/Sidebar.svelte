@@ -4,33 +4,33 @@
   import { onMount } from "svelte";
   import Icon from "$display/comps/Icon.svelte";
   import t from "$display/translate";
-  import { selected_categories, selected_tasks } from "$display/selected.svelte";
-  import { hotbar_categories, startHotbarCategories } from "$display/view/hotbar.svelte";
+  import { selected_lists, selected_tasks } from "$display/selected.svelte";
+  import { hotbar_lists, startHotbarLists } from "$display/view/hotbar.svelte";
 
   /**
    * Web desktop navigation. Replaces the footer's hotbar and bottom nav on wide screens: the links on
-   * top, the hotbar's categories (with task counts) below them.
+   * top, the hotbar's lists (with task counts) below them.
    */
 
-  onMount(startHotbarCategories);
+  onMount(startHotbarLists);
 
   const NAV_ITEMS = $derived([
     { icon: "tasks", label: t("all_tasks"), href: "/", active: page.url.pathname === "/" },
-    { icon: "users", label: t("groups"), href: "/groups", active: page.url.pathname.startsWith("/groups") },
+    { icon: "categories", label: t("lists"), href: "/lists", active: page.url.pathname.startsWith("/lists") },
     { icon: "contacts", label: t("contact_list"), href: "/contacts", active: page.url.pathname === "/contacts" },
     { icon: "check", label: t("completed_tasks"), href: "/complete", active: page.url.pathname === "/complete" },
   ]);
 
   /**
-   * Toggles a category filter, like a hotbar tag. Categories filter the home list, so go there first.
+   * Toggles a list filter, like a hotbar tag. Lists filter the home list, so go there first.
    * @param {string} id
    */
   function toggle(id) {
     selected_tasks.clear();
-    if (selected_categories.has(id)) {
-      selected_categories.delete(id);
+    if (selected_lists.has(id)) {
+      selected_lists.delete(id);
     } else {
-      selected_categories.add(id);
+      selected_lists.add(id);
     }
     if (!page.data.is_home) goto("/");
   }
@@ -56,17 +56,17 @@
     {/each}
   </nav>
 
-  {#if hotbar_categories.length}
+  {#if hotbar_lists.length}
     <div class="flex items-center justify-between px-3 pt-5 pb-1">
-      <h2 class="text-sm font-semibold text-muted">{t("categories")}</h2>
-      <a href="/categories" draggable="false" class="p-1 rounded-md hover:bg-card" aria-label={t("categories")}>
+      <h2 class="text-sm font-semibold text-muted">{t("lists")}</h2>
+      <a href="/lists" draggable="false" class="p-1 rounded-md hover:bg-card" aria-label={t("lists")}>
         <Icon name="categories" size={16} />
       </a>
     </div>
 
     <ul class="flex flex-col gap-0.5">
-      {#each hotbar_categories as category (category.id)}
-        {@const is_selected = selected_categories.has(category.id)}
+      {#each hotbar_lists as list (list.id)}
+        {@const is_selected = selected_lists.has(list.id)}
         <li>
           <button
             type="button"
@@ -76,12 +76,12 @@
               "bg-secondary-500 text-alt": is_selected,
               "hover:bg-card": !is_selected,
             }}
-            onclick={() => toggle(category.id)}
+            onclick={() => toggle(list.id)}
           >
-            <span class="truncate min-w-0">{category.name}</span>
-            {#if category.task_count != null}
+            <span class="truncate min-w-0">{list.name}</span>
+            {#if list.task_count != null}
               <span class={{ "shrink-0 text-sm font-mono": true, "text-muted": !is_selected }}>
-                {category.task_count}
+                {list.task_count}
               </span>
             {/if}
           </button>

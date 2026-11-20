@@ -1,0 +1,125 @@
+<script>
+  import TaskGroupList from "$display/features/task-list/TaskGroupList.svelte";
+  import { markCompleting, useDelayedEmpty } from "$display/features/task-list/task-transitions.svelte";
+  import ListInfo from "$display/features/lists/ListInfo.svelte";
+  import Icon from "$display/comps/Icon.svelte";
+  import { selected_tasks } from "$display/selected.svelte";
+  import { Haptics } from "@capacitor/haptics";
+  import { goto, invalidate } from "$app/navigation";
+  import { context } from "$logic/context.svelte";
+  import { getContext, onMount } from "svelte";
+  import { fade } from "svelte/transition";
+  import { filterTasks, INBOX_ID } from "$lib";
+  import { backHandler, navHistory } from "$logic/navigation";
+  import View from "$display/view";
+  import Api from "$logic/api";
+  import t from "$display/translate";
+  import toast from "$display/toast/toast.svelte";
+
+  const { data } = $props();
+
+  const list_id = $derived(data.list?.id ?? INBOX_ID);
+  const create_url = $derived(
+    data.list ? `/create?list_id=${data.list.id}&redirect=/lists/${list_id}` : `/create?redirect=/lists/${list_id}`,
+  );
+
+  selected_tasks.clear();
+  const search_text = getContext("search_text");
+
+  /** @type {AL.MainPageTask[]} */
+  let all_tasks = $state([]);
+  const tasks = $derived(filterTasks(all_tasks, search_text.value, new Set()));
+
+  const show_empty = useDelayedEmpty(() => tasks.length);
+
+  onMount(() => {
+    const token = backHandler.register(() => navHistory.back("/lists"), -1);
+    return () => backHandler.unregister(token);
+  });
+
+  // svelte-ignore state_referenced_locally
+  onMount(() => View.lists.taskList(list_id, all_tasks));
+
+  // Re-run the access check in +page.js when memberships change, it redirects to /lists if access was lost
+  const scopes_key = $derived(context.user_state.active_scopes.join(","));
+  let first_scopes_run = true;
+  $effect(() => {
+    scopes_key;
+    if (first_scopes_run) {
+      first_scopes_run = false;
+      return;
+    }
+    invalidate("lists:page");
+  });
+
+  /**
+   * @param {AL.MainPageTask} task
+   */
+  function handleLongPress(task) {
+    Haptics.vibrate({ duration: 100 });
+    if (selected_tasks.has(task.id)) {
+      selected_tasks.delete(task.id);
+    } else {
+      selected_tasks.add(task.id);
+    }
+  }
+
+  /**
+   * @param {AL.MainPageTask} task
+   */
+  async function handleClick(task) {
+    if (!selected_tasks.size) return goto(`/${task.id}?redirect=/lists/${list_id}`);
+    if (selected_tasks.has(task.id)) {
+      selected_tasks.delete(task.id);
+    } else {
+      selected_tasks.add(task.id);
+      Haptics.vibrate({ duration: 50 });
+    }
+  }
+
+  /**
+   * @param {AL.MainPageTask} task
+   */
+  async function handleComplete(task) {
+    markCompleting(task.id);
+    const result = await Api.task.complete(task.id);
+    if (!result.ok) return toast.error(result.error);
+
+    selected_tasks.delete(task.id);
+    return { ok: true };
+  }
+</script>
+
+<div class="space-y-1.5 mt-2">
+  {#if data.list}
+    <ListInfo list={data.list} />
+  {:else}
+    <h1 class="bg-surface rounded-lg px-4 py-3 text-2xl font-bold text-secondary-400">{t("inbox")}</h1>
+  {/if}
+  <TaskGroupList {tasks} onclick={handleClick} oncheck={handleComplete} onlongpress={handleLongPress} />
+
+  {#if !tasks.length && show_empty.value}
+    <div class="flex flex-col items-center gap-4 py-12" in:fade={{ delay: 150 }}>
+      <span class="text-lg">{t("empty_list")}</span>
+      <button
+        type="button"
+        class="rounded-lg bg-card px-12 py-6 flex justify-center items-center gap-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        onclick={() => goto(create_url)}
+      >
+        <Icon name="plus" />
+        <span class="text-lg">{t("create_new_task")}</span>
+      </button>
+    </div>
+  {/if}
+</div>
+
+<!-- FAB -->
+<button
+  type="button"
+  onclick={() => goto(create_url)}
+  class="fixed right-4 z-30 flex h-15 w-15 items-center justify-center rounded-full bg-primary shadow-lg"
+  style="bottom: calc(89px + env(safe-area-inset-bottom));"
+  aria-label={t("add_task")}
+>
+  <Icon name="plus" class="text-2xl text-white" />
+</button>

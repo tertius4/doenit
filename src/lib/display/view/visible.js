@@ -1,11 +1,11 @@
 import DB from "$lib/domain/db";
 import { context } from "$logic/context.svelte";
-import { visibleSelector } from "$logic/visibility";
+import { visibleSelector } from "$domain/sync/scopes";
 import { distinctUntilChanged, map, switchMap } from "rxjs";
 
 /**
- * Like `table.subscribe$(query)`, limited to what the current user may see (see visibility.ts). Re-queries when the
- * user's memberships change, so group tasks appear and disappear with the group.
+ * Like `table.subscribe$(query)`, limited to what the current user may see (see visibleSelector in scopes.ts). Re-queries when the
+ * user's memberships change, so shared tasks appear and disappear with their list.
  * @template T
  * @param {{ subscribe$: (query: any) => import("rxjs").Observable<T[]> }} table
  * @param {{ selector?: Record<string, any>, sort?: any[] }} [query]

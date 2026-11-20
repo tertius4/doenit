@@ -10,7 +10,7 @@ public class Const {
 
     // Widget data keys
     public static final String WIDGET_TASKS = "widget_tasks";
-    public static final String WIDGET_CATEGORIES = "widget_categories";
+    public static final String WIDGET_LISTS = "widget_lists";
 
     // Intent actions
     public static final String ACTION_ADD_TASK = "ADD_TASK";

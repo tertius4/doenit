@@ -33,33 +33,28 @@ async function subscribeTaskList() {
     },
     sort: [{ due_date: "asc" }],
   });
-  const categories$ = DB.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+  const lists$ = DB.list.subscribe$({ selector: { soft_deleted: { $ne: true } } });
 
-  const groups$ = DB.group.subscribe$({ selector: { soft_deleted: { $ne: true } } });
-
-  return combineLatest([tasks$, categories$, groups$]).pipe(
-    map(([tasks, categories, groups]) => {
-      /** @type {Map<string, DB.Category>} */
-      const categoryMap = new Map(categories.map((c) => [c.id, c]));
-      /** @type {Map<string, string>} */
-      const groupMap = new Map(groups.map((g) => [g.id, g.name]));
+  return combineLatest([tasks$, lists$]).pipe(
+    map(([tasks, lists]) => {
+      /** @type {Map<string, DB.List>} */
+      const list_map = new Map(lists.map((l) => [l.id, l]));
       const today = new Date();
 
       tasks.sort(compareTasks);
 
-      return tasks.map((task) => formatTask(task, categoryMap, groupMap, today));
+      return tasks.map((task) => formatTask(task, list_map, today));
     }),
   );
 }
 
 /**
  * @param {DB.Task} task
- * @param {Map<string, DB.Category>} category_map
- * @param {Map<string, string>} group_map
+ * @param {Map<string, DB.List>} list_map
  * @param {Date} today
  * @returns {AL.MainPageTask}
  */
-function formatTask(task, category_map, group_map, today) {
+function formatTask(task, list_map, today) {
   const start_date = DateUtil.startOfDay(task.start_date);
   const due_date = DateUtil.endOfDay(task.due_date);
 
@@ -78,13 +73,8 @@ function formatTask(task, category_map, group_map, today) {
     });
   }
 
-  if (task.category_id) {
-    const category = category_map.get(task.category_id);
-    if (category) pills.push({ type: "square", label: category.name, pre_icon: "categories" });
-  }
-
-  const group_name = task.scope_id ? group_map.get(task.scope_id) : undefined;
-  if (group_name) pills.push({ type: "square", label: group_name, pre_icon: "users" });
+  const list = task.list_id ? list_map.get(task.list_id) : undefined;
+  if (list) pills.push({ type: "square", label: list.name, pre_icon: list.scope_id ? "users" : "categories" });
 
   /** @type {AL.MainPageTask['top_right_icons']} */
   const top_right_icons = [];
@@ -99,7 +89,7 @@ function formatTask(task, category_map, group_map, today) {
     is_do_now: isDoNowTask(task, today),
     is_ongoing,
     is_past,
-    category_id: task.category_id,
+    list_id: task.list_id ?? null,
     onclick: () => {},
     onlongpress: () => {},
     pills,

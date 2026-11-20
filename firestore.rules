@@ -70,7 +70,7 @@ service cloud.firestore {
         : isScopeMember(scope_id);
     }
 
-    // Synced scope data (tasks, groups, members, ...). Only members of the scope may read or write it.
+    // Synced scope data (tasks, lists, members, ...). Only members of the scope may read or write it.
     match /scopes/{scope_id}/items/{item_id} {
       allow read, delete: if canAccessScope(scope_id);
       allow create, update: if canAccessScope(scope_id) && isServerStamped();
@@ -100,7 +100,7 @@ service cloud.firestore {
             : request.resource.data.diff(resource.data).affectedKeys();
         }
 
-        // Group members add and remove scopes on behalf of the users they invite or remove.
+        // Members of a shared list add and remove scopes on behalf of the users they invite or remove.
         // They may change at most one scope per write, and only one that they belong to themselves.
         function isMemberManaging() {
           return signedIn()

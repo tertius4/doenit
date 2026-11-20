@@ -3,7 +3,7 @@
   import Modal, { ModalHeader } from "$display/comps/modal";
   import { onMount, untrack } from "svelte";
   import t from "$display/translate";
-  import { Calendar } from "./calendar";
+  import Calendar from "./calendar/Calendar.svelte";
 
   import DateUtil from "$display/date-util";
   import InputTime from "$display/comps/input/InputTime.svelte";

@@ -7,7 +7,7 @@ import logger from "$display/logger";
 import toast from "$display/toast/toast.svelte";
 
 export interface TaskWidgetPlugin {
-  updateTasks({ tasks, categories }: { tasks: DB.Task[]; categories: DB.Category[] }): Promise<void>;
+  updateTasks({ tasks, lists }: { tasks: DB.Task[]; lists: DB.List[] }): Promise<void>;
   updateLanguage({ language }: { language: Domain.Settings["language"] }): Promise<void>;
   updateTheme({ theme }: { theme: Domain.Settings["theme"] }): Promise<void>;
   /** Ids of tasks checked off in the widget while the app was closed. */
@@ -32,19 +32,19 @@ export class Widget {
     if (!IS_ANDROID || this._subscription) return;
 
     const tasks$ = db.task.subscribe$({ selector: { archived: { $eq: false }, soft_deleted: { $ne: true } } });
-    const categories$ = db.category.subscribe$({ selector: { soft_deleted: { $ne: true } } });
+    const lists$ = db.list.subscribe$({ selector: { soft_deleted: { $ne: true } } });
     const settings$ = db.settings.subscribe$();
 
     this._subscription = new Subscription();
 
     this._subscription.add(
-      combineLatest([tasks$, categories$])
+      combineLatest([tasks$, lists$])
         .pipe(debounceTime(500))
-        .subscribe(([tasks, categories]) => {
+        .subscribe(([tasks, lists]) => {
           const uid = context.user?.firebase_uid ?? null;
           // Send every dated task; the widget filters to "do now" against its own date, so it rolls over at midnight.
           const mine = tasks.filter((t) => (!t.assigned_firebase_uid || t.assigned_firebase_uid === uid) && (t.start_date || t.due_date));
-          Widget.updateTasks(mine.sort(compareTasks), categories);
+          Widget.updateTasks(mine.sort(compareTasks), lists);
         }),
     );
 
@@ -116,11 +116,11 @@ export class Widget {
   /**
    * Update the widget display
    */
-  static async updateTasks(tasks: DB.Task[], categories: DB.Category[]): Promise<void> {
+  static async updateTasks(tasks: DB.Task[], lists: DB.List[]): Promise<void> {
     if (!IS_ANDROID) return;
 
     try {
-      const result = await TaskWidget.updateTasks({ tasks, categories });
+      const result = await TaskWidget.updateTasks({ tasks, lists });
       logger.debug("Tasks updated", result);
     } catch (error) {
       const error_message = error instanceof Error ? error.message : JSON.stringify(error);

@@ -82,54 +82,54 @@ export const NotificationService = {
     });
   },
 
-  async createAddedToGroup(user_id: string, group: DB.Group): AsyncResult<DB.Notification> {
+  async createAddedToList(user_id: string, list: DB.List): AsyncResult<DB.Notification> {
     return this.create({
       user_id,
       type: "group_added",
-      title: "Added to group",
-      body: `You were added to ${group.name}.`,
+      title: "Added to list",
+      body: `You were added to ${list.name}.`,
       data: {
-        group_id: group.id,
-        group_name: group.name,
+        group_id: list.id,
+        group_name: list.name,
       },
     });
   },
 
-  async createRemovedFromGroup(user_id: string, group: DB.Group): AsyncResult<DB.Notification> {
+  async createRemovedFromList(user_id: string, list: DB.List): AsyncResult<DB.Notification> {
     return this.create({
       user_id,
       type: "group_removed",
-      title: "Removed from group",
-      body: `You were removed from ${group.name}.`,
+      title: "Removed from list",
+      body: `You were removed from ${list.name}.`,
       data: {
-        group_id: group.id,
-        group_name: group.name,
+        group_id: list.id,
+        group_name: list.name,
       },
     });
   },
 
-  async createGroupDeleted(user_id: string, group: DB.Group): AsyncResult<DB.Notification> {
+  async createListDeleted(user_id: string, list: DB.List): AsyncResult<DB.Notification> {
     return this.create({
       user_id,
       type: "group_deleted",
-      title: "Group deleted",
-      body: `${group.name} was deleted.`,
+      title: "List deleted",
+      body: `${list.name} was deleted.`,
       data: {
-        group_id: group.id,
-        group_name: group.name,
+        group_id: list.id,
+        group_name: list.name,
       },
     });
   },
 
-  async createUserLeftGroup(user_id: string, group: DB.Group, user_name: string): AsyncResult<DB.Notification> {
+  async createUserLeftList(user_id: string, list: DB.List, user_name: string): AsyncResult<DB.Notification> {
     return this.create({
       user_id,
       type: "user_left_group",
-      title: "Member left group",
-      body: `${user_name} left ${group.name}.`,
+      title: "Member left list",
+      body: `${user_name} left ${list.name}.`,
       data: {
-        group_id: group.id,
-        group_name: group.name,
+        group_id: list.id,
+        group_name: list.name,
         user_name,
       },
     });
@@ -152,19 +152,19 @@ export const NotificationService = {
   async createTaskCompleted(
     user_id: string,
     task: DB.Task,
-    group: DB.Group,
+    list: DB.List,
     user_name: string,
   ): AsyncResult<DB.Notification> {
     return this.create({
       user_id,
       type: "task_completed",
       title: "A task is done!",
-      body: `${user_name} completed "${task.name}" in ${group.name}.`,
+      body: `${user_name} completed "${task.name}" in ${list.name}.`,
       data: {
         task_id: task.id,
         task_name: task.name,
-        group_id: group.id,
-        group_name: group.name,
+        group_id: list.id,
+        group_name: list.name,
         user_name,
       },
     });

@@ -15,7 +15,7 @@ import firestore from "$services/firestore";
 import t from "$display/translate";
 import { PushService } from "$logic/notifications/PushService";
 import scopeManager from "$domain/sync/ScopeManager";
-import { isPersonalScope } from "$domain/sync/personal";
+import { isPersonalScope } from "$domain/sync/scopes";
 import { releasePersonalData } from "$domain/sync/ownership";
 import * as env from "$env/static/public";
 
@@ -213,8 +213,8 @@ async function signOutHandler(): AsyncResult {
 }
 
 /**
- * Deletes the account and its cloud data through the deleteAccount function, then signs out. Group data is purged
- * from the device; personal tasks and categories stay.
+ * Deletes the account and its cloud data through the deleteAccount function, then signs out. Shared lists are purged
+ * from the device; personal tasks and private lists stay.
  */
 async function deleteAccountHandler(): AsyncResult {
   if (!navigator.onLine) return { ok: false, error: "sign_in_error_offline" };
@@ -232,9 +232,7 @@ async function deleteAccountHandler(): AsyncResult {
     await scopeManager.purgeLocalScope(scope_id);
   }
 
-  // Groups that never got a scope (no members or tasks yet) are not covered by the purge above.
-  await DB.group.collection.find({ selector: { owner_id: user.id } }).remove();
-  // Personal tasks and categories stay on the device, now as signed-out tasks.
+  // Personal tasks and private lists stay on the device, now as signed-out data.
   await releasePersonalData(user.id);
   await DB.user_state.remove(user.id);
   await DB.user.remove(user.id);

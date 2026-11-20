@@ -1,7 +1,7 @@
 import DB from "$domain/db";
 import { SyncQueue } from "./SyncQueue";
 import { mergeFields } from "./field-times";
-import { isPersonalScope } from "./personal";
+import { isPersonalScope } from "./scopes";
 import { context } from "$logic/context.svelte";
 
 class MergeEngine {
@@ -9,7 +9,9 @@ class MergeEngine {
   async apply(remote: Record<string, any> & DB.MetaDataShared, scope_id: string) {
     // TODO: getCollection, moet getSyncCollection wees.
     const collection = DB.getCollection(remote.collection);
-    if (!collection) throw new Error(`Collection ${remote.collection} not found`);
+    // Documents of collections this app version no longer has (the group and category documents that lists replaced)
+    // stay in Firestore; skipping them keeps the rest of the scope syncing.
+    if (!collection) return;
     const doc_result = await collection.findById(remote.id);
     if (!doc_result.ok) throw new Error(`Document ${remote.id} not found in collection ${remote.collection}`);
     const local = doc_result.value as (Record<string, any> & DB.MetaDataShared) | null;

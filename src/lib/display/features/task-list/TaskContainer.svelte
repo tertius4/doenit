@@ -1,6 +1,6 @@
 <script>
   import { longpress } from "$logic/long-press";
-  import { taskIn, taskOut } from "./task-transitions";
+  import { taskIn, taskOut } from "./task-transitions.svelte";
 
   const { children, onlongpress, ...rest } = $props();
 </script>

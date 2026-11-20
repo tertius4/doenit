@@ -10,7 +10,8 @@ import { err } from "$lib";
 import t from "$display/translate";
 import { PHOTO_DIR } from "$services/photos.svelte";
 
-const FORMAT = 1;
+/** 2: lists replaced categories. */
+const FORMAT = 2;
 const BACKUP_FILE = "backup.json";
 const PHOTOS_FOLDER = "photos/";
 
@@ -30,15 +31,15 @@ type BackupFile = {
   format: number;
   app_version: string;
   exported_at: string;
-  schema: { task: number; category: number };
+  schema: { task: number; list: number };
   tasks: DB.Task[];
-  categories: DB.Category[];
+  lists: DB.List[];
   settings: Partial<DB.Settings>;
 };
 
 export type RestoreSummary = { added: number; updated: number; skipped: number };
 
-/** Only personal data is backed up; items in a group (scope_id set) come back through sync. */
+/** Only personal data is backed up; tasks and lists in a shared list (scope_id set) come back through sync. */
 const isPersonal = (doc: { scope_id?: string | null }) => !doc.scope_id;
 
 /** Decides what to do with an incoming document, last write wins. */
@@ -51,8 +52,8 @@ export async function createBackup(options: { photos: boolean }): AsyncResult {
   try {
     const tasks = await DB.task.findMany({});
     if (!tasks.ok) return tasks;
-    const categories = await DB.category.findMany({});
-    if (!categories.ok) return categories;
+    const lists = await DB.list.findMany({});
+    if (!lists.ok) return lists;
 
     const settings: Partial<DB.Settings> = {};
     for (const key of SETTING_KEYS) (settings as any)[key] = context.settings[key];
@@ -61,9 +62,9 @@ export async function createBackup(options: { photos: boolean }): AsyncResult {
       format: FORMAT,
       app_version: context.app_state.app_version,
       exported_at: new Date().toISOString(),
-      schema: { task: schema.task.version, category: schema.category.version },
+      schema: { task: schema.task.version, list: schema.list.version },
       tasks: tasks.value.filter(isPersonal),
-      categories: categories.value.filter(isPersonal),
+      lists: lists.value.filter(isPersonal),
       settings,
     };
 
@@ -103,16 +104,16 @@ export async function restoreBackup(base64: string): AsyncResult<RestoreSummary>
     if (!json) return err(t("invalid_backup_data_format"));
 
     const backup = JSON.parse(json) as BackupFile;
-    if (backup.format !== FORMAT || !Array.isArray(backup.tasks) || !Array.isArray(backup.categories)) {
+    if (backup.format !== FORMAT || !Array.isArray(backup.tasks) || !Array.isArray(backup.lists)) {
       return err(t("invalid_backup_data_format"));
     }
-    if (backup.schema.task > schema.task.version || backup.schema.category > schema.category.version) {
+    if (backup.schema.task > schema.task.version || backup.schema.list > schema.list.version) {
       return err(t("invalid_backup_data_format"));
     }
 
     const summary: RestoreSummary = { added: 0, updated: 0, skipped: 0 };
-    // Categories first so tasks never point to a missing category.
-    await mergeTable(DB.category, backup.categories, summary);
+    // Lists first so tasks never point to a missing list.
+    await mergeTable(DB.list, backup.lists, summary);
     await mergeTable(DB.task, backup.tasks, summary);
 
     await restorePhotos(zip);
@@ -131,7 +132,7 @@ export async function restoreBackup(base64: string): AsyncResult<RestoreSummary>
   }
 }
 
-async function mergeTable<T extends DB.Task | DB.Category>(table: any, docs: T[], summary: RestoreSummary) {
+async function mergeTable<T extends DB.Task | DB.List>(table: any, docs: T[], summary: RestoreSummary) {
   for (const doc of docs) {
     const existing = await table.findById(doc.id);
     if (!existing.ok) throw new Error(existing.error);

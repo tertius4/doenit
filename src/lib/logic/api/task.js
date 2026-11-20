@@ -1,11 +1,11 @@
 import { deepEqual, apiLogger, syncApiLogger, getNextRepeatDates } from "$lib";
-import { tempMediaManager } from "$logic/temp-media";
+import { tempMediaManager } from "$lib/services/photos.svelte";
 import DateUtil from "$display/date-util";
 import t from "$lib/display/translate";
 import logger from "$display/logger";
 import DB from "$lib/domain/db";
 import { TaskNotifier } from "$logic/notifications/TaskNotifier";
-import { ensureOwnerMember } from "./groups";
+import { moveTask } from "$logic/api/lists";
 import { context } from "$logic/context.svelte";
 
 export const updateTask = apiLogger(updateTaskHandler);
@@ -55,8 +55,8 @@ function getNewTaskHandler(overrides = {}) {
     important: false,
     assigned_firebase_uid: undefined,
     photo_ids: [],
-    category_id: undefined,
-    scope_id: undefined,
+    list_id: null,
+    scope_id: null,
 
     ...overrides,
   };
@@ -123,35 +123,26 @@ async function updateTaskHandler(task) {
       }
     }
 
-    // Validate category and assigned user
-    if (task.category_id) {
-      const category_result = await DB.category.findById(task.category_id);
-      if (!category_result.ok) {
-        return { ok: false, error: t("category_not_found") };
-      }
+    const list = await resolveList(task.list_id);
+    if (!list.ok) return list;
 
-      if (!category_result.value) {
-        task.category_id = undefined;
-        task.assigned_firebase_uid = undefined;
-      }
-    }
-
-    // A task can be assigned to a group, but not unassigned or moved to another group.
-    if (original_task.scope_id) {
-      task.scope_id = original_task.scope_id;
-    } else if (task.scope_id) {
-      const scope_result = await ensureGroupScope(task.scope_id);
-      if (!scope_result.ok) return scope_result;
-    }
-
-    const updated_task = await DB.task.update(task.id, task);
+    // Everything but the list is saved in place; a new list may then move the task to another scope (new id).
+    const updated_task = await DB.task.update(task.id, {
+      ...task,
+      list_id: original_task.list_id ?? null,
+      scope_id: original_task.scope_id ?? null,
+    });
     if (!updated_task.ok) throw Error(updated_task.error);
 
-    TaskNotifier.assigned(updated_task.value, original_task.assigned_firebase_uid);
-    if (!original_task.archived && updated_task.value.archived) TaskNotifier.completed(updated_task.value);
+    const moved = await moveTask(updated_task.value, list.value.list_id, list.value.scope_id);
+    if (!moved.ok) return moved;
+
+    const saved = moved.value;
+    TaskNotifier.assigned(saved, original_task.assigned_firebase_uid);
+    if (!original_task.archived && saved.archived) TaskNotifier.completed(saved);
     if (is_repeat_completion) {
       // Same as completing from the list: the repeating task comes back with its next dates.
-      setTimeout(() => DB.task.update(task.id, { archived: false }), 500);
+      setTimeout(() => DB.task.update(saved.id, { archived: false }), 500);
     }
 
     // Delete removed photos
@@ -166,27 +157,18 @@ async function updateTaskHandler(task) {
 }
 
 /**
- * Makes sure the group exists and syncs under its own scope, so tasks assigned to it reach its members.
- * @param {string} group_id
- * @returns {AsyncResult}
+ * The list a task is put in and that list's scope. A list that is gone leaves the task in the Inbox.
+ * @param {string | null | undefined} list_id
+ * @returns {AsyncResult<{ list_id: string | null, scope_id: string | null }>}
  */
-async function ensureGroupScope(group_id) {
-  const group = await DB.group.findById(group_id);
-  if (!group.ok) return group;
-  if (!group.value || group.value.soft_deleted) return { ok: false, error: t("group_not_found") };
+async function resolveList(list_id) {
+  if (!list_id) return { ok: true, value: { list_id: null, scope_id: null } };
 
-  if (!group.value.scope_id) {
-    const updated = await DB.group.update(group.value.id, { scope_id: group.value.id });
-    if (!updated.ok) return updated;
-  }
+  const list = await DB.list.findById(list_id);
+  if (!list.ok) return list;
+  if (!list.value || list.value.soft_deleted) return { ok: true, value: { list_id: null, scope_id: null } };
 
-  // A group that never had members added has no owner member row yet; without it the scope has no members.
-  if (group.value.owner_id === context.user?.id) {
-    const owner = await ensureOwnerMember(group.value.id);
-    if (!owner.ok) return owner;
-  }
-
-  return { ok: true };
+  return { ok: true, value: { list_id: list.value.id, scope_id: list.value.scope_id ?? null } };
 }
 
 /**
@@ -195,12 +177,15 @@ async function ensureGroupScope(group_id) {
  */
 async function createTaskHandler(task) {
   try {
-    if (task.scope_id) {
-      const scope_result = await ensureGroupScope(task.scope_id);
-      if (!scope_result.ok) return scope_result;
-    }
+    const list = await resolveList(task.list_id);
+    if (!list.ok) return list;
 
-    const result = await DB.task.create(task);
+    const result = await DB.task.create({
+      ...task,
+      ...list.value,
+      // Nobody else can be assigned a task in a private list or the Inbox.
+      ...(list.value.scope_id ? {} : { assigned_firebase_uid: undefined }),
+    });
     if (!result.ok) throw Error(result.error);
 
     const new_task = result.value;
@@ -280,7 +265,7 @@ async function completeTaskHandler(task_id) {
     const result = await DB.task.update(task_id, task);
     if (result.ok && was_open) TaskNotifier.completed(result.value);
     if (is_repeat_task) {
-      // Let the task finish sliding out of the list before it re-enters (see TASK_OUT_MS in task-transitions.js).
+      // Let the task finish sliding out of the list before it re-enters (see TASK_OUT_MS in task-transitions.svelte.js).
       setTimeout(() => DB.task.update(task_id, { archived: false }), 500);
     }
 

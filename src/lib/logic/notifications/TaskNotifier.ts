@@ -26,14 +26,14 @@ export const TaskNotifier = {
     }
   },
 
-  /** Call when a task goes from open to completed. Notifies the other members of the task's group. */
+  /** Call when a task goes from open to completed. Notifies the other members of the task's shared list (whose id is its scope). */
   async completed(task: DB.Task): Promise<void> {
     try {
       if (!task.scope_id) return;
 
       const my_uid = context.user?.firebase_uid;
       const [group, members] = await Promise.all([
-        DB.group.findById(task.scope_id),
+        DB.list.findById(task.scope_id),
         DB.member.findMany({ selector: { scope_id: task.scope_id, soft_deleted: { $ne: true } } }),
       ]);
       if (!group.ok || !group.value || !members.ok) return;

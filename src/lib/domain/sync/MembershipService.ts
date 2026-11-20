@@ -1,7 +1,7 @@
 import firestore from "$services/firestore";
 import DB from "$domain/db";
 import { SyncQueue } from "./SyncQueue";
-import { isPersonalScope, PERSONAL_TABLES, personalScope } from "./personal";
+import { isPersonalScope, PERSONAL_TABLES, personalScope } from "./scopes";
 import { ContactNames } from "./ContactNames";
 import { context } from "$logic/context.svelte";
 
@@ -27,7 +27,7 @@ export const MembershipService = {
 
   /**
    * Follows personal sync being on or off. When it was just turned on (here or on another device), queues every local
-   * personal task and category and uploads the contact names, so this device's personal data reaches the cloud too.
+   * personal task and private list and uploads the contact names, so this device's personal data reaches the cloud too.
    * Later changes are queued by the tables themselves.
    * @param previous_scopes  The active scopes stored locally before this change.
    * @param scopes  The active scopes from the memberships document.
@@ -58,7 +58,7 @@ export const MembershipService = {
 
   /**
    * Adds a scope to a user's Firestore membership list (idempotent, atomic).
-   * Call this when a user joins or creates a shared scope (group).
+   * Call this when a user joins or creates a shared scope (shared list).
    */
   async addScope(firebase_uid: string, scope_id: string): Promise<void> {
     await firestore.addMembership(firebase_uid, scope_id);
@@ -66,7 +66,7 @@ export const MembershipService = {
 
   /**
    * Removes a scope from a user's Firestore membership list (idempotent, atomic).
-   * Call this when a user leaves or is removed from a shared scope (group).
+   * Call this when a user leaves or is removed from a shared scope (shared list).
    */
   async removeScope(firebase_uid: string, scope_id: string): Promise<void> {
     await firestore.removeMembership(firebase_uid, scope_id);
@@ -74,7 +74,7 @@ export const MembershipService = {
 
   /**
    * Reconciles a user's Firestore scope memberships against the live Firestore scope data.
-   * Any scope whose group document is soft-deleted in Firestore is removed from memberships.
+   * Any scope whose list document is soft-deleted in Firestore is removed from memberships.
    * Call this on app startup after Firestore is initialised.
    * Returns the (cleaned) membership list so callers don't need to fetch it again.
    */

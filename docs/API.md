@@ -36,7 +36,7 @@ curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
 
 ## When will my task show up?
 
-A task sent through the API is stored in the cloud straight away. Every device you are signed in on picks it up **within seconds** while it is online, or as soon as it comes back online. Group tasks reach everyone in the group.
+A task sent through the API is stored in the cloud straight away. Every device you are signed in on picks it up **within seconds** while it is online, or as soon as it comes back online. Tasks in a shared list reach everyone in the list.
 
 Changes made in the app show up in the API right away too, as soon as the phone that made them is online.
 
@@ -77,8 +77,7 @@ Every endpoint that returns a task uses this shape:
   "due_date": null,
   "start_date": "2026-11-01",
   "important": true,
-  "category": "Finansies",
-  "group_id": null,
+  "list_id": null,
   "repeat": { "interval": "monthly", "every": 1 },
   "completed": false,
   "completed_at": null,
@@ -88,7 +87,7 @@ Every endpoint that returns a task uses this shape:
 ```
 
 - `start_date` holds the task's date. `due_date` is only set when the task spans a date range (then `start_date` is the start).
-- `group_id` is `null` for a personal task.
+- `list_id` is the list the task is in, or `null` for the Inbox.
 - `repeat` is `null` for a task that doesn't repeat. See [Repeating tasks](#repeating-tasks).
 - `completed` is `true` once the task is done. A repeating task never stays completed: completing it moves it on to its next date, as in the app. `completed_at` then shows when it was last done.
 
@@ -103,8 +102,7 @@ These are the fields you can send with `POST` (create) and `PATCH` (change).
 | `due_date` | string | no | A date, optionally with a time. See [Dates](#dates). Sent on its own, it becomes the task's date. | `"2026-10-10 17:00"` |
 | `start_date` | string | no | Same as `due_date`; must be on or before it. Send both for a date range. | `"2026-10-09"` |
 | `important` | boolean | no | Default `false` | `true` |
-| `category` | string | no | Up to 100 characters. Matched by name, ignoring case. **A missing category is created.** | `"Inkopies"` |
-| `group_id` | string | no | A group you belong to. In Doenit, open the group and tap **Copy group ID**. | `"3f2c…"` |
+| `list_id` | string | no | A list of yours, or a shared list you belong to. In Doenit, open the list, tap its name and then **Copy list ID**. Leave it out (or send `null`) for the Inbox. | `"3f2c…"` |
 | `repeat` | object | no | Makes the task repeat. Needs a `due_date` or `start_date`. See [Repeating tasks](#repeating-tasks). | `{"interval": "weekly"}` |
 
 Any other field is rejected with a `400`, so typos are caught early.
@@ -165,7 +163,7 @@ Leave `repeat` out (or send `null`) for a task that doesn't repeat. An unknown `
 GET /api/v1/tasks
 ```
 
-Returns all your open tasks, personal and from every group you are in, as an array of [task objects](#the-task-object).
+Returns all your open tasks, from your Inbox and every list you can see, as an array of [task objects](#the-task-object).
 
 Add `?include_completed=true` to include completed tasks.
 
@@ -188,7 +186,7 @@ Send only the fields you want to change. Any [request field](#request-fields) wo
 
 - Send `null` to clear a field, for example `"due_date": null` or `"repeat": null`.
 - The result must still be a valid task: a repeating task needs a date, and `start_date` must be on or before `due_date`.
-- `group_id` can't be changed. Sending a different one is rejected with a `400`.
+- `list_id` can change between your private lists and the Inbox. Moving a task to or from a shared list is rejected with a `400`: do that in the app.
 - Returns the changed [task object](#the-task-object).
 
 ```bash
@@ -204,7 +202,7 @@ curl -X PATCH https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks/8b1d
 DELETE /api/v1/tasks/{id}
 ```
 
-Deletes the task on all your devices (and for everyone in the group, for a group task). Returns `{ "ok": true }`.
+Deletes the task on all your devices (and for everyone in the list, for a task in a shared list). Returns `{ "ok": true }`.
 
 ## Responses
 
@@ -228,7 +226,7 @@ Every response uses the same shape.
 
 | Status | Meaning | What to do |
 |---|---|---|
-| `400` | The request body is invalid (missing `name`, bad date, unknown field, unknown group, bad `repeat`, …). | Read `error`, fix the request. |
+| `400` | The request body is invalid (missing `name`, bad date, unknown field, unknown list, bad `repeat`, …). | Read `error`, fix the request. |
 | `401` | The key is missing, mistyped or revoked. | Check the `Authorization` header or create a new key. |
 | `403` | Sync is off. | Turn on **Sync** in Doenit's settings. |
 | `404` | Wrong URL, or no task with that id (it may have been deleted). | Use `/api/v1/tasks` or `/api/v1/tasks/{id}`. |
@@ -243,7 +241,7 @@ Every response uses the same shape.
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -H "Authorization: Bearer dk_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Betaal huur", "due_date": "2026-11-01", "important": true, "category": "Finansies"}'
+  -d '{"name": "Betaal huur", "due_date": "2026-11-01", "important": true}'
 ```
 
 A repeating task, due on the 1st of every month:
@@ -275,7 +273,7 @@ import requests
 result = requests.post(
     "https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks",
     headers={"Authorization": "Bearer dk_YOUR_KEY"},
-    json={"name": "Gee die plante water", "category": "Huis"},
+    json={"name": "Gee die plante water", "list_id": "3f2c…"},
 ).json()
 
 if not result["ok"]:
@@ -303,4 +301,4 @@ if not result["ok"]:
 
 - **Sync is required.** The API works on the copy of your tasks that Sync keeps in the cloud (Google Firebase, Johannesburg). With Sync off, the API is switched off too.
 - **Keys:** at most 10 per account. Only a hash of each key is stored.
-- **Groups:** `group_id` must be a group you are a member of; others are rejected. The API can read and change every task in your groups, just like you can in the app.
+- **Lists:** `list_id` must be one of your lists or a shared list you are a member of; others are rejected. The API can read and change every task in your shared lists, just like you can in the app.

@@ -15,7 +15,6 @@
     // "/(main)": "plus",
     // "/(main)/create": "check",
     // "/(main)/complete": "home",
-    // "/(main)/categories": "home",
     // "/(main)/daily-summary": "home",
     // "/(main)/subscriptions": "home",
     // "/(main)/settings": "home",

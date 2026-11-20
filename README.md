@@ -1,6 +1,6 @@
 # Doenit
 
-**Doenit** is the first Afrikaans task-list app: offline-first, with shared tasks, groups and an Android home-screen widget. The app is available in Afrikaans and English.
+**Doenit** is the first Afrikaans task-list app: offline-first, with private and shared lists and an Android home-screen widget. The app is available in Afrikaans and English.
 
 Doenit is die eerste Afrikaanse taaklys-toepassing. Dit werk sonder internet en sinkroniseer wanneer jy weer aanlyn is.
 
@@ -151,7 +151,7 @@ Skep take van buite die app (skripte, Zapier, iOS Shortcuts, ...) met 'n persoon
 curl -X POST https://africa-south1-doenit2.cloudfunctions.net/api/v1/tasks \
   -H "Authorization: Bearer dk_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Buy milk", "due_date": "2026-10-10", "category": "Shopping"}'
+  -d '{"name": "Buy milk", "due_date": "2026-10-10"}'
 ```
 
 Hoe dit werk: die `api` Cloud Function valideer die versoek en skryf dit na `users/{uid}/inbox_tasks`. Die app luister na daardie inbox (`InboxService`), skep 'n gewone plaaslike taak met `createTask` en vee die inskrywing uit. Sleutels word deur die app geskep en slegs as SHA-256-hash in `users/{uid}/api_keys` gestoor.

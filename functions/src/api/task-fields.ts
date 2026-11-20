@@ -2,7 +2,7 @@ import { type Result } from "../shared/result";
 
 /** Year first only (never 05/06/2026), optional time; seconds and a timezone (Z, +02:00) may follow and are ignored. */
 const DATE_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/i;
-const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "category", "group_id", "repeat"];
+const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "list_id", "repeat"];
 /** Same keys as REPEAT_INTERVALS in the app (src/lib/index.ts). */
 const REPEAT_INTERVALS = ["daily", "workdaily", "weekly", "weekly_custom_days", "monthly", "yearly"];
 /** Intervals that honour `every`; the app ignores the number for the others. */
@@ -13,15 +13,14 @@ const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 /** Same as MAX_CUSTOM_INTERVAL in the app's repeat picker. */
 const MAX_REPEAT_EVERY = 500;
 
-/** The task fields a request can set, in the app's own format. `category` is a name, resolved per scope. */
+/** The task fields a request can set, in the app's own format. `list_id` null is the Inbox. */
 export type TaskInput = {
   name: string;
   description: string;
   due_date: string | null;
   start_date: string | null;
   important: boolean;
-  category: string | null;
-  group_id: string | null;
+  list_id: string | null;
   /** The app's own repeat fields, so they can be stored as is. "" means no repeat. */
   repeat_interval: string;
   repeat_interval_number: number;
@@ -29,13 +28,12 @@ export type TaskInput = {
 };
 
 /** A task as the app stores it in scopes/{scope_id}/items (plus `collection` and `synced_at`). */
-export type StoredTask = Omit<TaskInput, "category" | "group_id"> & {
+export type StoredTask = TaskInput & {
   id: string;
   collection: "task";
   archived: boolean;
   completed: number;
   completed_at: string | null;
-  category_id: string | null;
   photo_ids: string[];
   scope_id: string | null;
   owner_id: string;
@@ -55,8 +53,7 @@ export type PublicTask = {
   due_date: string | null;
   start_date: string | null;
   important: boolean;
-  category: string | null;
-  group_id: string | null;
+  list_id: string | null;
   repeat: { interval: string; every?: number; days?: string[] } | null;
   completed: boolean;
   completed_at: string | null;
@@ -64,7 +61,7 @@ export type PublicTask = {
   updated_at: string;
 };
 
-export function toPublicTask(task: StoredTask, category_names: Map<string, string>): PublicTask {
+export function toPublicTask(task: StoredTask): PublicTask {
   return {
     id: task.id,
     name: task.name,
@@ -72,8 +69,7 @@ export function toPublicTask(task: StoredTask, category_names: Map<string, strin
     due_date: task.due_date ?? null,
     start_date: task.start_date ?? null,
     important: !!task.important,
-    category: (task.category_id && category_names.get(task.category_id)) || null,
-    group_id: task.scope_id ?? null,
+    list_id: task.list_id ?? null,
     repeat: toPublicRepeat(task),
     // A repeating task that was completed is open again on its next dates, just like in the app.
     completed: !!task.archived,
@@ -144,11 +140,8 @@ export function parseTask(body: unknown): Result<TaskInput> {
 
   if (input.important != null && typeof input.important !== "boolean") return bad("important must be a boolean");
 
-  const category = optionalString("category", 100);
-  if (!category.ok) return category;
-
-  const group_id = optionalString("group_id", 50);
-  if (!group_id.ok) return group_id;
+  const list_id = optionalString("list_id", 50);
+  if (!list_id.ok) return list_id;
 
   const repeat = parseRepeat(input.repeat, !!(due_date.value || start_date.value));
   if (!repeat.ok) return repeat;
@@ -161,8 +154,7 @@ export function parseTask(body: unknown): Result<TaskInput> {
       due_date: due_date.value ?? null,
       start_date: start_date.value ?? null,
       important: input.important === true,
-      category: category.value ?? null,
-      group_id: group_id.value ?? null,
+      list_id: list_id.value ?? null,
       ...repeat.value!,
     },
   };
@@ -291,6 +283,6 @@ function nextDate(value: string | null, task: StoredTask): string | null {
 
 /** The public fields of a stored task, so a PATCH can be merged onto it and validated as a whole. */
 export function toTaskBody(task: PublicTask): Record<string, unknown> {
-  const { name, description, due_date, start_date, important, category, group_id, repeat } = task;
-  return { name, description, due_date, start_date, important, category, group_id, repeat };
+  const { name, description, due_date, start_date, important, list_id, repeat } = task;
+  return { name, description, due_date, start_date, important, list_id, repeat };
 }

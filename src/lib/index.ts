@@ -93,16 +93,19 @@ export function syncApiLogger<T extends (...args: any[]) => any>(fn: T): (...arg
   };
 }
 
+/** Stands for the Inbox (tasks without a list) wherever a list id is expected, like the list filter. */
+export const INBOX_ID = "inbox";
+
 export function filterTasks(
   tasks: AL.MainPageTask[],
   search_text: string,
-  selected_categories: Set<string>,
+  selected_lists: Set<string>,
 ): AL.MainPageTask[] {
   const search = normalize(search_text) || "";
   return tasks.filter((task) => {
     const matches_search = normalize(task.name).includes(search) || search.length === 0;
-    const matches_category = !selected_categories.size || selected_categories.has(task.category_id || "default");
-    return matches_search && matches_category;
+    const matches_list = !selected_lists.size || selected_lists.has(task.list_id || INBOX_ID);
+    return matches_search && matches_list;
   });
 }
 

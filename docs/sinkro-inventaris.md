@@ -4,6 +4,12 @@ Inventaris van Doenit vir die oorskakeling na `@tertius4/sinkro-db` 0.1.0, soos 
 `sinko-db-migrasie` (gelyk aan `master`, 4acd87c1) en `../sinkro-db` op `master` (0bf04b9). Niks is verander nie; net
 hierdie lêer is nuut. Die produksie-data is nie gesien nie, so alles oor data kom uit die kode.
 
+> **Bygewerk vir fase 1 (Lyste), Nov 2026.** `group` en `category` is vervang deur een tabel, `list`, en `task.category_id`
+> deur `task.list_id` (taakskema 3). Die skemas, `purgeLocalScope` en die tabelle hieronder is bygewerk. Die
+> lêer:reël-verwysings in afdelings 7 tot 10 is van voor die verandering: wat daar na `groups.ts` of `categories.ts`
+> verwys, is nou in `logic/api/lists.ts`, en `view/groups.js`, `view/categories.js` en `view/group_tasks.js` is nou
+> `view/lists.js`. Die eenmalige migrasie is in `logic/migrations/2_3`.
+
 ## 1. Die belangrikste bevindings
 
 Hierdie punte verander die plan. Besonderhede is in [afdeling 8](#8-wat-nie-in-die-pakket-pas-nie) en die besluite in
@@ -32,7 +38,7 @@ Hierdie punte verander die plan. Besonderhede is in [afdeling 8](#8-wat-nie-in-d
 | Geskep | `created_at` (ISO-string) | `created_at` | Dieselfde naam. |
 | Verander | `updated_at` (ISO-string) | `updated_at` | Dieselfde naam. |
 | Bedienertyd | `synced_at` | `layout.fields.syncedAt` | Reeds so. Die reëls eis reeds `request.time`. |
-| Veldtye | `field_times` (`{ veld: ISO }`) | `field_hlc` | Net op `task`, `category`, `group`. Nie op `member` nie. |
+| Veldtye | `field_times` (`{ veld: ISO }`) | `field_hlc` | Net op `task` en `list`. Nie op `member` nie. |
 | Weergawe | `version` (app se teller) | `_v` | Twee verskillende dinge. `version` is gereserveer en val weg. |
 | Toestel | `device_id` | intern | Gereserveer en val weg. |
 | Eienaar | `owner_id` | nie in die pakket nie | Plaaslike gebruiker-id, verskil per toestel. Sien 8.6. |
@@ -50,13 +56,13 @@ Die ou enjin se metavelde wat nie saamgesmelt word nie: `id`, `created_at`, `upd
 
 ## 3. Tabelle
 
-Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `required` nie; `category`, `group`, `member` en
+Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `required` nie; `list`, `member` en
 `user` het `required: []`, so enige veld kan ontbreek. Hou daarom alles `.optional()` of met `.default()`, anders faal
 `update` op ou dokumente, want `applyUpdate` valideer die hele dokument.
 
 ### 3.1 Gesinkroniseer in `scopes/{scope}/items`
 
-**`task`** (skema 2, `sync-table`, sinkroniseer per veld)
+**`task`** (skema 3, `sync-table`, sinkroniseer per veld)
 
 | Veld | Tipe | Voorstel |
 | ---- | ---- | -------- |
@@ -69,20 +75,17 @@ Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `require
 | `repeat_interval_number` | number | |
 | `repeat_specific_days` | number[] | **lww** (besluit B5) |
 | `important` | boolean | |
-| `category_id` | string, null (ook `""`, `categories.ts:77`) | nullable, opsioneel |
+| `list_id` | string, null (`null` is die Inboks) | nullable, opsioneel |
 | `assigned_firebase_uid` | string, null | nullable, opsioneel; sien 8.11 |
 | `photo_ids` | string[] | **`set`** (besluit B5) |
 | `owner_id` | string | sien 8.6 |
-| `scope_id` | string, null | onveranderlik sodra gestel, volgens `task.js:139`; sien 8.2 |
+| `scope_id` | string, null | volg die lys se scope. 'n Skuif na 'n ander scope maak 'n nuwe dokument (`stableId`) en 'n grafsteen (`moveTask` in `logic/api/lists.ts`); sien 8.2 |
 | valt weg | `soft_deleted`, `version`, `device_id`, `field_times` | |
 
-**`category`** (skema 1): `name`, `owner_id`, `scope_id`, plus die wegvallers. API-kategorieë leef in die taak se scope
-(`functions/src/api/store.ts:54`).
-
-**`group`** (skema 1): `name`, `description`, `owner_id` (onveranderlik), `scope_id`, plus die wegvallers. `scope_id` is
-gelyk aan die groep se `id`, maar word eers by die eerste lid of taak gestel (`groups.ts:320`, `task.js:179`). Tot dan is
-die groep net plaaslik. `firestore.scopeDeleted` lees `scopes/{id}/items/{id}`, so die groep se dokument-id moet die
-scope bly.
+**`list`** (skema 0, `sync-table`, sinkroniseer per veld): `name`, `description`, `owner_id` (onveranderlik), `scope_id`,
+plus die wegvallers. 'n Privaat lys het `scope_id: null` en sinkroniseer deur die eienaar se `personal_{uid}`. By die
+eerste deel kry dit sy eie scope, gelyk aan sy `id` (`ensureListScope` in `lists.ts`), en sy take skuif daarheen.
+`firestore.scopeDeleted` lees `scopes/{id}/items/{id}`, so die lys se dokument-id moet die scope bly.
 
 **`member`** (skema 0): `firebase_uid` (onveranderlik), `role` (`admin` of `member`), `owner_id`, `scope_id`
 (onveranderlik), plus `soft_deleted`, `version`, `device_id`. **Geen `field_times` nie**: tans lww op die hele dokument
@@ -121,13 +124,13 @@ Sien [afdeling 7](#7-plaaslike-data).
   `getUserScopes` lees `active_scopes`.
 - **`context.svelte.ts:99-115`.** By elke lidmaatskap-gebeurtenis word `active_scopes` opgedateer, dan
   `applyPersonalSync`, dan `purgeLocalScope` vir elke scope wat weg is.
-- **`purgeLocalScope`** (`ScopeManager.ts:71`). Vee `task`, `category`, `group`, `member` en `sync_queue` van die scope
+- **`purgeLocalScope`** (`ScopeManager.ts:71`). Vee `task`, `list`, `member` en `sync_queue` van die scope
   sonder enige tou, en die cursor. Dit vee ook ongestuurde veranderinge weg. `onChannelRemoved` is die plaasvervanger.
   Dit soek op `scope_id`, so dit raak nie persoonlike dokumente nie (`null`). Die pakket soek op `channel`, en dit
   sou hulle wel raak.
 - **`MembershipService`.**
   - `sync` lees die lys en stoor dit, op `reconcileScopes` se antwoord indien beskikbaar.
-  - `applyPersonalSync`: as Sync pas aangeskakel is, laai dit kontakname op en sit elke persoonlike `task` en `category`
+  - `applyPersonalSync`: as Sync pas aangeskakel is, laai dit kontakname op en sit elke persoonlike `task` en `list`
     in die tou.
   - `addScope`/`removeScope`: atomies met `arrayUnion`/`arrayRemove`.
   - `reconcileScopes`: by app-oopmaak, verwyder scopes waarvan die groep beslis verwyder is. Foute hou die scope.
@@ -206,7 +209,7 @@ val weg, want die pakket laat grafstene by verstek uit.
 
 | Lêer:reël | Tabel | Navraag | Let op |
 | --------- | ----- | ------- | ------ |
-| `logic/visibility.ts:9` | (selector) | `owner_id` of `$or [owner_id, scope_id $in]` | Skryf om na `channel`, 8.6 |
+| `domain/sync/scopes.ts` (`visibleSelector`) | (selector) | `owner_id` of `$or [owner_id, scope_id $in]` | Skryf om na `channel`, 8.6 |
 | `logic/api/notifications.ts:107` | task | `assigned $in [uid, null]`, nie verwyder, `archived != true`, `$or [completed 0, repeat_interval $exists]`, sigbaar | **8.11** |
 | `logic/api/categories.ts:15` | task | sigbaar | Sluit tans grafstene in, `:25` filter hulle |
 | `logic/api/categories.ts:74` | task | `category_id` | |
@@ -384,7 +387,7 @@ herskryf word of weg.
 - **Lidmaatskap-opdragte.** 'n Klein duursame tou bly nodig vir `membership`, met eie verwydering laaste. Die volgorde kan
   eenvoudiger word: vir verwydering, `await db.sync.flush()` en dan die lidmaatskap. Vir byvoeging is die volgorde vanself
   reg, want 'n kanaal stuur eers wanneer dit in die lys is.
-- **`personal.ts`**, `firestore.ts` se res, en `reconcileScopes`.
+- **`scopes.ts`** (voorheen `personal.ts`), `firestore.ts` se res, en `reconcileScopes`.
 
 ### 8.9 Ander naamgevings- en metaprobleme
 

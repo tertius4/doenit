@@ -2,7 +2,7 @@ import type { RxJsonSchema } from "rxdb";
 
 export const app_state: RxJsonSchema<DB.AppState> = {
   title: "app_state",
-  version: 2,
+  version: 3,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -25,6 +25,9 @@ export const app_state: RxJsonSchema<DB.AppState> = {
       type: "string",
     },
     migration_1_complete: {
+      type: "boolean",
+    },
+    migration_2_complete: {
       type: "boolean",
     },
     home_mode: {

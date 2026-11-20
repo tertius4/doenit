@@ -3,7 +3,7 @@ import BaseTable from "./base-table";
 import { context } from "$logic/context.svelte";
 import { err } from "$lib";
 import { SyncQueue } from "$domain/sync/SyncQueue";
-import { PERSONAL_TABLES, personalScope } from "$domain/sync/personal";
+import { PERSONAL_TABLES, personalScope } from "$domain/sync/scopes";
 import { stampChanges } from "$domain/sync/field-times";
 
 export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
@@ -139,6 +139,36 @@ export default class Table<T> extends BaseTable<T & DB.MetaDataShared> {
             ...data,
             ...this.fieldTimes(data, { soft_deleted: true }, date),
             soft_deleted: true,
+            updated_at: date,
+            version: (data.version ?? 0) + 1,
+          })),
+        ),
+      );
+
+      await this.afterWriteMany(updated.map((doc) => doc.toJSON() as T & DB.MetaDataShared));
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      return err(message);
+    }
+  }
+
+  /**
+   * Marks `fields` of the given documents as changed now and queues them, without changing their values. For values
+   * written outside `update` (a schema migration), so the per-field merge treats them as the newest.
+   */
+  async markChanged(ids: string[], fields: string[]): AsyncResult {
+    try {
+      const unique_ids = [...new Set(ids)];
+      if (!unique_ids.length) return { ok: true };
+
+      const docs = await this.collection.find({ selector: { id: { $in: unique_ids } } } as any).exec();
+      const date = new Date().toISOString();
+      const updated = await Promise.all(
+        docs.map((doc) =>
+          doc.incrementalModify((data: any) => ({
+            ...data,
+            field_times: { ...(data.field_times ?? {}), ...Object.fromEntries(fields.map((field) => [field, date])) },
             updated_at: date,
             version: (data.version ?? 0) + 1,
           })),

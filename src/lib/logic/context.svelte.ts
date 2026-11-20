@@ -1,4 +1,5 @@
 import { App } from "@capacitor/app";
+import { runListMigration } from "$logic/migrations/2_3/migration";
 import { Device } from "@capacitor/device";
 import DB from "$lib/domain/db";
 import scopeManager from "$lib/domain/sync/ScopeManager";
@@ -322,6 +323,9 @@ export async function initApp(user_id?: string | null) {
     await claimPersonalData(context.user.id).catch((err) => console.warn("[initApp] claiming personal data failed:", err));
   }
 
+  // Groups and categories became lists; settle that before anything syncs.
+  await migrateToLists();
+
   subscribeForUser(resolved_user_id);
 
   // Network sync is not needed to render. On app open it runs in the background, after the
@@ -382,5 +386,21 @@ export async function initApp(user_id?: string | null) {
     _app_subscriptions.add(DB.task.collection.$.subscribe(() => Api.notifications.schedule()));
     Api.notifications.listenForTaps().catch((err) => console.warn("[initApp] notification tap listener failed:", err));
     Api.notifications.listenForPush().catch((err) => console.warn("[initApp] push listener failed:", err));
+  }
+}
+
+/** Runs logic/migrations/2_3 once per device. A failure is retried on the next start. */
+async function migrateToLists() {
+  const state = await DB.app_state.getDevice();
+  if (!state.ok || state.value.migration_2_complete) return;
+
+  // Table writes read the device id from the app state, which initApp otherwise only loads later.
+  context.app_state = state.value;
+  try {
+    await runListMigration();
+    const updated = await DB.app_state.update({ migration_2_complete: true });
+    if (updated.ok) context.app_state = updated.value;
+  } catch (err) {
+    console.error("[initApp] list migration failed:", err);
   }
 }

@@ -22,12 +22,12 @@ export function users(list) {
  * @param {Record<string, any>[]} list
  * @returns {() => void}
  */
-export function category(list) {
+export function lists(list) {
   /** @type {Subscription} */
-  let subscription = DB.category
+  let subscription = DB.list
     .subscribe$()
     .pipe(
-      map((category) => category),
+      map((lists) => lists),
       tap((data) => (list = data)),
     )
     .subscribe();

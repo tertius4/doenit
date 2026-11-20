@@ -35,7 +35,7 @@ public class TaskWidgetProvider extends AppWidgetProvider {
     public static void updateTasksData(Context context, String tasksJson, String categoriesStr) {
         try {
             DB.saveData(Const.WIDGET_TASKS, tasksJson);
-            DB.saveData(Const.WIDGET_CATEGORIES, categoriesStr);
+            DB.saveData(Const.WIDGET_LISTS, categoriesStr);
     
             // Update all widgets
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

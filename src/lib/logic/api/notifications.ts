@@ -1,5 +1,5 @@
 import { apiLogger } from "$lib";
-import { visibleSelector } from "$logic/visibility";
+import { visibleSelector } from "$domain/sync/scopes";
 import { NotificationService } from "$logic/notifications/NotificationService";
 import { PushService } from "$logic/notifications/PushService";
 import { NotificationRouter } from "$logic/notifications/NotificationRouter";

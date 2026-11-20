@@ -1,15 +1,15 @@
-import * as categories from "./categories.js";
+import * as lists from "./lists.js";
 import * as main_page from "./main_page.js";
 import * as done_page from "./done-page.js";
-import * as groups from "./groups.js";
-import * as group_tasks from "./group_tasks.js";
 import * as contacts from "./contacts.js";
 import * as db from "./db.js";
 
 export default class View {
-  static readonly categories = {
-    categoryList: categories.categoryList,
-    listAssignTask: categories.listAssignTask,
+  static readonly lists = {
+    getList: lists.getList,
+    getOne: lists.getOne,
+    options: lists.options,
+    taskList: lists.taskList,
   };
 
   static readonly main_page = {
@@ -19,25 +19,16 @@ export default class View {
   static readonly done_page = {
     taskList: done_page.taskList,
   };
-  
+
   static readonly db = {
     users: db.users,
-    category: db.category,
+    lists: db.lists,
     tasks: db.tasks,
     sync_queues: db.sync_queues,
-  }
-
-  static readonly groups = {
-    getList: groups.getList,
-    getOne: groups.getOne,
-  }
-
-  static readonly group_tasks = {
-    taskList: group_tasks.taskList,
-  }
+  };
 
   static readonly contacts = {
     getList: contacts.getList,
     getInviteList: contacts.getInviteList,
-  }
+  };
 }

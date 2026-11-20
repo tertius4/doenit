@@ -1,15 +1,15 @@
 <script>
-  import TagCategory from "./TagCategory.svelte";
+  import TagList from "./TagList.svelte";
   import { onMount } from "svelte";
-  import { hotbar_categories, startHotbarCategories } from "$display/view/hotbar.svelte";
+  import { hotbar_lists, startHotbarLists } from "$display/view/hotbar.svelte";
 
-  onMount(startHotbarCategories);
+  onMount(startHotbarLists);
 </script>
 
-{#if !!hotbar_categories.length}
+{#if !!hotbar_lists.length}
   <nav class="w-full min-w-0 p-2 bg-surface border-t border-default flex gap-1.5 overflow-x-auto scrollbar-none">
-    {#each hotbar_categories as category (category.id)}
-      <TagCategory {category} disable_edit={category.id === "default"} />
+    {#each hotbar_lists as list (list.id)}
+      <TagList {list} />
     {/each}
   </nav>
 {/if}
