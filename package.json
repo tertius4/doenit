@@ -20,7 +20,8 @@
     "deploy:functions": "firebase deploy --only functions --project default",
     "deploy:functions:dev": "firebase deploy --only functions --project dev",
     "deploy:hosting": "npm run build && firebase deploy --only hosting --project default",
-    "deploy:hosting:dev": "npm run build:dev && firebase deploy --only hosting --project dev"
+    "deploy:hosting:dev": "npm run build:dev && firebase deploy --only hosting --project dev",
+    "deploy": "npm run build && firebase deploy --only hosting,functions,rules"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
