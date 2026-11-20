@@ -62,7 +62,7 @@ Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `require
 
 ### 3.1 Gesinkroniseer in `scopes/{scope}/items`
 
-**`task`** (skema 3, `sync-table`, sinkroniseer per veld)
+**`task`** (skema 5, `sync-table`, sinkroniseer per veld)
 
 | Veld | Tipe | Voorstel |
 | ---- | ---- | -------- |
@@ -78,6 +78,8 @@ Alle tipes kom uit `src/lib/domain/schema/`. "Opsioneel" beteken nie in `require
 | `list_id` | string, null (`null` is die Inboks) | nullable, opsioneel |
 | `assigned_firebase_uid` | string, null | nullable, opsioneel; sien 8.11 |
 | `photo_ids` | string[] | **`set`** (besluit B5) |
+| `checklist` | `{ id, text, done }[]`, hoogstens 100 | een veld, laaste skrywer wen (fase 3). Per-item-samevoeging kan later kom |
+| `after_task_id` | string, null | die taak in dieselfde lys waarop hierdie een wag (fase 5). Twee toestelle kan aflyn elk 'n ander taak na A sit; `normalize` in `logic/chains.ts` herstel die lyn by die volgende voltooiing |
 | `owner_id` | string | sien 8.6 |
 | `scope_id` | string, null | volg die lys se scope. 'n Skuif na 'n ander scope maak 'n nuwe dokument (`stableId`) en 'n grafsteen (`moveTask` in `logic/api/lists.ts`); sien 8.2 |
 | valt weg | `soft_deleted`, `version`, `device_id`, `field_times` | |
@@ -102,7 +104,7 @@ Dié pas nie by "alle tabelle is `synced`" nie, want hulle pad, reëls en logika
 | Tabel | Firestore | Velde |
 | ----- | --------- | ----- |
 | `contact_invite` | `users/{uid}/invites/{id}`, een kopie by elke party | `id`, `relationship_id` (index), `from_firebase_uid`, `from_email`, `to_firebase_uid`, `to_email`, `status` (index; `pending`, `accepted`, `rejected`, `cancelled`), `created_at`, `updated_at`, `responded_at`, `contact_name` (net plaaslik) |
-| `notification` | `users/{uid}/notifications/{id}`, ander gebruikers skep dit | `id`, `user_id`, `type` (10 waardes, `list_completed` bygevoeg in fase 2), `title`, `body`, `read_at`, `data` (json), `created_at`, `updated_at` |
+| `notification` | `users/{uid}/notifications/{id}`, ander gebruikers skep dit | `id`, `user_id`, `type` (11 waardes: `list_completed` in fase 2, `task_unblocked` in fase 5), `title`, `body`, `read_at`, `data` (json), `created_at`, `updated_at` |
 | `contact` | Geen. Afgelei van aanvaarde uitnodigings. Net die naam sinkroniseer, in `users/{uid}/meta/contact_names` | `id`, `created_at`, `updated_at`, `owner_id`, `user_id` (index), `firebase_uid` (index), `relationship_id` (index), `name`, `avatar_url`, `email_address` |
 
 ### 3.3 Net plaaslik

@@ -1,8 +1,12 @@
+import { randomUUID } from "crypto";
 import { type Result } from "../shared/result";
 
 /** Year first only (never 05/06/2026), optional time; seconds and a timezone (Z, +02:00) may follow and are ignored. */
 const DATE_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/i;
-const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "list_id", "repeat"];
+const TASK_FIELDS = ["name", "description", "due_date", "start_date", "important", "list_id", "repeat", "checklist"];
+/** Same limits as the app's task schema. */
+const MAX_CHECKLIST_ITEMS = 100;
+const MAX_CHECKLIST_TEXT = 300;
 /** Same keys as REPEAT_INTERVALS in the app (src/lib/index.ts). */
 const REPEAT_INTERVALS = ["daily", "workdaily", "weekly", "weekly_custom_days", "monthly", "yearly"];
 /** Intervals that honour `every`; the app ignores the number for the others. */
@@ -25,7 +29,10 @@ export type TaskInput = {
   repeat_interval: string;
   repeat_interval_number: number;
   repeat_specific_days: number[];
+  checklist: ChecklistItem[];
 };
+
+export type ChecklistItem = { id: string; text: string; done: boolean };
 
 /** A task as the app stores it in scopes/{scope_id}/items (plus `collection` and `synced_at`). */
 export type StoredTask = TaskInput & {
@@ -43,6 +50,8 @@ export type StoredTask = TaskInput & {
   updated_at: string;
   soft_deleted: boolean;
   assigned_firebase_uid?: string | null;
+  /** The task this one waits on, in the same list. The API shows it but can't set it. */
+  after_task_id?: string | null;
 };
 
 /** A task as the API returns it. */
@@ -55,6 +64,9 @@ export type PublicTask = {
   important: boolean;
   list_id: string | null;
   repeat: { interval: string; every?: number; days?: string[] } | null;
+  checklist: ChecklistItem[];
+  /** The task this one waits on (read only). */
+  after_task_id: string | null;
   completed: boolean;
   completed_at: string | null;
   created_at: string;
@@ -71,6 +83,8 @@ export function toPublicTask(task: StoredTask): PublicTask {
     important: !!task.important,
     list_id: task.list_id ?? null,
     repeat: toPublicRepeat(task),
+    checklist: (task.checklist ?? []).map(({ id, text, done }) => ({ id, text, done: !!done })),
+    after_task_id: task.after_task_id ?? null,
     // A repeating task that was completed is open again on its next dates, just like in the app.
     completed: !!task.archived,
     completed_at: task.completed_at ?? null,
@@ -146,6 +160,9 @@ export function parseTask(body: unknown): Result<TaskInput> {
   const repeat = parseRepeat(input.repeat, !!(due_date.value || start_date.value));
   if (!repeat.ok) return repeat;
 
+  const checklist = parseChecklist(input.checklist);
+  if (!checklist.ok) return checklist;
+
   return {
     ok: true,
     value: {
@@ -156,8 +173,32 @@ export function parseTask(body: unknown): Result<TaskInput> {
       important: input.important === true,
       list_id: list_id.value ?? null,
       ...repeat.value!,
+      checklist: checklist.value!,
     },
   };
+}
+
+/** Items as `[{ text, done? }]`; an item that keeps its `id` stays the same item in the app. */
+function parseChecklist(value: unknown): Result<ChecklistItem[]> {
+  const bad = (error: string) => ({ ok: false, error, status_code: 400 }) as const;
+
+  if (value == null) return { ok: true, value: [] };
+  if (!Array.isArray(value)) return bad("checklist must be an array");
+  if (value.length > MAX_CHECKLIST_ITEMS) return bad(`checklist may have at most ${MAX_CHECKLIST_ITEMS} items`);
+
+  const items: ChecklistItem[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return bad("checklist items must be objects");
+    const { id, text, done, ...rest } = item as Record<string, unknown>;
+    if (Object.keys(rest).length) return bad(`Unknown checklist field(s): ${Object.keys(rest).join(", ")}`);
+    if (typeof text !== "string" || !text.trim()) return bad("checklist items need a text");
+    if (text.trim().length > MAX_CHECKLIST_TEXT) return bad(`checklist text must be at most ${MAX_CHECKLIST_TEXT} characters`);
+    if (done != null && typeof done !== "boolean") return bad("checklist done must be a boolean");
+    if (id != null && (typeof id !== "string" || !id || id.length > 50)) return bad("checklist id must be a string");
+
+    items.push({ id: (id as string) || randomUUID(), text: text.trim(), done: done === true });
+  }
+  return { ok: true, value: items };
 }
 
 /** Returns the date in the app's format ("YYYY-MM-DD" or "YYYY-MM-DD HH:mm"). Out-of-range parts roll over. */
@@ -223,17 +264,26 @@ function parseRepeat(value: unknown, has_date: boolean): Result<RepeatFields> {
   return { ok: true, value: { repeat_interval: interval, repeat_interval_number: every, repeat_specific_days: days } };
 }
 
-/** Same as markTaskDone in the app: counts the completion; a repeating task moves on to its next dates instead. */
-export function markDone(task: StoredTask): void {
+/**
+ * Same as markTaskDone in the app: counts the completion; a repeating task moves on to its next dates instead, unless
+ * `defer` (the first task of a chain, which repeats once the whole chain is done: see chain.ts).
+ */
+export function markDone(task: StoredTask, defer = false): void {
   task.completed = (task.completed ?? 0) + 1;
   task.completed_at = new Date().toLocaleString("sv-SE", { timeZone: "Africa/Johannesburg" });
 
-  const is_repeat = !!task.repeat_interval && !!(task.start_date || task.due_date);
+  const is_repeat = !defer && !!task.repeat_interval && !!(task.start_date || task.due_date);
   task.archived = !is_repeat;
   if (!is_repeat) return;
 
   task.start_date = nextDate(task.start_date, task);
   task.due_date = nextDate(task.due_date, task);
+  task.checklist = (task.checklist ?? []).map((item) => ({ ...item, done: false }));
+}
+
+/** A repeating task's next dates, as markDone would give them. */
+export function nextRepeatDates(task: StoredTask): { start_date: string | null; due_date: string | null } {
+  return { start_date: nextDate(task.start_date, task), due_date: nextDate(task.due_date, task) };
 }
 
 /** Same as getNextRepeatDates in the app (src/lib/index.ts). Dates are plain strings, so the maths is done in UTC. */
@@ -283,6 +333,6 @@ function nextDate(value: string | null, task: StoredTask): string | null {
 
 /** The public fields of a stored task, so a PATCH can be merged onto it and validated as a whole. */
 export function toTaskBody(task: PublicTask): Record<string, unknown> {
-  const { name, description, due_date, start_date, important, list_id, repeat } = task;
-  return { name, description, due_date, start_date, important, list_id, repeat };
+  const { name, description, due_date, start_date, important, list_id, repeat, checklist } = task;
+  return { name, description, due_date, start_date, important, list_id, repeat, checklist };
 }

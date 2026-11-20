@@ -49,11 +49,21 @@ declare global {
       important: boolean;
       assigned_firebase_uid?: string | null;
       photo_ids?: string[];
+      /** Items to tick off inside the task. */
+      checklist?: ChecklistItem[];
+      /** The task in the same list this one waits on (a chain: B waits on A). */
+      after_task_id?: string | null;
 
       /** The list the task is in; null is the Inbox. */
       list_id?: string | null;
       /** The scope the task syncs in: the list's scope (null for a private list or the Inbox). */
       scope_id?: string | null;
+    }
+
+    interface ChecklistItem {
+      id: string;
+      text: string;
+      done: boolean;
     }
 
     interface List {
@@ -111,6 +121,7 @@ declare global {
       | "group_deleted"
       | "user_left_group"
       | "list_completed"
+      | "task_unblocked"
       | "task_assigned"
       | "task_completed"
       | "mentioned";
@@ -298,7 +309,8 @@ declare global {
       is_past: boolean;
       onclick: () => void;
       onlongpress: () => void;
-      pills: { type: "round" | "square"; label: string; pre_icon?: string; post_icon?: string }[];
+      /** `highlight` shows after the label in its own colour, e.g. the task's name in "waits on <task>". */
+      pills: { type: "round" | "square"; label: string; highlight?: string; pre_icon?: string; post_icon?: string }[];
       top_right_icons?: { name: string }[];
     }
 

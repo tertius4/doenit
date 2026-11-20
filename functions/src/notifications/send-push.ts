@@ -13,6 +13,7 @@ const PUSH_TYPES = [
   "group_deleted",
   "user_left_group",
   "list_completed",
+  "task_unblocked",
   "task_assigned",
   "task_completed",
   "mentioned",
@@ -107,6 +108,8 @@ function getTemplateTitle(type: string, lang: "af" | "en"): string {
       return en ? "Member left list" : "Lid het lys verlaat";
     case "list_completed":
       return en ? "Project completed" : "Projek voltooi";
+    case "task_unblocked":
+      return en ? "Your turn" : "Jou beurt";
     case "task_assigned":
       return en ? "New task assigned" : "Nuwe taak toegeken";
     case "task_completed":
@@ -133,6 +136,10 @@ function getTemplateBody(type: string, lang: "af" | "en", data: Record<string, s
       return en ? `${data.user_name} left ${data.group_name}.` : `${data.user_name} het ${data.group_name} verlaat.`;
     case "list_completed":
       return en ? `${data.user_name} completed ${data.group_name}.` : `${data.user_name} het ${data.group_name} voltooi.`;
+    case "task_unblocked":
+      return en
+        ? `"${data.before_name}" is done, so "${data.task_name}" can start.`
+        : `"${data.before_name}" is klaar, so "${data.task_name}" kan begin.`;
     case "task_assigned":
       return en ? `Task "${data.task_name}" was assigned to you.` : `Taak "${data.task_name}" is aan jou toegeken.`;
     case "task_completed":

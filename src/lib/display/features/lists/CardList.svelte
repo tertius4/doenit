@@ -22,7 +22,7 @@
   class="relative w-full flex items-center gap-3 bg-surface rounded-lg px-3 py-2 text-left active:bg-card transition-colors"
 >
   <div class="flex-1">
-    <h1 class="text-secondary-400 font-semibold text-lg leading-none truncate pr-20 flex items-center gap-1.5">
+    <h1 class="text-secondary-400 font-semibold text-lg truncate pr-20 flex items-center gap-1.5">
       {#if list.completable}<Icon name="folder" size={16} class="shrink-0" />{/if}
       <span class="truncate">{list.name}</span>
     </h1>

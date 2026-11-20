@@ -163,6 +163,22 @@ export const NotificationService = {
     });
   },
 
+  /** The task `task` waited on is done: it is the assignee's turn. */
+  async createTaskUnblocked(user_id: string, task: DB.Task, before: DB.Task): AsyncResult<DB.Notification> {
+    return this.create({
+      user_id,
+      type: "task_unblocked",
+      title: "Your turn",
+      body: `"${before.name}" is done, so "${task.name}" can start.`,
+      data: {
+        task_id: task.id,
+        task_name: task.name,
+        before_name: before.name,
+        ...(task.scope_id ? { group_id: task.scope_id } : {}),
+      },
+    });
+  },
+
   async createTaskCompleted(
     user_id: string,
     task: DB.Task,

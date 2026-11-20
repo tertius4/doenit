@@ -70,16 +70,6 @@
     </a>
 
     <a
-      aria-label={t("lists")}
-      draggable="false"
-      href="/lists"
-      class="rounded-lg font-medium flex gap-3 items-center px-4 py-3 w-full hover:bg-card active:bg-card transition-colors"
-    >
-      <Icon name="categories" size={16} />
-      <span>{t("lists")}</span>
-    </a>
-
-    <a
       aria-label={t("settings")}
       draggable="false"
       href="/settings"

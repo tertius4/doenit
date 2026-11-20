@@ -1,4 +1,6 @@
 import t from "$display/translate";
+import { checklistLabel } from "$logic/checklist";
+import { isWaiting, orderChains, wouldCycle } from "$logic/chains";
 import DB from "$domain/db";
 import DateUtil from "$display/date-util";
 import { getGroup, INBOX_ID, listIcon } from "$lib";
@@ -236,6 +238,9 @@ function subscribeListTaskList(list_id) {
       const contact_map = new Map(contacts.map((c) => [c.firebase_uid, c.name ?? c.email_address ?? c.firebase_uid]));
       const today = new Date();
 
+      const open_ids = new Set(tasks.map((task) => task.id));
+      const names = new Map(tasks.map((task) => [task.id, task.name]));
+
       tasks.sort((a, b) => {
         const group_diff = getGroup(a) - getGroup(b);
         if (group_diff !== 0) return group_diff;
@@ -264,7 +269,10 @@ function subscribeListTaskList(list_id) {
         return a_date.getTime() - b_date.getTime();
       });
 
-      return tasks.map((task) => formatTask(task, contact_map, today));
+      // A chain reads in order: each task straight after the one it waits on.
+      return orderChains(tasks).map((task) =>
+        formatTask(task, contact_map, today, isWaiting(task, open_ids) ? names.get(task.after_task_id ?? "") : undefined),
+      );
     }),
   );
 }
@@ -273,9 +281,10 @@ function subscribeListTaskList(list_id) {
  * @param {DB.Task} task
  * @param {Map<string, string>} contactMap
  * @param {Date} today
+ * @param {string} [waiting_on] - The name of the open task this one waits on.
  * @returns {AL.MainPageTask}
  */
-function formatTask(task, contactMap, today) {
+function formatTask(task, contactMap, today, waiting_on) {
   const startDate = DateUtil.parseWithTimeBoundary(task.start_date, "start");
   const dueDate = DateUtil.parseWithTimeBoundary(task.due_date, "end");
 
@@ -293,6 +302,11 @@ function formatTask(task, contactMap, today) {
       ...(task.repeat_interval ? { post_icon: "sync" } : {}),
     });
   }
+
+  if (waiting_on) pills.push({ type: "square", label: t("waiting_on"), highlight: waiting_on, pre_icon: "lock" });
+
+  const checklist = checklistLabel(task.checklist);
+  if (checklist) pills.push({ type: "square", label: checklist, pre_icon: "check" });
 
   if (task.assigned_firebase_uid) {
     const my_uid = context.user?.firebase_uid;
@@ -357,4 +371,34 @@ function calculateIsPast(today, startDate, dueDate, is_ongoing) {
   if (!date) return false;
 
   return date < today;
+}
+
+/**
+ * Fills `options` with the tasks in a list that `task_id` can wait on ("after task"): not itself, and none that would
+ * close a circle. Returns the unsubscribe function, so it can be returned from `onMount`.
+ * @param {string | null} list_id - null: the Inbox.
+ * @param {string | undefined} task_id - Undefined for a new task.
+ * @param {{ id: string, name: string, date: string | null, is_done: boolean }[]} options
+ * @returns {() => void}
+ */
+export function afterOptions(list_id, task_id, options) {
+  const subscription = visible$(DB.task, {
+    selector: { list_id: list_id ?? null, soft_deleted: { $ne: true } },
+    sort: [{ created_at: "asc" }],
+  }).subscribe((tasks) => {
+    const allowed = tasks.filter((task) => task.id !== task_id && !(task_id && wouldCycle(tasks, task_id, task.id)));
+    // Open tasks first; a done one can still be chosen (a chain that repeats).
+    const ordered = [...orderChains(allowed.filter((task) => !task.archived)), ...allowed.filter((task) => task.archived)];
+    options.splice(
+      0,
+      options.length,
+      ...ordered.map((task) => ({
+        id: task.id,
+        name: task.name,
+        date: task.start_date || task.due_date,
+        is_done: !!task.archived,
+      })),
+    );
+  });
+  return () => subscription.unsubscribe();
 }

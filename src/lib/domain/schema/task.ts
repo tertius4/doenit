@@ -2,7 +2,7 @@ import type { RxJsonSchema } from "rxdb";
 
 export const task: RxJsonSchema<DB.Task> = {
   title: "task",
-  version: 3,
+  version: 5,
   description: "describes a task",
   type: "object",
   required: ["id", "name", "archived", "created_at", "updated_at"],
@@ -28,6 +28,22 @@ export const task: RxJsonSchema<DB.Task> = {
     list_id: { type: ["string", "null"] },
     assigned_firebase_uid: { type: ["string", "null"] },
     photo_ids: { type: "array", items: { type: "string" } },
+    /** The task this one waits on, in the same list (see logic/chains.ts). */
+    after_task_id: { type: ["string", "null"] },
+    /** Items to tick off inside the task (see logic/checklist.ts). */
+    checklist: {
+      type: "array",
+      maxItems: 100,
+      items: {
+        type: "object",
+        required: ["id", "text", "done"],
+        properties: {
+          id: { type: "string" },
+          text: { type: "string", maxLength: 300 },
+          done: { type: "boolean" },
+        },
+      },
+    },
     owner_id: { type: "string" },
     device_id: {
       type: "string",

@@ -14,6 +14,9 @@
   import Icon from "$display/comps/Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
   import DescriptionEditor from "./DescriptionEditor.svelte";
+  import Checklist from "./Checklist.svelte";
+  import SelectAfterTask from "./SelectAfterTask.svelte";
+  import Api from "$logic/api";
 
   /**
    * @typedef {Object} Props
@@ -22,13 +25,26 @@
    */
 
   /** @type {Props & Record<string, any>} */
-  const { task, onsubmit } = $props();
+  let { task = $bindable(), onsubmit } = $props();
 
   let is_loading = $state(false);
   let name_invalid = $state(false);
   let is_prompting = $state(false);
   let is_editing_description = $state(false);
   let is_date_picker_open = $state(false);
+
+  // A saved task ticks its items off straight away; a new one only when it is created.
+  const task_id = $derived(/** @type {string | undefined} */ (/** @type {any} */ (task).id));
+
+  // A chain stays in one list: choosing another list takes the task out of its chain.
+  // svelte-ignore state_referenced_locally
+  let chain_list_id = task.list_id ?? null;
+  $effect(() => {
+    const list_id = task.list_id ?? null;
+    if (list_id === chain_list_id) return;
+    chain_list_id = list_id;
+    task.after_task_id = null;
+  });
 
   const date_title = $derived(!!task.start_date ? t("date") : t("due_date"));
   // The scope of the list chosen in the form. The task itself only moves when it is saved.
@@ -94,9 +110,21 @@
     <DescriptionEditor bind:value={task.description} onclose={() => (is_editing_description = false)} />
   {/if}
 
+  <Checklist
+    bind:items={task.checklist}
+    ontoggle={task_id ? (/** @type {string} */ item_id) => Api.task.toggleItem(task_id, item_id) : undefined}
+  />
+
   <SelectList bind:list_id={task.list_id} bind:scope_id />
 
   <SelectAssignee scope_id={scope_id ?? undefined} bind:value={task.assigned_firebase_uid} />
+
+  <SelectAfterTask
+    bind:value={task.after_task_id}
+    list_id={task.list_id}
+    {task_id}
+    date={task.start_date || task.due_date}
+  />
 
   <div class="w-full">
     <label class="font-semibold" for="date">{date_title}</label>
@@ -104,7 +132,15 @@
     <DatePickerShortcut date={task.start_date} onchange={(value) => (task.start_date = value)} />
   </div>
 
-  {#if task.start_date}
+  {#if task.start_date && task.after_task_id}
+    <!-- Only the first task of a chain repeats; the rest comes back with it. -->
+    <div transition:slide>
+      <span class="font-bold">{t("repeat")}</span>
+      <p class="text-sm text-muted flex items-center gap-1">
+        <Icon name="lock" size={14} />{t("repeat_with_chain")}
+      </p>
+    </div>
+  {:else if task.start_date}
     <div transition:slide>
       <label class="font-bold" for="repeat">{t("repeat")}</label>
       <SelectRepeatInterval

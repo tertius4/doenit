@@ -68,7 +68,10 @@
           {#if pill.pre_icon}
             <Icon name={pill.pre_icon} class="text-current shrink-0" size={12} />
           {/if}
-          <span class="truncate">{pill.label}</span>
+          <span class={pill.highlight ? "shrink-0" : "truncate"}>{pill.label}</span>
+          {#if pill.highlight}
+            <span class="truncate rounded-sm bg-primary/20 text-primary font-semibold px-1">{pill.highlight}</span>
+          {/if}
           {#if pill.post_icon}
             <Icon name={pill.post_icon} class="text-current shrink-0" size={12} />
           {/if}

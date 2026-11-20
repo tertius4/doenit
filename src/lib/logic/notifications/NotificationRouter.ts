@@ -28,6 +28,7 @@ export const NotificationRouter = {
         break;
       case "task_assigned":
       case "task_completed":
+      case "task_unblocked":
       case "mentioned":
         if (typeof notification.data.task_id === "string") {
           await goto(`/${notification.data.task_id}`);

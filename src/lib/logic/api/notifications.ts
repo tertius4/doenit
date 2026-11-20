@@ -1,4 +1,5 @@
 import { apiLogger } from "$lib";
+import { isWaiting } from "$logic/chains";
 import { visibleSelector } from "$domain/sync/scopes";
 import { NotificationService } from "$logic/notifications/NotificationService";
 import { PushService } from "$logic/notifications/PushService";
@@ -129,8 +130,14 @@ async function rebuildSchedule() {
     // The open tasks of a completed project only show in the project, so they don't remind either.
     const done_projects = await DB.list.findMany({ selector: { completed_at: { $ne: null }, soft_deleted: { $ne: true } } });
     const done_project_ids = new Set(done_projects.ok ? done_projects.value.map((list) => list.id) : []);
+    // A task waiting on another open task (anyone's) doesn't remind yet.
+    const all_open = await DB.task.findMany({ selector: { archived: { $ne: true }, soft_deleted: { $ne: true } } });
+    const open_ids = new Set(all_open.ok ? all_open.value.map((task) => task.id) : []);
     const open_tasks = tasks.value.filter(
-      (task) => !completed_in_widget.includes(task.id) && !(task.list_id && done_project_ids.has(task.list_id)),
+      (task) =>
+        !completed_in_widget.includes(task.id) &&
+        !(task.list_id && done_project_ids.has(task.list_id)) &&
+        !isWaiting(task, open_ids),
     );
 
     notifications = buildSchedule({ tasks: open_tasks, present_time, past_time, now: new Date(), t });

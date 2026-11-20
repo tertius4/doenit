@@ -7,7 +7,7 @@
   import { page } from "$app/state";
   import { INBOX_ID } from "$lib";
 
-  const task = $state(getTask());
+  let task = $state(getTask());
 
   const redirect_to = $derived(page.url.searchParams.get("redirect") || "/");
 
@@ -46,5 +46,5 @@
 
 <SaveChanges changed={task} onsave={handleCreate} oncancel={handleCancel} />
 <div class="mb-20">
-  <EditTask {task} onsubmit={handleCreate} />
+  <EditTask bind:task onsubmit={handleCreate} />
 </div>

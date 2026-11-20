@@ -10,6 +10,7 @@ Read, create, change and delete Doenit tasks from anywhere: scripts, Zapier, Mak
 - [Request fields](#request-fields)
 - [Dates](#dates)
 - [Repeating tasks](#repeating-tasks)
+- [Checklists](#checklists)
 - [List tasks](#list-tasks)
 - [Change a task](#change-a-task)
 - [Delete a task](#delete-a-task)
@@ -79,6 +80,8 @@ Every endpoint that returns a task uses this shape:
   "important": true,
   "list_id": null,
   "repeat": { "interval": "monthly", "every": 1 },
+  "checklist": [{ "id": "c1a…", "text": "Kontroleer die bedrag", "done": false }],
+  "after_task_id": null,
   "completed": false,
   "completed_at": null,
   "created_at": "2026-10-27T09:12:03.120Z",
@@ -89,6 +92,8 @@ Every endpoint that returns a task uses this shape:
 - `start_date` holds the task's date. `due_date` is only set when the task spans a date range (then `start_date` is the start).
 - `list_id` is the list the task is in, or `null` for the Inbox.
 - `repeat` is `null` for a task that doesn't repeat. See [Repeating tasks](#repeating-tasks).
+- `after_task_id` is the task this one waits on, in the same list, or `null`. It is set in the app ("After task") and can't be sent to the API. When you complete the first task of a repeating chain, it comes back on its next date only once every task in the chain is done; then the whole chain starts over, as in the app. Moving a task to another list or deleting it takes it out of its chain: the task after it then waits on the task before it.
+- `checklist` holds the items to tick off inside the task, in order. It is `[]` for a task without items. See [Checklists](#checklists).
 - `completed` is `true` once the task is done. A repeating task never stays completed: completing it moves it on to its next date, as in the app. `completed_at` then shows when it was last done.
 
 ## Request fields
@@ -104,6 +109,7 @@ These are the fields you can send with `POST` (create) and `PATCH` (change).
 | `important` | boolean | no | Default `false` | `true` |
 | `list_id` | string | no | A list of yours, or a shared list you belong to. In Doenit, open the list, tap its name and then **Copy list ID**. Leave it out (or send `null`) for the Inbox. | `"3f2c…"` |
 | `repeat` | object | no | Makes the task repeat. Needs a `due_date` or `start_date`. See [Repeating tasks](#repeating-tasks). | `{"interval": "weekly"}` |
+| `checklist` | array | no | Up to 100 items of `{ "text", "done" }`. See [Checklists](#checklists). | `[{"text": "Melk"}]` |
 
 Any other field is rejected with a `400`, so typos are caught early.
 
@@ -156,6 +162,24 @@ Mondays, Wednesdays and Fridays:
 Leave `repeat` out (or send `null`) for a task that doesn't repeat. An unknown `interval`, an unknown field inside `repeat`, or `every`/`days` used with an interval that doesn't support them is rejected with a `400`.
 
 > Doenit versions released before repeat support add the task without repeating. Update the app to get repeating tasks.
+
+## Checklists
+
+Send `checklist` as an array of items to give a task things to tick off, just like the checklist in the app.
+
+| Field | Type | Rules |
+|---|---|---|
+| `text` | string | **Required.** 1–300 characters. |
+| `done` | boolean | Default `false`. |
+| `id` | string | Leave it out for a new item. To change an item, send it back with the `id` the API gave it. |
+
+```json
+{ "name": "Inkopies", "checklist": [{ "text": "Melk" }, { "text": "Brood", "done": true }] }
+```
+
+- With `PATCH`, `checklist` replaces the whole list. Send `[]` or `null` to remove every item.
+- When a repeating task is completed, every item is open again for the next time.
+- An unknown field inside an item, an empty `text` or more than 100 items is rejected with a `400`.
 
 ## List tasks
 

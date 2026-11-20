@@ -31,6 +31,7 @@ export default class Api {
     isTaskUpdated: task.isTaskUpdated,
     uncomplete: task.uncomplete,
     updateTask: task.updateTask,
+    toggleItem: task.toggleItem,
   };
 
   static readonly auth = {
@@ -113,5 +114,6 @@ export default class Api {
     moveTasks: lists.moveTasks,
     complete: lists.complete,
     reopen: lists.reopen,
+    convertTask: lists.convertTask,
   };
 }

@@ -27,7 +27,7 @@
 
   /** @type {AL.TaskPhoto[]} */
   let photos = $state([]);
-  $inspect(photos);
+
   // Load photos when photo_ids change
   $effect(() => {
     if (photo_ids?.length) {

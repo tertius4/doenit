@@ -10,6 +10,7 @@ export default class View {
     getOne: lists.getOne,
     options: lists.options,
     taskList: lists.taskList,
+    afterOptions: lists.afterOptions,
   };
 
   static readonly main_page = {

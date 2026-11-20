@@ -190,7 +190,7 @@ service cloud.firestore {
         allow update: if isOwner(uid) && isServerStamped();
         allow create: if signedIn() && isServerStamped() && request.resource.data.user_id == uid
           && request.resource.data.type in ['invite_received', 'invite_accepted', 'group_added', 'group_removed',
-            'group_deleted', 'user_left_group', 'list_completed', 'task_assigned', 'task_completed', 'mentioned']
+            'group_deleted', 'user_left_group', 'list_completed', 'task_unblocked', 'task_assigned', 'task_completed', 'mentioned']
           && request.resource.data.title is string && request.resource.data.title.size() <= 200
           && request.resource.data.body is string && request.resource.data.body.size() <= 500;
       }

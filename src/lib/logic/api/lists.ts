@@ -6,6 +6,8 @@ import { context } from "$logic/context.svelte";
 import { SyncQueue } from "$domain/sync/SyncQueue";
 import { NotificationService } from "$logic/notifications/NotificationService";
 import { stableId } from "$domain/sync/scopes";
+import { projectFromTask } from "$logic/checklist";
+import { detach } from "$logic/chains";
 
 export const save = apiLogger(saveListHandler);
 export const remove = apiLogger(deleteListHandler);
@@ -17,6 +19,7 @@ export const getById = apiLogger(getByIdHandler);
 export const moveTasks = apiLogger(moveTasksHandler);
 export const complete = apiLogger(completeListHandler);
 export const reopen = apiLogger(reopenListHandler);
+export const convertTask = apiLogger(convertTaskHandler);
 
 const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 250;
@@ -381,6 +384,79 @@ async function moveTasksHandler(list_id: string | null, task_ids: string[]): Asy
 }
 
 /**
+ * Turns a task with a checklist into a project (see projectFromTask): a task for every item, then the task itself is
+ * deleted. A task in a shared list gives a shared project with the same members.
+ * @returns The new project.
+ */
+async function convertTaskHandler(task_id: string): AsyncResult<DB.List> {
+  try {
+    const task_result = await DB.task.findById(task_id);
+    if (!task_result.ok) return task_result;
+    const task = task_result.value;
+    if (!task || task.soft_deleted) return { ok: false, error: t("task_not_found") };
+    if (!task.checklist?.length) return { ok: false, error: t("checklist_empty") };
+
+    const plan = projectFromTask(task, DateUtil.format(new Date(), "YYYY-MM-DD HH:mm:ss"));
+    const created = await saveListHandler(plan.list);
+    if (!created.ok) return created;
+    let project = created.value;
+
+    if (task.scope_id) {
+      const shared = await shareLike(project, task.scope_id);
+      if (!shared.ok) return shared;
+      project = shared.value;
+    }
+
+    for (const new_task of plan.tasks) {
+      const result = await DB.task.create({
+        ...new_task,
+        due_date: null,
+        start_date: null,
+        repeat_interval: "",
+        repeat_specific_days: [],
+        repeat_interval_number: 1,
+        important: false,
+        checklist: [],
+        after_task_id: null,
+        list_id: project.id,
+        scope_id: project.scope_id ?? null,
+      });
+      if (!result.ok) return result;
+    }
+
+    const left = await leaveChain(task.id);
+    if (!left.ok) return left;
+    const removed = await DB.task.remove(task.id);
+    if (!removed.ok) return removed;
+
+    return { ok: true, value: project };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : JSON.stringify(err);
+    return { ok: false, error };
+  }
+}
+
+/** Shares a new list with everyone in another list's scope, without needing them as contacts. */
+async function shareLike(list: DB.List, scope_id: string): AsyncResult<DB.List> {
+  const shared = await ensureListScope(list);
+  if (!shared.ok) return shared;
+
+  const members = await DB.member.findMany({ selector: { scope_id, soft_deleted: { $ne: true } } });
+  if (!members.ok) return members;
+
+  for (const member of members.value) {
+    if (member.firebase_uid === context.user?.firebase_uid) continue;
+
+    const added = await upsertMember(shared.value.id, member.firebase_uid, "member", null);
+    if (!added.ok) return added;
+    await enqueueMembership(member.firebase_uid, shared.value.id);
+    await NotificationService.createAddedToList(member.firebase_uid, shared.value).then(warnOnFailure);
+  }
+
+  return shared;
+}
+
+/**
  * Puts a task in another list. Within one scope only list_id changes. Across scopes the task is copied into the new
  * scope under an id derived from the old one, and the old one is deleted: the old scope's members see it go, the new
  * scope's members get it, and one id never lives in two scopes.
@@ -388,16 +464,25 @@ async function moveTasksHandler(list_id: string | null, task_ids: string[]): Asy
  * @param scope_id  That list's scope (null for a private list or the Inbox).
  */
 export async function moveTask(task: DB.Task, list_id: string | null, scope_id: string | null): AsyncResult<DB.Task> {
-  if ((task.scope_id ?? null) === scope_id) {
-    if ((task.list_id ?? null) === list_id) return { ok: true, value: task };
-    return DB.task.update(task.id, { list_id });
+  const same_list = (task.list_id ?? null) === list_id;
+  if (same_list && (task.scope_id ?? null) === scope_id) return { ok: true, value: task };
+
+  if (!same_list) {
+    // A chain stays inside one list: the task leaves its chain first.
+    const left = await leaveChain(task.id);
+    if (!left.ok) return left;
+    task = { ...task, after_task_id: null };
   }
+
+  if ((task.scope_id ?? null) === scope_id) return DB.task.update(task.id, { list_id, after_task_id: null });
 
   const { id, created_at, updated_at, version, device_id, owner_id, field_times, soft_deleted, ...content } = task;
   const changes = {
     ...content,
     list_id,
     scope_id,
+    // The whole list moves scope together (ensureListScope), so the task it waits on gets its new id too.
+    after_task_id: content.after_task_id ? await stableId(content.after_task_id, scope_id ?? "personal") : null,
     // Nobody outside the user can be assigned a private task.
     ...(scope_id ? {} : { assigned_firebase_uid: null }),
   } as Domain.Task;
@@ -415,6 +500,24 @@ export async function moveTask(task: DB.Task, list_id: string | null, scope_id: 
   if (!removed.ok) return removed;
 
   return moved;
+}
+
+/**
+ * Takes a task out of its chain (before it is deleted or leaves its list): whatever waited on it now waits on the
+ * task before it, or on nothing.
+ */
+export async function leaveChain(task_id: string): AsyncResult {
+  const task = await DB.task.findById(task_id);
+  if (!task.ok || !task.value) return { ok: true };
+
+  const tasks = await DB.task.findMany({ selector: { list_id: task.value.list_id ?? null, soft_deleted: { $ne: true } } });
+  if (!tasks.ok) return tasks;
+
+  for (const { id, after_task_id } of detach(tasks.value, task_id)) {
+    const result = await DB.task.update(id, { after_task_id });
+    if (!result.ok) return result;
+  }
+  return { ok: true };
 }
 
 /**

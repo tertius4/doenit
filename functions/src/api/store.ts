@@ -61,3 +61,29 @@ export async function findTask(access: Access, id: string): Promise<{ task: Stor
   }
   return null;
 }
+
+/** The live tasks of one list (null: the Inbox) in a scope, for the chain rules (chain.ts). */
+export async function tasksOfList(scope_id: string, list_id: string | null): Promise<StoredTask[]> {
+  const snap = await itemsOf(scope_id).where("collection", "==", "task").where("list_id", "==", list_id).get();
+  return snap.docs
+    .map((doc) => {
+      const { synced_at: _synced_at, ...task } = doc.data();
+      return task as StoredTask;
+    })
+    .filter((task) => !task.soft_deleted);
+}
+
+/** Writes changes to other tasks in the same scope (a chain's links or restart), stamped like any API change. */
+export async function writeTaskChanges(
+  scope_id: string,
+  tasks: StoredTask[],
+  changes: ({ id: string } & Partial<StoredTask>)[],
+): Promise<void> {
+  const by_id = new Map(tasks.map((task) => [task.id, task]));
+  await Promise.all(
+    changes.map(({ id, ...change }) => {
+      const before = by_id.get(id);
+      return before ? writeItem(scope_id, stampChange(before, { ...before, ...change })) : null;
+    }),
+  );
+}

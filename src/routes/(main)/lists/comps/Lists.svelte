@@ -60,12 +60,17 @@
     <button
       type="button"
       onclick={() => (show_completed = !show_completed)}
-      class="flex items-center gap-1 text-sm font-semibold text-muted px-1 pt-2"
+      class="flex items-center gap-1 text-sm font-semibold text-muted px-1 py-2"
       aria-expanded={show_completed}
     >
-      <Icon name="chevron-right" size={16} class={show_completed ? "transition-transform rotate-90" : "transition-transform"} />
-      {t("completed_projects")} ({completed.length})
+      <Icon
+        name="chevron-right"
+        size={16}
+        class={show_completed ? "transition-transform rotate-90" : "transition-transform"}
+      />
+      <span>{t("completed_projects")} ({completed.length})</span>
     </button>
+
     {#if show_completed}
       {#each completed as list (list.id)}
         <CardList {list} />

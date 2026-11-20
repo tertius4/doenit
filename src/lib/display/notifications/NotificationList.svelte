@@ -34,6 +34,7 @@
 
     const task = typeof data.task_name === "string" ? data.task_name : "";
     const user = typeof data.user_name === "string" ? data.user_name : "";
+    const before = typeof data.before_name === "string" ? data.before_name : "";
 
     /** What each type needs before it can be translated. */
     const required: Partial<Record<DB.NotificationType, boolean>> = {
@@ -46,13 +47,14 @@
       list_completed: !!group && !!user,
       task_assigned: !!task,
       task_completed: !!task && !!group && !!user,
+      task_unblocked: !!task && !!before,
     };
 
     if (!required[notification.type]) return { title: notification.title, body: notification.body };
 
     return {
       title: t(`notification_${notification.type}_title` as TranslationKey),
-      body: t(`notification_${notification.type}_body` as TranslationKey, { email, group, task, user }),
+      body: t(`notification_${notification.type}_body` as TranslationKey, { email, group, task, user, before }),
     };
   }
 </script>

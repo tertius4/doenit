@@ -1,4 +1,6 @@
 import DB from "$lib/domain/db";
+import { checklistLabel } from "$logic/checklist";
+import { isWaiting } from "$logic/chains";
 import DateUtil from "$lib/display/date-util";
 import { map, combineLatest } from "rxjs";
 import { context } from "$logic/context.svelte";
@@ -26,11 +28,8 @@ export function taskList(list) {
  */
 async function subscribeTaskList() {
   const tasks$ = visible$(DB.task, {
-    selector: {
-      archived: { $eq: false },
-      soft_deleted: { $ne: true },
-      assigned_firebase_uid: { $in: [null, context.user?.firebase_uid ?? null] },
-    },
+    // Every open task, also other people's: a task waits while the one before it is open, whoever has that one.
+    selector: { archived: { $eq: false }, soft_deleted: { $ne: true } },
     sort: [{ due_date: "asc" }],
   });
   const lists$ = DB.list.subscribe$({ selector: { soft_deleted: { $ne: true } } });
@@ -41,8 +40,16 @@ async function subscribeTaskList() {
       const list_map = new Map(lists.map((l) => [l.id, l]));
       const today = new Date();
 
-      // The open tasks of a completed project only show in the project itself.
-      const shown = tasks.filter((task) => !(task.list_id && list_map.get(task.list_id)?.completed_at));
+      const my_uid = context.user?.firebase_uid ?? null;
+      const open_ids = new Set(tasks.map((task) => task.id));
+      // Not: other people's tasks, the open tasks of a completed project (they only show in the project itself), and
+      // tasks waiting on another one.
+      const shown = tasks.filter(
+        (task) =>
+          (!task.assigned_firebase_uid || task.assigned_firebase_uid === my_uid) &&
+          !(task.list_id && list_map.get(task.list_id)?.completed_at) &&
+          !isWaiting(task, open_ids),
+      );
       shown.sort(compareTasks);
 
       return shown.map((task) => formatTask(task, list_map, today));
@@ -74,6 +81,9 @@ function formatTask(task, list_map, today) {
       ...(task.repeat_interval ? { post_icon: "sync" } : {}),
     });
   }
+
+  const checklist = checklistLabel(task.checklist);
+  if (checklist) pills.push({ type: "square", label: checklist, pre_icon: "check" });
 
   const list = task.list_id ? list_map.get(task.list_id) : undefined;
   if (list) pills.push({ type: "square", label: list.name, pre_icon: listIcon(list) });

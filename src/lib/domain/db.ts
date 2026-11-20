@@ -187,6 +187,10 @@ async function initDB() {
           ...doc,
           list_id: category_id && category_id !== "default" ? category_id : (doc.scope_id ?? null),
         }),
+        // Version 4 adds the checklist.
+        4: (doc) => ({ ...doc, checklist: [] }),
+        // Version 5 adds after_task_id: no task waits on another yet.
+        5: (doc) => ({ ...doc, after_task_id: null }),
       },
     },
     session: { schema: schema.session },
@@ -207,8 +211,11 @@ async function initDB() {
     contact: { schema: schema.contact, migrationStrategies: { 1: (doc) => doc } },
     // Version 2 adds the optional local-only contact_name: documents are unchanged.
     contact_invite: { schema: schema.contact_invite, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
-    // Versions 1 and 2 only widen the type enum: documents are unchanged.
-    notification: { schema: schema.notification, migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc } },
+    // Versions 1 to 3 only widen the type enum: documents are unchanged.
+    notification: {
+      schema: schema.notification,
+      migrationStrategies: { 1: (doc) => doc, 2: (doc) => doc, 3: (doc) => doc },
+    },
     // Version 1 makes a list completable (a project): existing lists are not.
     list: { schema: schema.list, migrationStrategies: { 1: (doc) => ({ ...doc, completable: false, target_date: null, completed_at: null }) } },
     member: { schema: schema.member },
